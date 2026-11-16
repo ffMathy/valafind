@@ -10,8 +10,19 @@ namespace Valafind.Core.Extraction;
 /// converted to plain text. Falls back to all (X)HTML entries in name order when the package metadata is
 /// missing or broken.
 /// </summary>
+/// <remarks>
+/// Bounded for hostile files: zip limits from <see cref="SafeZip"/>, at most <see cref="MaxManifestItems"/>
+/// manifest items and <see cref="MaxDocuments"/> distinct spine documents (duplicates are read once), and each
+/// document is read only up to the remaining character budget.
+/// </remarks>
 public sealed class EpubExtractor : ITextExtractor
 {
+    /// <summary>Maximum distinct content documents opened per book.</summary>
+    internal const int MaxDocuments = 2_000;
+
+    /// <summary>Maximum manifest items considered.</summary>
+    internal const int MaxManifestItems = 20_000;
+
     /// <inheritdoc />
     public bool CanHandle(string path) => ExtractionIO.HasExtension(path, ".epub");
 
@@ -20,21 +31,22 @@ public sealed class EpubExtractor : ITextExtractor
     {
         ArgumentNullException.ThrowIfNull(limits);
         cancellationToken.ThrowIfCancellationRequested();
+        using var stream = ExtractionIO.OpenRead(path);
+        var sink = new TextAccumulator(limits.MaxChars);
         try
         {
-            using var stream = ExtractionIO.OpenRead(path);
-            using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
-
-            var documents = GetSpineDocuments(zip);
+            using var zip = SafeZip.Open(stream);
+            var budget = SafeZip.NewFileBudget();
+            var documents = GetSpineDocuments(zip, budget, cancellationToken);
             if (documents.Count == 0)
             {
                 documents = zip.Entries
                     .Where(e => ExtractionIO.HasExtension(e.FullName, ".xhtml", ".html", ".htm"))
                     .OrderBy(e => e.FullName, StringComparer.Ordinal)
+                    .Take(MaxDocuments)
                     .ToList();
             }
 
-            var sink = new TextAccumulator(limits.MaxChars);
             foreach (var entry in documents)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -44,20 +56,37 @@ public sealed class EpubExtractor : ITextExtractor
                 }
 
                 var rawBudget = (int)Math.Min((long)(limits.MaxChars - sink.Length) * 4 + 4096, Array.MaxLength / 2);
-                var html = ReadEntry(entry, rawBudget);
+                string html;
+                try
+                {
+                    html = ReadEntry(entry, rawBudget, budget);
+                }
+                catch (ExtractionLimitException ex) when (!ex.FileBudgetExhausted)
+                {
+                    continue; // bomb-like chapter: skip it
+                }
+
                 sink.EnsureBlankLine();
                 HtmlText.AppendText(html, sink);
             }
-
-            return Task.FromResult<ExtractedText?>(new ExtractedText(sink.ToString(), FileKind.Document));
         }
-        catch (InvalidDataException)
+        catch (InvalidDataException) when (sink.Length == 0)
         {
             return Task.FromResult<ExtractedText?>(null);
         }
+        catch (InvalidDataException)
+        {
+            // Damaged later entry: keep the chapters read so far.
+        }
+        catch (ExtractionLimitException)
+        {
+            // Per-file decompression budget used up (or too many entries): keep what was read within it.
+        }
+
+        return Task.FromResult<ExtractedText?>(new ExtractedText(sink.ToString(), FileKind.Document));
     }
 
-    private static List<ZipArchiveEntry> GetSpineDocuments(ZipArchive zip)
+    private static List<ZipArchiveEntry> GetSpineDocuments(ZipArchive zip, DecompressionBudget budget, CancellationToken cancellationToken)
     {
         var result = new List<ZipArchiveEntry>();
         try
@@ -69,14 +98,14 @@ public sealed class EpubExtractor : ITextExtractor
             }
 
             string? opfPath = null;
-            using (var s = container.Open())
-            using (var reader = XmlReader.Create(s, OpenDocumentExtractor.SafeXmlSettings))
+            using (var s = SafeZip.OpenEntry(container, budget))
+            using (var reader = XmlReader.Create(s, BoundedXml.Settings))
             {
                 while (reader.Read())
                 {
                     if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "rootfile")
                     {
-                        opfPath = reader.GetAttribute("full-path");
+                        opfPath = BoundedXml.GetAttribute(reader, "full-path", 2048);
                         break;
                     }
                 }
@@ -90,29 +119,40 @@ public sealed class EpubExtractor : ITextExtractor
             var baseDir = opfPath.Contains('/', StringComparison.Ordinal) ? opfPath[..(opfPath.LastIndexOf('/') + 1)] : string.Empty;
             var manifest = new Dictionary<string, string>(StringComparer.Ordinal);
             var spine = new List<string>();
-            using (var s = opfEntry.Open())
-            using (var reader = XmlReader.Create(s, OpenDocumentExtractor.SafeXmlSettings))
+            var spineSeen = new HashSet<string>(StringComparer.Ordinal);
+            using (var s = SafeZip.OpenEntry(opfEntry, budget))
+            using (var reader = XmlReader.Create(s, BoundedXml.Settings))
             {
-                while (reader.Read())
+                var nodes = 0;
+                while (reader.Read() && spine.Count < MaxDocuments)
                 {
+                    if ((++nodes & 0xFFF) == 0)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
                     if (reader.NodeType != XmlNodeType.Element)
                     {
                         continue;
                     }
 
                     if (reader.LocalName == "item"
-                        && reader.GetAttribute("id") is { } id
-                        && reader.GetAttribute("href") is { } href)
+                        && manifest.Count < MaxManifestItems
+                        && BoundedXml.GetAttribute(reader, "id", 256) is { } id
+                        && BoundedXml.GetAttribute(reader, "href", 2048) is { } href)
                     {
                         manifest[id] = href;
                     }
-                    else if (reader.LocalName == "itemref" && reader.GetAttribute("idref") is { } idref)
+                    else if (reader.LocalName == "itemref"
+                             && BoundedXml.GetAttribute(reader, "idref", 256) is { } idref
+                             && spineSeen.Add(idref))
                     {
                         spine.Add(idref);
                     }
                 }
             }
 
+            var added = new HashSet<ZipArchiveEntry>();
             foreach (var idref in spine)
             {
                 if (!manifest.TryGetValue(idref, out var href))
@@ -126,8 +166,8 @@ public sealed class EpubExtractor : ITextExtractor
                     href = href[..hashAt];
                 }
 
-                var entryPath = NormalizePath(baseDir + Uri.UnescapeDataString(href));
-                if (zip.GetEntry(entryPath) is { } entry)
+                var entryPath = SafeZip.NormalizePath(baseDir + Uri.UnescapeDataString(href));
+                if (zip.GetEntry(entryPath) is { } entry && added.Add(entry))
                 {
                     result.Add(entry);
                 }
@@ -141,40 +181,17 @@ public sealed class EpubExtractor : ITextExtractor
         {
             result.Clear();
         }
+        catch (ExtractionLimitException ex) when (!ex.FileBudgetExhausted)
+        {
+            result.Clear(); // bomb-like package document: fall back to entry names
+        }
 
         return result;
     }
 
-    /// <summary>Resolves "." and ".." segments of a zip-internal path.</summary>
-    private static string NormalizePath(string path)
+    private static string ReadEntry(ZipArchiveEntry entry, int maxChars, DecompressionBudget budget)
     {
-        var parts = new List<string>();
-        foreach (var segment in path.Split('/'))
-        {
-            if (segment is "" or ".")
-            {
-                continue;
-            }
-
-            if (segment == "..")
-            {
-                if (parts.Count > 0)
-                {
-                    parts.RemoveAt(parts.Count - 1);
-                }
-
-                continue;
-            }
-
-            parts.Add(segment);
-        }
-
-        return string.Join('/', parts);
-    }
-
-    private static string ReadEntry(ZipArchiveEntry entry, int maxChars)
-    {
-        using var stream = entry.Open();
+        using var stream = SafeZip.OpenEntry(entry, budget);
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         var buffer = new char[Math.Min(maxChars, 64 * 1024)];
         var sb = new StringBuilder();

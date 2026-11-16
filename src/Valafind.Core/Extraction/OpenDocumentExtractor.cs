@@ -9,6 +9,11 @@ namespace Valafind.Core.Extraction;
 /// <c>content.xml</c> out of the zip package. Paragraphs and headings become lines; spreadsheet cells are
 /// tab-separated with one line per row; slides/sheets are separated by blank lines.
 /// </summary>
+/// <remarks>
+/// Bounded for hostile files: <c>content.xml</c> is opened through <see cref="SafeZip"/> (entry count,
+/// decompressed-size and compression-ratio limits) and text nodes are read in chunks that stop at the character
+/// budget, so a single multi-gigabyte text node is never materialized.
+/// </remarks>
 public sealed class OpenDocumentExtractor : ITextExtractor
 {
     private const string TextNs = "urn:oasis:names:tc:opendocument:xmlns:text:1.0";
@@ -29,29 +34,38 @@ public sealed class OpenDocumentExtractor : ITextExtractor
             return Task.FromResult<ExtractedText?>(null);
         }
 
+        using var stream = ExtractionIO.OpenRead(path);
+        var sink = new TextAccumulator(limits.MaxChars);
         try
         {
-            using var stream = ExtractionIO.OpenRead(path);
-            using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
+            using var zip = SafeZip.Open(stream);
             var entry = zip.GetEntry("content.xml");
             if (entry is null)
             {
                 return Task.FromResult<ExtractedText?>(null);
             }
 
-            using var content = entry.Open();
-            var sink = new TextAccumulator(limits.MaxChars);
+            using var content = SafeZip.OpenEntry(entry, SafeZip.NewFileBudget());
             ReadContent(content, sink, cancellationToken);
-            return Task.FromResult<ExtractedText?>(new ExtractedText(sink.ToString(), kind));
         }
         catch (InvalidDataException)
         {
             return Task.FromResult<ExtractedText?>(null);
         }
-        catch (XmlException)
+        catch (XmlException) when (sink.Length == 0)
         {
             return Task.FromResult<ExtractedText?>(null);
         }
+        catch (XmlException)
+        {
+            // Malformed tail: keep the text before the error.
+        }
+        catch (ExtractionLimitException)
+        {
+            // Decompression bomb or oversized part: keep what was read within the limits.
+        }
+
+        return Task.FromResult<ExtractedText?>(new ExtractedText(sink.ToString(), kind));
     }
 
     private static FileKind? GetKind(string path)
@@ -74,15 +88,8 @@ public sealed class OpenDocumentExtractor : ITextExtractor
         return null;
     }
 
-    internal static XmlReaderSettings SafeXmlSettings { get; } = new()
-    {
-        DtdProcessing = DtdProcessing.Ignore,
-        XmlResolver = null,
-        IgnoreComments = true,
-        IgnoreProcessingInstructions = true,
-        CheckCharacters = false,
-        CloseInput = false,
-    };
+    /// <summary>Settings for untrusted XML (see <see cref="BoundedXml.Settings"/>).</summary>
+    internal static XmlReaderSettings SafeXmlSettings => BoundedXml.Settings;
 
     private static void ReadContent(Stream content, TextAccumulator sink, CancellationToken cancellationToken)
     {
@@ -92,6 +99,7 @@ public sealed class OpenDocumentExtractor : ITextExtractor
         var rowHasText = false;
         var nodes = 0;
         var advance = true;
+        var buffer = new char[BoundedXml.ChunkSize];
 
         while (!sink.IsFull && (advance ? reader.Read() : !reader.EOF))
         {
@@ -200,30 +208,51 @@ public sealed class OpenDocumentExtractor : ITextExtractor
 
                 case XmlNodeType.Text or XmlNodeType.SignificantWhitespace or XmlNodeType.CDATA:
                 {
-                    var value = reader.Value;
-                    if (cellDepth > 0)
+                    // Read in bounded chunks: a single text node can be hundreds of megabytes in a hostile file.
+                    if (cellDepth == 0 || cellHasText)
                     {
-                        if (string.IsNullOrWhiteSpace(value))
-                        {
-                            break;
-                        }
-
-                        if (!cellHasText)
-                        {
-                            if (rowHasText)
-                            {
-                                sink.Append('\t');
-                            }
-
-                            cellHasText = true;
-                            rowHasText = true;
-                        }
+                        BoundedXml.AppendValue(reader, sink, buffer);
+                        break;
                     }
 
-                    sink.Append(value);
+                    // First text of a table cell: skip leading whitespace; whitespace-only text is not a value.
+                    if (!reader.CanReadValueChunk)
+                    {
+                        AppendCellText(reader.Value.AsSpan(), sink, ref cellHasText, ref rowHasText);
+                        break;
+                    }
+
+                    int n;
+                    while (!sink.IsFull && (n = reader.ReadValueChunk(buffer, 0, buffer.Length)) > 0)
+                    {
+                        AppendCellText(buffer.AsSpan(0, n), sink, ref cellHasText, ref rowHasText);
+                    }
+
                     break;
                 }
             }
         }
+    }
+
+    private static void AppendCellText(ReadOnlySpan<char> chunk, TextAccumulator sink, ref bool cellHasText, ref bool rowHasText)
+    {
+        if (!cellHasText)
+        {
+            chunk = chunk.TrimStart();
+            if (chunk.IsEmpty)
+            {
+                return;
+            }
+
+            if (rowHasText)
+            {
+                sink.Append('\t');
+            }
+
+            cellHasText = true;
+            rowHasText = true;
+        }
+
+        sink.Append(chunk);
     }
 }
