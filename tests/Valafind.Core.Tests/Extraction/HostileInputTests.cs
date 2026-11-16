@@ -17,7 +17,9 @@ public sealed class HostileInputTests : IDisposable
     /// <summary>Managed bytes the extraction thread may allocate for one hostile file.</summary>
     private const long MaxAllocatedBytes = 300L * 1024 * 1024;
 
-    private static readonly TimeSpan MaxElapsed = TimeSpan.FromSeconds(5);
+    /// <summary>Wall-clock bound per hostile file. Bounded files finish in well under a second here; the margin
+    /// is for slow shared CI runners. An unbounded decode is caught by the allocation check regardless.</summary>
+    private static readonly TimeSpan MaxElapsed = TimeSpan.FromSeconds(15);
 
     private readonly ExtractionFixtures _fx = new();
     private readonly DocumentReader _reader = new();
@@ -80,6 +82,33 @@ public sealed class HostileInputTests : IDisposable
 
         var result = await ReadBounded(path);
         Assert.Equal(new ExtractedText(string.Empty, FileKind.Document), result);
+    }
+
+    [Fact]
+    public async Task DocxRepetitivePartAboveRatioCheck_KeepsLeadingText()
+    {
+        // 12 MB of empty paragraphs compresses far beyond 100:1. Such a part is read only up to the smaller
+        // suspicious-entry cap, but the text before the cap is kept instead of dropping the whole part.
+        var path = _fx.WriteBytes("repetitive.docx", Zip(
+            Entry("[Content_Types].xml", ContentTypes),
+            Entry("_rels/.rels", RootRels("word/document.xml")),
+            BombEntry("word/document.xml", WordPrefix + "<w:p><w:r><w:t>Leading words</w:t></w:r></w:p>", "<w:p/>", 12L << 20, WordSuffix)));
+
+        var result = await ReadBounded(path);
+        Assert.NotNull(result);
+        Assert.Contains("Leading words", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OdtRepetitiveContentAboveRatioCheck_KeepsLeadingText()
+    {
+        var path = _fx.WriteBytes("repetitive.odt", Zip(
+            Entry("mimetype", "application/vnd.oasis.opendocument.text"),
+            BombEntry("content.xml", OdtPrefix + "<text:p>Leading words</text:p>", "<text:p/>", 12L << 20, OdtSuffix)));
+
+        var result = await ReadBounded(path);
+        Assert.NotNull(result);
+        Assert.Contains("Leading words", result.Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -356,6 +385,80 @@ public sealed class HostileInputTests : IDisposable
         var result = await ReadBounded(path);
         Assert.NotNull(result);
         Assert.Contains("Compressed page", result.Text, StringComparison.Ordinal);
+    }
+
+    // The raw pre-scan is the only guard for object and xref streams (PdfPig decodes them while it opens the
+    // file), so it must read the stream dictionary the way PdfPig does, whatever decoys the dictionary holds.
+
+    private static byte[][] OnePageObjects(string text) =>
+    [
+        Obj("<< /Type /Catalog /Pages 2 0 R >>"),
+        Obj("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+        Obj("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>"),
+        Font(),
+        PdfStream(string.Empty, TextContent(text)),
+    ];
+
+    [Fact]
+    public async Task PdfWithXrefStream_WithinLimits_StillExtracts()
+    {
+        var objects = OnePageObjects("Hello glacier");
+        var path = _fx.WriteBytes("xref-stream.pdf", PdfWithXrefStream(
+            XrefStreamCore(objects.Length) + " /Filter /FlateDecode /Info (obj) /Pre << /Filter /DCTDecode >>", 0, objects));
+
+        var result = await ReadBounded(path);
+        Assert.NotNull(result);
+        Assert.Contains("Hello glacier", result.Text, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("{0} /Filter /FlateDecode")]
+    [InlineData("{0} /Filter /FlateDecode /Decoy (obj)")] // "obj" in a string used to truncate the dictionary
+    [InlineData("{0} /Filter /FlateDecode /Xobj 1")] // ... and in a name
+    [InlineData("/Pre << /Filter /DCTDecode >> {0} /Filter /FlateDecode")] // a nested /Filter used to win
+    [InlineData("{0} /Subtype /Image /Filter /FlateDecode")] // labelled as an image
+    [InlineData("{0} /Filter /FlateDecode /S (9 0 obj << /Subtype /Image %)\n")] // fake header and comment in a string
+    [InlineData("{0} /Filter /Fl#61teDecode")] // name escapes
+    [InlineData("{0} /Fil#74er /FlateDecode")]
+    [InlineData("{0} /Filter /DCTDecode /Filter /FlateDecode")] // duplicate keys: unparseable
+    [InlineData("{0} /Filter /FlateDecode % comment\n")] // comment: unparseable
+    [InlineData("{0} /Filter 4 0 R")] // indirect filter
+    [InlineData("{0} /Filter [/FlateDecode 4 0 R]")]
+    public async Task PdfXrefStreamBomb_IsNameOnly(string entries)
+    {
+        var objects = OnePageObjects("Hello glacier");
+        var dictionary = string.Format(System.Globalization.CultureInfo.InvariantCulture, entries, XrefStreamCore(objects.Length));
+        var file = PdfWithXrefStream(dictionary, 64L << 20, objects);
+        Assert.NotNull(PdfStreamGuard.ScanFile(file, Ct));
+
+        var path = _fx.WriteBytes("xref-bomb.pdf", file);
+        var result = await ReadBounded(path);
+        Assert.Equal(new ExtractedText(string.Empty, FileKind.Pdf), result);
+    }
+
+    [Theory]
+    [InlineData("/Type /ObjStm /N 1 /First 4 /Filter /FlateDecode")]
+    [InlineData("/Type /ObjStm /N 1 /First 4 /Decoy (obj) /Filter /FlateDecode")]
+    [InlineData("/Pre << /Filter /DCTDecode >> /Type /ObjStm /N 1 /First 4 /Filter /FlateDecode")]
+    [InlineData("/Type /ObjStm /Subtype /Image /N 1 /First 4 /Filter /FlateDecode")]
+    public async Task PdfObjectStreamBomb_IsNameOnly(string entries)
+    {
+        var file = Pdf([.. OnePageObjects("Hello glacier"), PdfStream(entries, ZlibRepeated("1 0 ", (byte)' ', 64L << 20, "<< >>"))]);
+        Assert.NotNull(PdfStreamGuard.ScanFile(file, Ct));
+
+        var path = _fx.WriteBytes("objstm-bomb.pdf", file);
+        var result = await ReadBounded(path);
+        Assert.Equal(new ExtractedText(string.Empty, FileKind.Pdf), result);
+    }
+
+    [Theory]
+    [InlineData("/Subtype /Image /Width 8192 /Height 8192 /BitsPerComponent 8 /ColorSpace /DeviceGray /Filter /FlateDecode")]
+    [InlineData("/Subtype /Image /Note (obj) /DecodeParms << /Predictor 15 /Columns 8192 >> /Width 8192 /Height 8192 /BitsPerComponent 8 /ColorSpace /DeviceGray /Filter /FlateDecode")]
+    public void PdfLargeFlateImage_IsNotMeasured(string entries)
+    {
+        // Text extraction never decodes image data, so a legitimately large image must not reject the file.
+        var file = Pdf([.. OnePageObjects("Hello glacier"), PdfStream(entries, ZlibRepeated(string.Empty, 0x80, 64L << 20, string.Empty))]);
+        Assert.Null(PdfStreamGuard.ScanFile(file, Ct));
     }
 
     [Fact]

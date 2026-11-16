@@ -16,7 +16,10 @@ namespace Valafind.Core.Extraction;
 /// <list type="number">
 /// <item><see cref="ScanFile"/> runs before the document is opened. It finds every stream object in the raw
 /// file bytes (stream objects can never be inside object streams, so their dictionaries are always in plain
-/// view), parses its /Filter chain and measures it. Any non-image stream that decodes to more than
+/// view), parses its dictionary structurally from the object header, reads the top-level /Filter chain and
+/// measures it. Expanding filter names spelled anywhere else in the dictionary text are measured as well, and
+/// an object or xref stream whose dictionary does not parse cleanly, or whose filter is indirect, rejects the
+/// file. Any non-image stream that decodes to more than
 /// <see cref="MaxStreamBytes"/>, or more than <see cref="MaxFileDecodedBytes"/> in total, rejects the file.
 /// This covers object and cross-reference streams, which PdfPig decodes while it opens the file. Image
 /// streams are not measured, because text extraction never decodes them. The exception is a stream that
@@ -58,6 +61,7 @@ internal static class PdfStreamGuard
         var streams = 0;
         var position = 0;
         var scratch = new byte[64 * 1024];
+        var chains = new List<IReadOnlyList<string>>();
         while (position < file.Length)
         {
             var found = file.AsSpan(position).IndexOf("stream"u8);
@@ -68,7 +72,7 @@ internal static class PdfStreamGuard
 
             var keyword = position + found;
             position = keyword + 6;
-            if (!TryGetStreamStart(file, keyword, out var dataStart, out var dict))
+            if (!TryGetStreamStart(file, keyword, out var raw))
             {
                 continue;
             }
@@ -83,21 +87,65 @@ internal static class PdfStreamGuard
                 return $"more than {MaxStreams} streams";
             }
 
-            var filters = ParseFilters(dict);
-            if (filters is null || filters.Count == 0)
+            // Names anywhere in the dictionary text, nested or not: a safety net under the structural parse.
+            // Whatever PdfPig decodes with must be spelled somewhere in this text (or be an indirect /Filter).
+            var text = file.AsSpan(raw.TextStart, raw.DictEnd - raw.TextStart);
+            var textStructural = FindName(text, "ObjStm") >= 0 || FindName(text, "XRef") >= 0
+                || FindName(text, "First") >= 0 || FindName(text, "W") >= 0;
+            chains.Clear();
+            var earlyChange = 1;
+            if (raw.Dictionary is { } dict)
             {
-                continue; // no filter (no expansion) or an indirect /Filter (checked per page)
+                var structural = textStructural || IsStructural(dict);
+                var filters = FiltersOf(dict);
+                if (filters is null && structural)
+                {
+                    // PdfPig decodes object and xref streams while it opens the file, before any page check.
+                    return "object or cross-reference stream with an undeterminable filter";
+                }
+
+                var extras = ExpandingNamesIn(text, filters);
+                if (filters is { Count: 0 } && extras.Count == 0)
+                {
+                    continue; // nothing that expands
+                }
+
+                if (!structural && extras.Count == 0 && IsImage(dict))
+                {
+                    continue; // image data is never decoded for text extraction
+                }
+
+                if (filters is { Count: > 0 })
+                {
+                    chains.Add(filters);
+                }
+
+                // An indirect /Filter on another stream is measured per page if PdfPig ever decodes it.
+                chains.AddRange(extras.Select(name => (IReadOnlyList<string>)[name]));
+                earlyChange = EarlyChange(dict);
+            }
+            else
+            {
+                // The dictionary does not parse cleanly (comments, duplicate keys, broken syntax): only what
+                // the text shows can be trusted, and an object or xref stream is not given the benefit of the doubt.
+                if (textStructural && FindName(text, "Filter") >= 0)
+                {
+                    return "object or cross-reference stream with an unparseable dictionary";
+                }
+
+                chains.AddRange(ExpandingNamesIn(text, null).Select(name => (IReadOnlyList<string>)[name]));
             }
 
-            if (HasName(dict, "Subtype", "Image") && !HasKey(dict, "First") && !HasKey(dict, "W"))
+            long size = 0;
+            foreach (var chain in chains)
             {
-                continue; // image data is never decoded for text extraction
-            }
+                var measured = MeasureDecoded(file, raw.DataStart, file.Length - raw.DataStart, chain, earlyChange, MaxStreamBytes, scratch);
+                if (measured is null)
+                {
+                    return "stream with chained expanding filters";
+                }
 
-            var size = MeasureDecoded(file, dataStart, file.Length - dataStart, filters, EarlyChange(dict), MaxStreamBytes, scratch);
-            if (size is null)
-            {
-                return "stream with chained expanding filters";
+                size = Math.Max(size, measured.Value);
             }
 
             if (size > MaxStreamBytes)
@@ -105,24 +153,40 @@ internal static class PdfStreamGuard
                 return $"stream decodes to more than {MaxStreamBytes} bytes";
             }
 
-            total += size.Value;
+            total += size;
             if (total > MaxFileDecodedBytes)
             {
                 return $"streams decode to more than {MaxFileDecodedBytes} bytes";
             }
 
-            position = dataStart;
+            position = raw.DataStart;
         }
 
         return null;
     }
 
-    /// <summary>Checks that "stream" at <paramref name="keyword"/> is a stream keyword (after "&gt;&gt;", before
-    /// an end-of-line) and finds its dictionary text.</summary>
-    private static bool TryGetStreamStart(byte[] file, int keyword, out int dataStart, out ReadOnlySpan<byte> dict)
+    /// <summary>A stream keyword found in the raw file, with its dictionary.</summary>
+    /// <param name="DataStart">First byte of the stream data.</param>
+    /// <param name="Dictionary">Top-level entries of the stream dictionary, or null when it does not parse
+    /// cleanly from an object header.</param>
+    /// <param name="TextStart">Start of the dictionary text that was examined (the object header when parsed).</param>
+    /// <param name="DictEnd">Just past the closing "&gt;&gt;".</param>
+    private readonly record struct RawStream(int DataStart, Dictionary<string, RawValue>? Dictionary, int TextStart, int DictEnd);
+
+    private const int MaxDictionaryWindow = 64 * 1024;
+    private const int MaxHeaderCandidates = 32;
+
+    /// <summary>
+    /// Checks that "stream" at <paramref name="keyword"/> is a stream keyword (after "&gt;&gt;", before an
+    /// end-of-line) and parses its dictionary structurally: from an <c>N G obj</c> header, balanced
+    /// <c>&lt;&lt; &gt;&gt;</c> with literal and hex strings skipped, and the parse must end exactly at the
+    /// "&gt;&gt;" before the keyword. Headers are tried nearest first; one inside a string of the real
+    /// dictionary cannot produce such a parse, because the real string's closing parenthesis is unbalanced
+    /// from inside it, and comments (which could swallow it) fail the parse.
+    /// </summary>
+    private static bool TryGetStreamStart(byte[] file, int keyword, out RawStream raw)
     {
-        dataStart = 0;
-        dict = default;
+        raw = default;
         if (keyword >= 3 && file.AsSpan(keyword - 3, 3).SequenceEqual("end"u8))
         {
             return false;
@@ -162,17 +226,91 @@ internal static class PdfStreamGuard
             return false;
         }
 
-        var windowStart = Math.Max(0, b - 64 * 1024);
-        var window = file.AsSpan(windowStart, b + 1 - windowStart);
-        var obj = window.LastIndexOf("obj"u8);
-        dict = obj >= 0 ? window[obj..] : window;
-        dataStart = j;
+        var dictEnd = b + 1;
+        var floor = Math.Max(0, b - MaxDictionaryWindow);
+        var textStart = floor;
+        var searchEnd = b;
+        var candidates = 0;
+        while (candidates < MaxHeaderCandidates && searchEnd > floor)
+        {
+            var at = file.AsSpan(floor, searchEnd - floor).LastIndexOf("obj"u8);
+            if (at < 0)
+            {
+                break;
+            }
+
+            at += floor;
+            searchEnd = at;
+            if (!TryGetObjectHeader(file, at, out var headerStart))
+            {
+                continue;
+            }
+
+            candidates++;
+            textStart = headerStart;
+            var parser = new RawParser(file.AsSpan(0, dictEnd), at + 3);
+            if (parser.SkipWhite()
+                && parser.AtDictionary
+                && parser.ParseValue(0, out var value)
+                && value.Entries is { } entries
+                && parser.Position == dictEnd)
+            {
+                raw = new RawStream(j, entries, headerStart, dictEnd);
+                return true;
+            }
+        }
+
+        raw = new RawStream(j, null, textStart, dictEnd);
+        return true;
+    }
+
+    /// <summary>True when "obj" at <paramref name="obj"/> ends an <c>N G obj</c> header.</summary>
+    private static bool TryGetObjectHeader(byte[] file, int obj, out int headerStart)
+    {
+        headerStart = 0;
+        if (obj + 3 < file.Length && !IsDelimiter(file[obj + 3]))
+        {
+            return false;
+        }
+
+        var i = obj - 1;
+        if (i < 0 || !IsWhite(file[i]))
+        {
+            return false;
+        }
+
+        for (var number = 0; number < 2; number++)
+        {
+            while (i >= 0 && IsWhite(file[i]))
+            {
+                i--;
+            }
+
+            var digitsEnd = i;
+            while (i >= 0 && file[i] is >= (byte)'0' and <= (byte)'9' && digitsEnd - i < 12)
+            {
+                i--;
+            }
+
+            if (i == digitsEnd)
+            {
+                return false;
+            }
+        }
+
+        if (i >= 0 && !IsDelimiter(file[i]))
+        {
+            return false;
+        }
+
+        headerStart = i + 1;
         return true;
     }
 
     private static bool IsWhite(byte c) => c is (byte)' ' or (byte)'\r' or (byte)'\n' or (byte)'\t' or (byte)'\f' or 0;
 
-    private static bool IsDelimiter(byte c) => IsWhite(c) || c is (byte)'/' or (byte)'[' or (byte)']' or (byte)'<' or (byte)'>' or (byte)'(' or (byte)')';
+    private static bool IsDelimiter(byte c) => IsWhite(c) || c is (byte)'/' or (byte)'[' or (byte)']' or (byte)'<' or (byte)'>'
+        or (byte)'(' or (byte)')' or (byte)'{' or (byte)'}' or (byte)'%';
 
     /// <summary>Index just past the name token <c>/key</c> (matched as a whole name), or -1.</summary>
     private static int FindName(ReadOnlySpan<byte> text, string key, int from = 0)
@@ -205,103 +343,337 @@ internal static class PdfStreamGuard
         return -1;
     }
 
-    private static bool HasKey(ReadOnlySpan<byte> dict, string key) => FindName(dict, key) >= 0;
+    private static readonly string[] ExpandingFilterNames = ["FlateDecode", "Fl", "LZWDecode", "LZW", "RunLengthDecode", "RL"];
 
-    private static bool HasName(ReadOnlySpan<byte> dict, string key, string value)
+    /// <summary>Expanding filter names spelled anywhere in <paramref name="text"/> whose kind is not already in
+    /// <paramref name="chain"/>.</summary>
+    private static List<string> ExpandingNamesIn(ReadOnlySpan<byte> text, IReadOnlyList<string>? chain)
     {
-        var at = FindName(dict, key);
-        if (at < 0)
-        {
-            return false;
-        }
-
-        while (at < dict.Length && IsWhite(dict[at]))
-        {
-            at++;
-        }
-
-        return FindName(dict[at..], value) == value.Length + 1;
-    }
-
-    private static int EarlyChange(ReadOnlySpan<byte> dict)
-    {
-        var at = FindName(dict, "EarlyChange");
-        if (at < 0)
-        {
-            return 1;
-        }
-
-        while (at < dict.Length && IsWhite(dict[at]))
-        {
-            at++;
-        }
-
-        return at < dict.Length && dict[at] == '0' ? 0 : 1;
-    }
-
-    /// <summary>The /Filter names in order; empty for none; null when the value is not a name or array of names.</summary>
-    private static List<string>? ParseFilters(ReadOnlySpan<byte> dict)
-    {
-        var at = FindName(dict, "Filter");
-        if (at < 0)
-        {
-            return [];
-        }
-
-        while (at < dict.Length && IsWhite(dict[at]))
-        {
-            at++;
-        }
-
-        if (at >= dict.Length)
-        {
-            return null;
-        }
-
         var result = new List<string>();
-        if (dict[at] == '/')
+        foreach (var name in ExpandingFilterNames)
         {
-            result.Add(ReadName(dict, at));
-            return result;
-        }
-
-        if (dict[at] != '[')
-        {
-            return null;
-        }
-
-        at++;
-        while (at < dict.Length && dict[at] != ']' && result.Count < 16)
-        {
-            if (dict[at] == '/')
+            var kind = Classify(name);
+            if (FindName(text, name) >= 0
+                && (chain is null || !chain.Any(f => Classify(f) == kind))
+                && !result.Any(f => Classify(f) == kind))
             {
-                var name = ReadName(dict, at);
                 result.Add(name);
-                at += name.Length + 1;
-            }
-            else if (IsWhite(dict[at]))
-            {
-                at++;
-            }
-            else
-            {
-                return null; // indirect reference or junk inside the array
             }
         }
 
         return result;
     }
 
-    private static string ReadName(ReadOnlySpan<byte> text, int slash)
+    private static bool IsStructural(Dictionary<string, RawValue> dict) =>
+        dict.ContainsKey("First") || dict.ContainsKey("W")
+        || (dict.TryGetValue("Type", out var type) && type.Name is "ObjStm" or "XRef");
+
+    private static bool IsImage(Dictionary<string, RawValue> dict) =>
+        dict.TryGetValue("Subtype", out var subtype) && subtype.Name == "Image";
+
+    /// <summary>The /Filter names in order; empty for none; null when the value is not a name or array of names.</summary>
+    private static List<string>? FiltersOf(Dictionary<string, RawValue> dict)
     {
-        var end = slash + 1;
-        while (end < text.Length && !IsDelimiter(text[end]) && end - slash < 64)
+        if (!dict.TryGetValue("Filter", out var filter))
         {
-            end++;
+            return [];
         }
 
-        return System.Text.Encoding.ASCII.GetString(text[(slash + 1)..end]);
+        if (filter.Name is { } single)
+        {
+            return [single];
+        }
+
+        if (filter.Items is not { } items || items.Count > 16)
+        {
+            return null;
+        }
+
+        var result = new List<string>(items.Count);
+        foreach (var item in items)
+        {
+            if (item.Name is not { } name)
+            {
+                return null; // indirect reference or junk inside the array
+            }
+
+            result.Add(name);
+        }
+
+        return result;
     }
+
+    private static int EarlyChange(Dictionary<string, RawValue> dict)
+    {
+        if (!dict.TryGetValue("DecodeParms", out var parms))
+        {
+            return 1;
+        }
+
+        IEnumerable<RawValue> all = parms.Items is { } items ? items : [parms];
+        return all.Any(p => p.Entries is { } e && e.TryGetValue("EarlyChange", out var ec) && ec.Number == 0) ? 0 : 1;
+    }
+
+    /// <summary>A parsed raw PDF value; only names, arrays, dictionaries and integers keep their content.</summary>
+    private sealed record RawValue(string? Name = null, List<RawValue>? Items = null, Dictionary<string, RawValue>? Entries = null, long? Number = null);
+
+    private static readonly RawValue OtherValue = new();
+
+    /// <summary>
+    /// A strict parser for PDF dictionary syntax in raw file bytes. It fails (rather than guesses) on comments,
+    /// duplicate keys, unbalanced delimiters and non-hex characters in hex strings, so a dictionary it accepts
+    /// means the same thing to PdfPig. Name escapes (<c>#xx</c>) are decoded, as PdfPig does.
+    /// </summary>
+    private ref struct RawParser(ReadOnlySpan<byte> text, int position)
+    {
+        private readonly ReadOnlySpan<byte> _text = text;
+        private int _budget = 100_000;
+
+        internal int Position = position;
+
+        internal readonly bool AtDictionary => Position + 1 < _text.Length && _text[Position] == '<' && _text[Position + 1] == '<';
+
+        /// <summary>Skips whitespace; false at the end of the text or at a comment.</summary>
+        internal bool SkipWhite()
+        {
+            while (Position < _text.Length && IsWhite(_text[Position]))
+            {
+                Position++;
+            }
+
+            return Position < _text.Length && _text[Position] != '%';
+        }
+
+        internal bool ParseValue(int depth, out RawValue value)
+        {
+            value = OtherValue;
+            if (--_budget < 0 || depth > 32 || !SkipWhite())
+            {
+                return false;
+            }
+
+            switch (_text[Position])
+            {
+                case (byte)'<' when AtDictionary:
+                    return ParseDictionary(depth, out value);
+                case (byte)'<':
+                    return SkipHexString();
+                case (byte)'[':
+                    return ParseArray(depth, out value);
+                case (byte)'(':
+                    return SkipLiteralString();
+                case (byte)'/':
+                    if (!ReadName(out var name))
+                    {
+                        return false;
+                    }
+
+                    value = new RawValue(Name: name);
+                    return true;
+                case (byte)')' or (byte)'>' or (byte)']' or (byte)'{' or (byte)'}':
+                    return false;
+            }
+
+            var token = ReadToken();
+            if (token.IsEmpty)
+            {
+                return false;
+            }
+
+            if (!TryParseInteger(token, out var number))
+            {
+                return true; // true, false, null, a real number, or an unknown keyword
+            }
+
+            // "N G R" is an indirect reference.
+            var save = Position;
+            if (SkipWhite() && TryParseInteger(ReadToken(), out _) && SkipWhite() && ReadToken().SequenceEqual("R"u8))
+            {
+                return true;
+            }
+
+            Position = save;
+            value = new RawValue(Number: number);
+            return true;
+        }
+
+        private bool ParseDictionary(int depth, out RawValue value)
+        {
+            value = OtherValue;
+            Position += 2;
+            var entries = new Dictionary<string, RawValue>(StringComparer.Ordinal);
+            while (true)
+            {
+                if (!SkipWhite())
+                {
+                    return false;
+                }
+
+                if (_text[Position] == '>')
+                {
+                    if (Position + 1 >= _text.Length || _text[Position + 1] != '>')
+                    {
+                        return false;
+                    }
+
+                    Position += 2;
+                    value = new RawValue(Entries: entries);
+                    return true;
+                }
+
+                if (_text[Position] != '/' || !ReadName(out var key)
+                    || !ParseValue(depth + 1, out var item) || !entries.TryAdd(key, item))
+                {
+                    return false; // not a key, a broken value, or a duplicate key (readers disagree on which wins)
+                }
+            }
+        }
+
+        private bool ParseArray(int depth, out RawValue value)
+        {
+            value = OtherValue;
+            Position++;
+            var items = new List<RawValue>();
+            while (true)
+            {
+                if (!SkipWhite())
+                {
+                    return false;
+                }
+
+                if (_text[Position] == ']')
+                {
+                    Position++;
+                    value = new RawValue(Items: items);
+                    return true;
+                }
+
+                if (!ParseValue(depth + 1, out var item))
+                {
+                    return false;
+                }
+
+                items.Add(item);
+            }
+        }
+
+        private bool SkipLiteralString()
+        {
+            Position++;
+            var nesting = 1;
+            while (Position < _text.Length)
+            {
+                var c = _text[Position++];
+                if (c == '\\')
+                {
+                    Position++;
+                }
+                else if (c == '(')
+                {
+                    nesting++;
+                }
+                else if (c == ')' && --nesting == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool SkipHexString()
+        {
+            Position++;
+            while (Position < _text.Length)
+            {
+                var c = _text[Position++];
+                if (c == '>')
+                {
+                    return true;
+                }
+
+                if (!IsWhite(c) && HexDigit(c) < 0)
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private bool ReadName(out string name)
+        {
+            name = string.Empty;
+            Position++; // the slash
+            Span<byte> buffer = stackalloc byte[128];
+            var length = 0;
+            while (Position < _text.Length && !IsDelimiter(_text[Position]))
+            {
+                var c = _text[Position++];
+                if (c == '#' && Position + 1 < _text.Length && HexDigit(_text[Position]) >= 0 && HexDigit(_text[Position + 1]) >= 0)
+                {
+                    c = (byte)((HexDigit(_text[Position]) << 4) | HexDigit(_text[Position + 1]));
+                    Position += 2;
+                }
+
+                if (length == buffer.Length)
+                {
+                    return false;
+                }
+
+                buffer[length++] = c;
+            }
+
+            name = System.Text.Encoding.Latin1.GetString(buffer[..length]);
+            return true;
+        }
+
+        private ReadOnlySpan<byte> ReadToken()
+        {
+            var start = Position;
+            while (Position < _text.Length && !IsDelimiter(_text[Position]) && Position - start < 64)
+            {
+                Position++;
+            }
+
+            return _text[start..Position];
+        }
+
+        private static bool TryParseInteger(ReadOnlySpan<byte> token, out long number)
+        {
+            number = 0;
+            var i = token.Length > 0 && token[0] is (byte)'+' or (byte)'-' ? 1 : 0;
+            if (i == token.Length || token.Length > 19)
+            {
+                return false;
+            }
+
+            for (; i < token.Length; i++)
+            {
+                if (token[i] is < (byte)'0' or > (byte)'9')
+                {
+                    return false;
+                }
+
+                number = (number * 10) + (token[i] - '0');
+            }
+
+            if (token[0] == '-')
+            {
+                number = -number;
+            }
+
+            return true;
+        }
+    }
+
+    private static int HexDigit(byte c) => c switch
+    {
+        >= (byte)'0' and <= (byte)'9' => c - '0',
+        >= (byte)'a' and <= (byte)'f' => c - 'a' + 10,
+        >= (byte)'A' and <= (byte)'F' => c - 'A' + 10,
+        _ => -1,
+    };
 
     // ------------------------------------------------------------------ per-page check
 
@@ -831,7 +1203,7 @@ internal static class PdfStreamGuard
                 break;
             }
 
-            var v = HexValue(c);
+            var v = HexDigit(c);
             if (v < 0)
             {
                 continue;
@@ -854,14 +1226,6 @@ internal static class PdfStreamGuard
         }
 
         return [.. output];
-
-        static int HexValue(byte c) => c switch
-        {
-            >= (byte)'0' and <= (byte)'9' => c - '0',
-            >= (byte)'a' and <= (byte)'f' => c - 'a' + 10,
-            >= (byte)'A' and <= (byte)'F' => c - 'A' + 10,
-            _ => -1,
-        };
     }
 
     private static byte[] DecodeAscii85(ReadOnlySpan<byte> data)

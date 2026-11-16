@@ -300,6 +300,50 @@ internal static class BombFixtures
         return ms.ToArray();
     }
 
+    /// <summary>The entries every cross-reference stream written by <see cref="PdfWithXrefStream"/> needs.</summary>
+    internal static string XrefStreamCore(int objects) => $"/Type /XRef /Size {objects + 2} /W [1 4 2] /Root 1 0 R";
+
+    /// <summary>
+    /// A PDF whose cross-reference table is a FlateDecode xref stream (object <c>objects.Length + 1</c>), which
+    /// PdfPig decodes while it opens the file. The stream decodes to the real xref rows followed by about
+    /// <paramref name="fillBytes"/> zero bytes. <paramref name="dictionaryEntries"/> is written verbatim after
+    /// /Length and must include the filter (and <see cref="XrefStreamCore"/>).
+    /// </summary>
+    internal static byte[] PdfWithXrefStream(string dictionaryEntries, long fillBytes, params byte[][] objects)
+    {
+        using var ms = new MemoryStream();
+        void Ascii(string s) => ms.Write(Encoding.ASCII.GetBytes(s));
+        Ascii("%PDF-1.7\n%\u00e2\u00e3\n");
+        var offsets = new List<long>();
+        for (var i = 0; i < objects.Length; i++)
+        {
+            offsets.Add(ms.Position);
+            Ascii($"{i + 1} 0 obj\n");
+            ms.Write(objects[i]);
+            Ascii("\nendobj\n");
+        }
+
+        var xref = ms.Position;
+        offsets.Add(xref);
+        var rows = new MemoryStream();
+        rows.Write([0, 0, 0, 0, 0, 0xFF, 0xFF]);
+        foreach (var offset in offsets)
+        {
+            rows.Write([1, (byte)(offset >> 24), (byte)(offset >> 16), (byte)(offset >> 8), (byte)offset, 0, 0]);
+        }
+
+        var deflate = DeflateRepeated(rows.ToArray(), 0, fillBytes, [], out _);
+        var data = new byte[deflate.Length + 6];
+        data[0] = 0x78;
+        data[1] = 0x9C;
+        deflate.CopyTo(data, 2);
+
+        Ascii($"{objects.Length + 1} 0 obj\n<< /Length {data.Length} {dictionaryEntries} >>\nstream\n");
+        ms.Write(data);
+        Ascii($"\nendstream\nendobj\nstartxref\n{xref}\n%%EOF\n");
+        return ms.ToArray();
+    }
+
     internal static byte[] Obj(string text) => Encoding.ASCII.GetBytes(text);
 
     internal static byte[] PdfStream(string dictionaryEntries, byte[] data)

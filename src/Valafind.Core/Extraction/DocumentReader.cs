@@ -147,7 +147,7 @@ public sealed partial class DocumentReader : IDocumentReader
         return null;
     }
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Text extraction of {Path} exceeded {Timeout}; indexing it by name only")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Text extraction of {Path} exceeded {Timeout}; indexing it by name only until the file changes")]
     private static partial void LogExtractionTimedOut(ILogger logger, string path, TimeSpan timeout);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Text extraction of {Path} hit a resource limit ({Reason}); indexing it by name only")]

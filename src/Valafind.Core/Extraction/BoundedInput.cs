@@ -127,7 +127,9 @@ internal static class SafeZip
     /// <summary>Maximum decompressed bytes read from all entries of one file.</summary>
     internal const long MaxFileBytes = 64L * 1024 * 1024;
 
-    /// <summary>Entries larger than this are skipped when their compression ratio exceeds <see cref="MaxCompressionRatio"/>.</summary>
+    /// <summary>Entries larger than this whose compression ratio exceeds <see cref="MaxCompressionRatio"/> are read
+    /// only up to this many bytes: a bomb costs little, and a legitimate but very repetitive part keeps its
+    /// leading text.</summary>
     internal const long SuspiciousEntryBytes = 8L * 1024 * 1024;
 
     internal const long MaxCompressionRatio = 100;
@@ -154,13 +156,15 @@ internal static class SafeZip
     /// <summary>
     /// Opens an entry for reading through a <see cref="BoundedReadStream"/>.
     /// </summary>
-    /// <exception cref="ExtractionLimitException">The entry looks like a decompression bomb (large and
-    /// compressed more than <see cref="MaxCompressionRatio"/>:1).</exception>
+    /// <remarks>An entry that looks like a decompression bomb (large and compressed more than
+    /// <see cref="MaxCompressionRatio"/>:1) is capped at <see cref="SuspiciousEntryBytes"/> instead of
+    /// <paramref name="maxBytes"/>; reading past the cap throws <see cref="ExtractionLimitException"/>, and the
+    /// extractors keep the text read before it.</remarks>
     internal static Stream OpenEntry(ZipArchiveEntry entry, DecompressionBudget budget, long maxBytes = MaxEntryBytes)
     {
         if (IsSuspicious(entry))
         {
-            throw new ExtractionLimitException($"Entry '{entry.FullName}' looks like a decompression bomb.");
+            maxBytes = Math.Min(maxBytes, SuspiciousEntryBytes);
         }
 
         return new BoundedReadStream(entry.Open(), maxBytes, budget);
