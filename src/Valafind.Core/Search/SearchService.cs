@@ -1,4 +1,5 @@
 using Valafind.Core.Abstractions;
+using Valafind.Core.Embedding;
 using Valafind.Core.Storage;
 
 namespace Valafind.Core.Search;
@@ -8,26 +9,34 @@ namespace Valafind.Core.Search;
 /// display results with a snippet around the best-matching sentence and "why it matched" highlights.
 /// </summary>
 /// <remarks>
-/// <para>The query is embedded on the thread pool. Cancellation (the launcher cancels the previous search on every
+/// <para><see cref="SearchAsync"/> is the fast path: one query embedding, one store search and LEXICAL snippets and
+/// highlights (query terms with light stemming, compound prefixes and CJK substrings). It does no other model work.
+/// The query is embedded on the thread pool. Cancellation (the launcher cancels the previous search on every
 /// keystroke) is honoured before and after embedding and throws <see cref="OperationCanceledException"/>.</para>
-/// <para>For the top <see cref="SemanticHighlightCount"/> results the best chunk is split into sentences that are
-/// embedded in one batched call; the sentence closest to the query is centred in the snippet and highlighted.
-/// The other results, or all of them when that step fails or exceeds its time budget, get lexical highlights
-/// (query terms, with light stemming).</para>
+/// <para><see cref="ExplainAsync"/> is the optional second pass the UI runs once results are shown: for the top
+/// <see cref="ExplainCount"/> results it embeds up to <see cref="ExplainSentencesPerResult"/> lexically pre-selected
+/// sentences of each snippet in ONE short batch and highlights the sentence closest to the query.</para>
 /// </remarks>
 public sealed class SearchService : ISearchService
 {
-    /// <summary>Results that get sentence-level semantic highlighting.</summary>
-    internal const int SemanticHighlightCount = 5;
+    /// <summary>Results that get sentence-level semantic highlighting in <see cref="ExplainAsync"/>.</summary>
+    internal const int ExplainCount = 2;
 
-    /// <summary>Sentences per chunk considered for semantic highlighting.</summary>
-    internal const int MaxSentencesPerChunk = 12;
+    /// <summary>Snippet sentences per result embedded by <see cref="ExplainAsync"/>.</summary>
+    internal const int ExplainSentencesPerResult = 4;
 
-    /// <summary>Added to the score when a query term appears in the file name.</summary>
+    /// <summary>Added to the score when a query term is a whole token of the file name.</summary>
     internal const float FileNameBoost = 0.03f;
+
+    /// <summary>Extra store hits (beyond topK, at most this many) fetched so a file-name match ranked just below the
+    /// cut can still be boosted into the results.</summary>
+    internal const int MaxBoostCandidates = 32;
 
     private readonly IEmbeddingModel _model;
     private readonly IIndexStore _store;
+
+    /// <summary>The last embedded query, reused by <see cref="ExplainAsync"/> for the same text.</summary>
+    private volatile CachedQuery? _lastQuery;
 
     /// <summary>Creates a search service over <paramref name="store"/> using <paramref name="model"/> for embeddings.</summary>
     public SearchService(IEmbeddingModel model, IIndexStore store)
@@ -38,14 +47,7 @@ public sealed class SearchService : ISearchService
         _store = store;
     }
 
-    /// <summary>Time allowed for embedding highlight sentences before falling back to lexical highlights.</summary>
-    internal TimeSpan HighlightBudget { get; set; } = TimeSpan.FromSeconds(2);
-
     /// <inheritdoc />
-    // INTEGRATION-STUB: replaced by the search-performance fix (progressive semantic highlights).
-    public Task<IReadOnlyList<SearchResult>> ExplainAsync(string query, IReadOnlyList<SearchResult> results, CancellationToken cancellationToken) =>
-        throw new NotImplementedException("INTEGRATION-STUB");
-
     public async Task<IReadOnlyList<SearchResult>> SearchAsync(string query, SearchFilter filter, int topK, CancellationToken cancellationToken)
     {
         var text = query?.Trim() ?? string.Empty;
@@ -54,42 +56,30 @@ public sealed class SearchService : ISearchService
         filter ??= SearchFilter.None;
         cancellationToken.ThrowIfCancellationRequested();
 
-        var queryVector = await Task.Run(() => _model.EmbedQuery(text, cancellationToken), cancellationToken).ConfigureAwait(false);
+        var queryVector = await EmbedQueryAsync(text, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var hits = await Task.Run(() => _store.Search(queryVector, filter, topK), cancellationToken).ConfigureAwait(false);
+        var candidates = topK + Math.Min(topK, MaxBoostCandidates);
+        var hits = await Task.Run(() => _store.Search(queryVector, filter, candidates), cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (hits.Count == 0)
             return [];
 
         var (stems, lastPrefix) = TextAnalysis.QueryTerms(text);
+        var nameTerms = NameTerms(text);
 
-        // File-name boost, then re-sort.
+        // File-name boost, then re-sort and cut to topK.
         var ranked = hits
-            .Select(hit => (hit, score: NameMatches(hit.Path, stems, lastPrefix) ? Math.Min(1f, hit.Score + FileNameBoost) : hit.Score))
+            .Select(hit => (hit, score: NameMatches(hit.Path, nameTerms) ? Math.Min(1f, hit.Score + FileNameBoost) : hit.Score))
             .OrderByDescending(x => x.score)
             .ThenBy(x => x.hit.Path, StringComparer.Ordinal)
+            .Take(topK)
             .ToList();
 
-        // Sentence candidates per result (only results with text).
-        var sentences = new List<TextSpan>[ranked.Count];
-        for (var i = 0; i < ranked.Count; i++)
-        {
-            var chunk = ranked[i].hit.ChunkText;
-            sentences[i] = string.IsNullOrWhiteSpace(chunk)
-                ? []
-                : TextAnalysis.CandidateSentences(chunk, MaxSentencesPerChunk, stems, lastPrefix);
-        }
-
-        var semanticBest = await PickSemanticSentencesAsync(ranked.Select(x => x.hit).ToList(), sentences, queryVector, cancellationToken)
-            .ConfigureAwait(false);
-        cancellationToken.ThrowIfCancellationRequested();
-
         var results = new List<SearchResult>(ranked.Count);
-        for (var i = 0; i < ranked.Count; i++)
+        foreach (var (hit, score) in ranked)
         {
-            var (hit, score) = ranked[i];
-            var (snippet, highlights) = BuildSnippet(hit.ChunkText, sentences[i], semanticBest[i], stems, lastPrefix);
+            var (snippet, highlights) = BuildLexicalSnippet(hit.ChunkText, stems, lastPrefix);
             results.Add(new SearchResult(
                 Path: hit.Path,
                 FileName: SafeFileName(hit.Path),
@@ -104,63 +94,67 @@ public sealed class SearchService : ISearchService
         return results;
     }
 
-    /// <summary>
-    /// For the top results, embeds their candidate sentences in ONE batched call and returns, per result, the
-    /// sentence closest to the query (or null when not computed). Model failures and the time budget fall back to null.
-    /// </summary>
-    private async Task<TextSpan?[]> PickSemanticSentencesAsync(
-        List<StoreHit> hits, List<TextSpan>[] sentences, float[] queryVector, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    /// <remarks>Never throws for model errors (returns <paramref name="results"/> unchanged); throws
+    /// <see cref="OperationCanceledException"/> when <paramref name="cancellationToken"/> is cancelled.</remarks>
+    public async Task<IReadOnlyList<SearchResult>> ExplainAsync(string query, IReadOnlyList<SearchResult> results, CancellationToken cancellationToken)
     {
-        var best = new TextSpan?[hits.Count];
+        ArgumentNullException.ThrowIfNull(results);
+        cancellationToken.ThrowIfCancellationRequested();
+        var text = query?.Trim() ?? string.Empty;
+        if (text.Length == 0 || results.Count == 0)
+            return results;
+
+        var (stems, lastPrefix) = TextAnalysis.QueryTerms(text);
         var documents = new List<DocumentText>();
         var owners = new List<(int Result, TextSpan Sentence)>();
-        for (var i = 0; i < Math.Min(SemanticHighlightCount, hits.Count); i++)
+        for (var i = 0; i < Math.Min(ExplainCount, results.Count); i++)
         {
-            var hit = hits[i];
-            if (sentences[i].Count == 0)
+            var snippet = results[i]?.Snippet;
+            if (string.IsNullOrWhiteSpace(snippet))
                 continue;
-            if (sentences[i].Count == 1)
+            var sentences = SnippetSentences(snippet, stems, lastPrefix);
+            if (sentences.Count < 2)
+                continue; // Nothing to choose from: the lexical highlights already say more than one sentence would.
+            // Title "none": the short prompt keeps the batch small and the file name from dominating short sentences.
+            foreach (var span in sentences)
             {
-                best[i] = sentences[i][0]; // Nothing to choose from: skip the model.
-                continue;
-            }
-            var title = SafeFileName(hit.Path);
-            foreach (var span in sentences[i])
-            {
-                documents.Add(new DocumentText(string.IsNullOrEmpty(title) ? "none" : title, hit.ChunkText.Substring(span.Start, span.Length)));
+                documents.Add(new DocumentText(EmbeddingPrompts.NoTitle, snippet.Substring(span.Start, span.Length)));
                 owners.Add((i, span));
             }
         }
         if (documents.Count == 0)
-            return best;
+            return results;
 
-        IReadOnlyList<float[]>? vectors = null;
-        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        budget.CancelAfter(HighlightBudget);
+        float[] queryVector;
+        IReadOnlyList<float[]> vectors;
         try
         {
-            vectors = await Task.Run(() => _model.EmbedDocuments(documents, budget.Token), budget.Token).ConfigureAwait(false);
+            queryVector = await EmbedQueryAsync(text, cancellationToken).ConfigureAwait(false);
+            vectors = await Task.Run(() => _model.EmbedDocuments(documents, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            vectors = null; // Budget exceeded: lexical fallback.
+            throw;
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+#pragma warning disable CA1031 // Explaining is optional: any model failure keeps the lexical highlights.
+        catch (Exception)
+#pragma warning restore CA1031
         {
-            vectors = null; // Model failure must not break search: lexical fallback.
+            return results;
         }
         cancellationToken.ThrowIfCancellationRequested();
-
         if (vectors is null || vectors.Count != documents.Count)
-            return best;
+            return results;
 
-        var bestScore = new float[hits.Count];
+        var best = new TextSpan?[results.Count];
+        var bestScore = new float[results.Count];
         Array.Fill(bestScore, float.NegativeInfinity);
         for (var k = 0; k < owners.Count; k++)
         {
             var v = vectors[k];
             if (v is null || v.Length != queryVector.Length)
-                return new TextSpan?[hits.Count]; // Inconsistent model output: do not trust any of it.
+                return results; // Inconsistent model output: do not trust any of it.
             var (result, span) = owners[k];
             var score = VectorMath.Dot(queryVector, v);
             if (score > bestScore[result])
@@ -169,23 +163,51 @@ public sealed class SearchService : ISearchService
                 best[result] = span;
             }
         }
-        return best;
+
+        var explained = new SearchResult[results.Count];
+        for (var i = 0; i < results.Count; i++)
+            explained[i] = best[i] is { } span ? results[i] with { Highlights = [span] } : results[i];
+        return explained;
     }
 
-    private static (string Snippet, IReadOnlyList<TextSpan> Highlights) BuildSnippet(
-        string chunkText, List<TextSpan> sentences, TextSpan? semanticSentence, HashSet<string> stems, string? lastPrefix)
+    private async Task<float[]> EmbedQueryAsync(string text, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(chunkText) || sentences.Count == 0)
+        if (_lastQuery is { } cached && string.Equals(cached.Text, text, StringComparison.Ordinal))
+            return cached.Vector;
+        var vector = await Task.Run(() => _model.EmbedQuery(text, cancellationToken), cancellationToken).ConfigureAwait(false);
+        _lastQuery = new CachedQuery(text, vector);
+        return vector;
+    }
+
+    /// <summary>Up to <see cref="ExplainSentencesPerResult"/> sentences of a snippet (preferring ones with query terms),
+    /// without the "…" that marks cut ends.</summary>
+    internal static List<TextSpan> SnippetSentences(string snippet, HashSet<string> stems, string? lastPrefix)
+    {
+        var result = new List<TextSpan>();
+        foreach (var span in TextAnalysis.CandidateSentences(snippet, ExplainSentencesPerResult, stems, lastPrefix))
+        {
+            var start = span.Start;
+            var end = span.Start + span.Length;
+            while (start < end && (snippet[start] == '…' || char.IsWhiteSpace(snippet[start])))
+                start++;
+            while (end > start && (snippet[end - 1] == '…' || char.IsWhiteSpace(snippet[end - 1])))
+                end--;
+            if (end > start)
+                result.Add(new TextSpan(start, end - start));
+        }
+        return result;
+    }
+
+    /// <summary>Snippet centred on the sentence with most query-term matches (first one on ties, first sentence if
+    /// none match), with every matching word highlighted.</summary>
+    private static (string Snippet, IReadOnlyList<TextSpan> Highlights) BuildLexicalSnippet(string chunkText, HashSet<string> stems, string? lastPrefix)
+    {
+        if (string.IsNullOrWhiteSpace(chunkText))
+            return (string.Empty, []);
+        var sentences = TextAnalysis.Sentences(chunkText);
+        if (sentences.Count == 0)
             return (string.Empty, []);
 
-        if (semanticSentence is { } focusSentence)
-        {
-            var snippet = Snippet.Build(chunkText, focusSentence);
-            var mapped = snippet.MapSourceSpan(focusSentence);
-            return (snippet.Text, mapped is { } span ? [span] : LexicalHighlights(snippet.Text, stems, lastPrefix));
-        }
-
-        // Lexical: centre on the sentence with most term matches (first one on ties, first sentence if none match).
         var focus = sentences[0];
         var bestCount = 0;
         foreach (var sentence in sentences)
@@ -197,27 +219,43 @@ public sealed class SearchService : ISearchService
                 focus = sentence;
             }
         }
-        var lexicalSnippet = Snippet.Build(chunkText, focus);
-        return (lexicalSnippet.Text, LexicalHighlights(lexicalSnippet.Text, stems, lastPrefix));
+        var snippet = Snippet.Build(chunkText, focus);
+        return (snippet.Text, snippet.Text.Length == 0 ? [] : TextAnalysis.LexicalMatches(snippet.Text, stems, lastPrefix));
     }
 
-    private static List<TextSpan> LexicalHighlights(string snippet, HashSet<string> stems, string? lastPrefix) =>
-        snippet.Length == 0 ? [] : TextAnalysis.LexicalMatches(snippet, stems, lastPrefix);
-
-    private static bool NameMatches(string path, HashSet<string> stems, string? lastPrefix)
+    /// <summary>Query terms that may trigger the file-name boost: words of ≥ 3 chars (≥ 2 in scripts without spaces)
+    /// that are not stopwords, stemmed.</summary>
+    internal static HashSet<string> NameTerms(string query)
     {
-        var name = SafeFileName(path);
+        var terms = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var span in TextAnalysis.Words(query))
+        {
+            var word = query.Substring(span.Start, span.Length);
+            var unspaced = TextAnalysis.ContainsUnspacedScript(word);
+            if (word.Length < (unspaced ? TextAnalysis.MinUnspacedTermLength : TextAnalysis.MinTermLength) || TextAnalysis.IsStopword(word))
+                continue;
+            terms.Add(TextAnalysis.Stem(word));
+        }
+        return terms;
+    }
+
+    /// <summary>True when a name term equals (by stem) a whole token of the file name without extension. Terms in
+    /// scripts written without spaces match anywhere in the name, since such names have no word boundaries.</summary>
+    internal static bool NameMatches(string path, HashSet<string> nameTerms)
+    {
+        if (nameTerms.Count == 0)
+            return false;
+        var name = SafeFileNameWithoutExtension(path);
         if (name.Length == 0)
             return false;
-        foreach (var span in TextAnalysis.Words(name))
+        foreach (var token in TextAnalysis.NameTokens(name))
         {
-            if (TextAnalysis.Matches(name, span, stems, lastPrefix))
+            if (nameTerms.Contains(TextAnalysis.Stem(token)))
                 return true;
         }
-        // Terms glued into names ("taxreturn2024.pdf"): plain case-insensitive containment of the raw stems.
-        foreach (var stem in stems)
+        foreach (var term in nameTerms)
         {
-            if (stem.Length >= TextAnalysis.MinTermLength && name.Contains(stem, StringComparison.OrdinalIgnoreCase))
+            if (TextAnalysis.ContainsUnspacedScript(term) && name.Contains(term, StringComparison.OrdinalIgnoreCase))
                 return true;
         }
         return false;
@@ -235,6 +273,13 @@ public sealed class SearchService : ISearchService
         }
     }
 
+    private static string SafeFileNameWithoutExtension(string path)
+    {
+        var name = SafeFileName(path);
+        var dot = name.LastIndexOf('.');
+        return dot > 0 ? name[..dot] : name;
+    }
+
     private static string SafeDirectory(string path)
     {
         try
@@ -246,4 +291,6 @@ public sealed class SearchService : ISearchService
             return string.Empty;
         }
     }
+
+    private sealed record CachedQuery(string Text, float[] Vector);
 }

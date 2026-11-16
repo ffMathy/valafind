@@ -14,7 +14,14 @@ public sealed class ChunkerOptions
     public int OverlapTokens { get; set; } = 48;
 
     /// <summary>Maximum number of chunks per document; the first ones are kept.</summary>
-    public int MaxChunks { get; set; } = 48;
+    /// <remarks>
+    /// The default (12) is a first-pass budget: ≈ 12 × (320 − 48) ≈ 3.3k new tokens (≈ 3.8k with overlap), i.e. roughly
+    /// the first 15–20k characters of prose, about 6 s of embedding per file at ~0.5 s per chunk on a laptop CPU. It is
+    /// aligned with <see cref="ExtractionLimits.MaxChars"/> (32k chars), so extraction does not parse much more than
+    /// is embedded. Limitation: content beyond that prefix of a long document (later pages of a long PDF, the tail of
+    /// a large log) is not embedded and cannot be found semantically until a deeper pass indexes it.
+    /// </remarks>
+    public int MaxChunks { get; set; } = 12;
 }
 
 /// <summary>

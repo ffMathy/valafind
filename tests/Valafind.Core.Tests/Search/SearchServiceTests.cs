@@ -57,15 +57,26 @@ public sealed class SearchServiceTests : IDisposable
         Assert.Equal(P("/home/u/finance"), top.Directory);
         Assert.Equal(FileKind.Text, top.Kind);
         Assert.Contains("marketing budget", top.Snippet, StringComparison.Ordinal);
-        var highlight = Assert.Single(top.Highlights);
-        Assert.Equal("The marketing budget for next year is set at two million.", top.Snippet.Substring(highlight.Start, highlight.Length));
         Assert.InRange(top.Score, -1f, 1f);
+        // Fast path: lexical highlights only, no model work beyond the query.
+        Assert.Equal(["marketing", "budget"], top.Highlights.Select(h => top.Snippet.Substring(h.Start, h.Length)));
+        Assert.Equal(0, _model.DocumentCalls);
+        Assert.Equal(1, _model.QueryCalls);
+
+        // Second pass: the semantically best sentence.
+        var explained = await service.ExplainAsync("  marketing budget  ", results, Ct);
+        Assert.Equal(results.Count, explained.Count);
+        var highlight = Assert.Single(explained[0].Highlights);
+        Assert.Equal("The marketing budget for next year is set at two million.", explained[0].Snippet.Substring(highlight.Start, highlight.Length));
+        Assert.Equal(top with { Highlights = explained[0].Highlights }, explained[0]);
         Assert.Equal(1, _model.DocumentCalls);
+        Assert.Equal(1, _model.QueryCalls); // query vector reused from the search
     }
 
     [Fact]
-    public async Task Sentence_embedding_is_one_batch_for_top_five_only()
+    public async Task Search_never_waits_on_document_embedding()
     {
+        _model.OnEmbedDocuments = ct => Task.Delay(Timeout.Infinite, ct).GetAwaiter().GetResult();
         var hits = Enumerable.Range(0, 8)
             .Select(i => Hit(P($"/d/file{i}.txt"), 0.9f - i * 0.01f, $"First sentence about apples {i}. Second sentence about pears {i}! Third one?"))
             .ToArray();
@@ -74,53 +85,103 @@ public sealed class SearchServiceTests : IDisposable
         var results = await service.SearchAsync("pears", SearchFilter.None, 8, Ct);
 
         Assert.Equal(8, results.Count);
-        Assert.Equal(1, _model.DocumentCalls);
-        Assert.True(_model.DocumentBatches.TryDequeue(out var batch));
-        Assert.Equal(5 * 3, batch.Count);
-        Assert.Equal(
-            Enumerable.Range(0, 5).Select(i => $"file{i}.txt").ToHashSet(),
-            batch.Select(d => d.Title).ToHashSet());
-
-        foreach (var r in results.Take(5))
+        Assert.Equal(0, _model.DocumentCalls);
+        foreach (var r in results)
         {
-            var span = Assert.Single(r.Highlights);
-            Assert.StartsWith("Second sentence about pears", r.Snippet.Substring(span.Start, span.Length), StringComparison.Ordinal);
-        }
-        foreach (var r in results.Skip(5))
-        {
-            // Lexical highlights: the word "pears".
             var span = Assert.Single(r.Highlights);
             Assert.Equal("pears", r.Snippet.Substring(span.Start, span.Length));
         }
     }
 
     [Fact]
-    public async Task Model_failure_during_highlighting_falls_back_to_lexical()
+    public async Task Explain_embeds_one_small_batch_for_the_top_two_without_title()
     {
-        _model.OnEmbedDocuments = _ => throw new InvalidOperationException("onnx exploded");
-        var service = new SearchService(_model, new FixedStore(
-            Hit(P("/d/a.txt"), 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard."),
-            Hit(P("/d/b.txt"), 0.7f, "Other text. More text.")));
+        var hits = Enumerable.Range(0, 8)
+            .Select(i => Hit(P($"/d/file{i}.txt"), 0.9f - i * 0.01f, $"First sentence about apples {i}. Second sentence about pears {i}! Third one?"))
+            .ToArray();
+        var service = new SearchService(_model, new FixedStore(hits));
+        var results = await service.SearchAsync("pears", SearchFilter.None, 8, Ct);
 
-        var results = await service.SearchAsync("invoice filing", SearchFilter.None, 5, Ct);
+        var explained = await service.ExplainAsync("pears", results, Ct);
 
-        Assert.Equal(2, results.Count);
-        var words = results[0].Highlights.Select(h => results[0].Snippet.Substring(h.Start, h.Length)).ToList();
-        Assert.Equal(["invoices", "filed", "Invoicing"], words);
-        Assert.Empty(results[1].Highlights);
+        Assert.Equal(8, explained.Count);
+        Assert.Equal(1, _model.DocumentCalls);
+        Assert.True(_model.DocumentBatches.TryDequeue(out var batch));
+        Assert.Equal(SearchService.ExplainCount * 3, batch.Count);
+        Assert.All(batch, d => Assert.Equal("none", d.Title));
+        Assert.Equal(results.Select(r => r.Path), explained.Select(r => r.Path));
+        foreach (var r in explained.Take(SearchService.ExplainCount))
+        {
+            var span = Assert.Single(r.Highlights);
+            Assert.StartsWith("Second sentence about pears", r.Snippet.Substring(span.Start, span.Length), StringComparison.Ordinal);
+        }
+        for (var i = SearchService.ExplainCount; i < results.Count; i++)
+            Assert.Same(results[i], explained[i]);
     }
 
     [Fact]
-    public async Task Highlight_budget_exceeded_falls_back_to_lexical_without_throwing()
+    public async Task Explain_embeds_at_most_four_lexically_preselected_sentences_per_result()
     {
-        _model.OnEmbedDocuments = ct => Task.Delay(Timeout.Infinite, ct).GetAwaiter().GetResult();
-        var service = new SearchService(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, "One. Two budget lines. Three.")))
+        var sentences = Enumerable.Range(0, 12).Select(i => i is 2 or 9 ? $"Line {i} has the budget." : $"Line {i} filler.");
+        var service = new SearchService(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, string.Join(' ', sentences))));
+        var results = await service.SearchAsync("budget", SearchFilter.None, 5, Ct);
+
+        await service.ExplainAsync("budget", results, Ct);
+
+        Assert.True(_model.DocumentBatches.TryDequeue(out var batch));
+        Assert.InRange(batch.Count, 2, SearchService.ExplainSentencesPerResult);
+        Assert.Contains(batch, d => d.Text.Contains("budget", StringComparison.Ordinal));
+        Assert.All(batch, d => Assert.DoesNotContain("…", d.Text, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Explain_returns_input_unchanged_when_the_model_fails()
+    {
+        var service = new SearchService(_model, new FixedStore(
+            Hit(P("/d/a.txt"), 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard."),
+            Hit(P("/d/b.txt"), 0.7f, "Other text. More text.")));
+        var results = await service.SearchAsync("invoice filing", SearchFilter.None, 5, Ct);
+        var words = results[0].Highlights.Select(h => results[0].Snippet.Substring(h.Start, h.Length)).ToList();
+        Assert.Equal(["invoices", "filed", "Invoicing"], words);
+        Assert.Empty(results[1].Highlights);
+
+        _model.OnEmbedDocuments = _ => throw new InvalidOperationException("onnx exploded");
+        Assert.Equal(results, await service.ExplainAsync("invoice filing", results, Ct));
+
+        _model.OnEmbedDocuments = _ => throw new OperationCanceledException("internal timeout, not ours");
+        Assert.Equal(results, await service.ExplainAsync("invoice filing", results, Ct));
+    }
+
+    [Fact]
+    public async Task Explain_honours_cancellation()
+    {
+        var service = new SearchService(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, "One. Two budget lines. Three.")));
+        var results = await service.SearchAsync("budget", SearchFilter.None, 5, Ct);
+        using var cts = new CancellationTokenSource();
+        using var entered = new ManualResetEventSlim();
+        _model.OnEmbedDocuments = ct =>
         {
-            HighlightBudget = TimeSpan.FromMilliseconds(50),
+            entered.Set();
+            ct.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
         };
-        var result = Assert.Single(await service.SearchAsync("budget", SearchFilter.None, 5, Ct));
-        var span = Assert.Single(result.Highlights);
-        Assert.Equal("budget", result.Snippet.Substring(span.Start, span.Length));
+
+        var task = service.ExplainAsync("budget", results, cts.Token);
+        Assert.True(entered.Wait(TimeSpan.FromSeconds(5), Ct));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+    }
+
+    [Fact]
+    public async Task Explain_without_text_or_with_single_sentences_does_no_model_work()
+    {
+        var service = new SearchService(_model, new FixedStore(
+            Hit(P("/pics/beach.jpg"), 0.9f, "", FileKind.Image),
+            Hit(P("/d/one.txt"), 0.8f, "Just one budget sentence")));
+        var results = await service.SearchAsync("budget", SearchFilter.None, 5, Ct);
+        Assert.Same(results, await service.ExplainAsync("budget", results, Ct));
+        Assert.Same(results, await service.ExplainAsync("", results, Ct));
+        Assert.Empty(await service.ExplainAsync("budget", [], Ct));
+        Assert.Equal(0, _model.DocumentCalls);
     }
 
     [Fact]
@@ -152,6 +213,61 @@ public sealed class SearchServiceTests : IDisposable
         var service = new SearchService(_model, new FixedStore(Hit(P("/d/budget.txt"), 0.99f, "x")));
         var result = Assert.Single(await service.SearchAsync("budget", SearchFilter.None, 5, Ct));
         Assert.Equal(1f, result.Score);
+    }
+
+    [Fact]
+    public async Task File_name_boost_ignores_stopwords_and_substrings()
+    {
+        var service = new SearchService(_model, new FixedStore(
+            Hit(P("/d/incident-2024-11.pdf"), 0.50f, "Postmortem.", FileKind.Pdf),
+            Hit(P("/d/Brother HL-L2350 manual.pdf"), 0.48f, "Printer.", FileKind.Pdf),
+            Hit(P("/d/Mother's day.jpg"), 0.47f, "", FileKind.Image),
+            Hit(P("/d/Fortress and Theory.txt"), 0.46f, "Other.")));
+
+        var results = await service.SearchAsync("outage on the payment service and for", SearchFilter.None, 5, Ct);
+
+        Assert.Equal(
+            [P("/d/incident-2024-11.pdf"), P("/d/Brother HL-L2350 manual.pdf"), P("/d/Mother's day.jpg"), P("/d/Fortress and Theory.txt")],
+            results.Select(r => r.Path));
+        Assert.Equal([0.50f, 0.48f, 0.47f, 0.46f], results.Select(r => r.Score));
+    }
+
+    [Theory]
+    [InlineData("tax return", "/d/TaxReturn2024.pdf")]
+    [InlineData("2024 report", "/d/report_2024.docx")]
+    [InlineData("parser", "/d/HTMLParser.cs")]
+    [InlineData("invoices", "/d/invoice-march.pdf")]
+    [InlineData("契約", "/d/賃貸契約書.pdf")]
+    public async Task File_name_boost_matches_whole_name_tokens(string query, string path)
+    {
+        var service = new SearchService(_model, new FixedStore(
+            Hit(P("/d/zzz.txt"), 0.50f, "x"),
+            Hit(P(path), 0.48f, "y")));
+        var results = await service.SearchAsync(query, SearchFilter.None, 5, Ct);
+        Assert.Equal(P(path), results[0].Path);
+        Assert.Equal(0.51f, results[0].Score, 4);
+    }
+
+    [Theory]
+    [InlineData("tax", "/d/Taxonomy.pdf")]
+    [InlineData("port", "/d/report.pdf")]
+    [InlineData("pdf", "/d/notes.pdf")]
+    public async Task File_name_boost_does_not_fire_inside_tokens_or_on_the_extension(string query, string path)
+    {
+        var service = new SearchService(_model, new FixedStore(Hit(P(path), 0.48f, "y")));
+        var result = Assert.Single(await service.SearchAsync(query, SearchFilter.None, 5, Ct));
+        Assert.Equal(0.48f, result.Score);
+    }
+
+    [Fact]
+    public async Task File_name_match_just_below_top_k_is_promoted()
+    {
+        var service = new SearchService(_model, new FixedStore(
+            Hit(P("/d/a.txt"), 0.50f, "x"),
+            Hit(P("/d/b.txt"), 0.49f, "x"),
+            Hit(P("/d/budget.xlsx"), 0.48f, "x", FileKind.Spreadsheet)));
+        var results = await service.SearchAsync("budget", SearchFilter.None, 2, Ct);
+        Assert.Equal([P("/d/budget.xlsx"), P("/d/a.txt")], results.Select(r => r.Path));
     }
 
     [Fact]
