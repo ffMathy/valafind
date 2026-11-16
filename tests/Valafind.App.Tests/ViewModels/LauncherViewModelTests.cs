@@ -8,8 +8,12 @@ namespace Valafind.App.Tests.ViewModels;
 
 public sealed class LauncherViewModelTests
 {
+    private const string LinuxAppDir = "/opt/Valafind";
+    private const string WindowsAppDir = @"C:\Program Files\Valafind";
+
     private static LauncherViewModel Create(UiFlavor flavor = UiFlavor.Linux, ValafindSettings? settings = null) =>
-        new(flavor, settings ?? new ValafindSettings { Hotkey = "Super+Space" }, TimeProvider.System, static a => a(), "/home/u");
+        new(flavor, settings ?? new ValafindSettings { Hotkey = "Super+Space" }, TimeProvider.System, static a => a(), "/home/u",
+            flavor == UiFlavor.Windows ? WindowsAppDir : LinuxAppDir);
 
     private static SearchResult Hit(string name, FileKind kind, float score, string snippet = "some passage") =>
         new("/home/u/Documents/" + name, name, "/home/u/Documents", kind, DateTimeOffset.UtcNow.AddDays(-10), 1234, score, snippet,
@@ -42,8 +46,31 @@ public sealed class LauncherViewModelTests
         vm.SetModelMissing(@"D:\models\gemma", customTarget: true);
         Assert.True(vm.IsModelMissingVisible);
         Assert.Equal(@"D:\models\gemma", vm.ModelTargetDirectory);
-        Assert.Contains("fetch-model.ps1", vm.FetchCommandText, StringComparison.Ordinal);
-        Assert.EndsWith("\"D:\\models\\gemma\"", vm.FetchCommandText, StringComparison.Ordinal);
+        // The shipped script by absolute path: works from any terminal, whatever the current directory.
+        Assert.Equal("powershell -ExecutionPolicy Bypass -File \"C:\\Program Files\\Valafind\\tools\\fetch-model.ps1\" \"D:\\models\\gemma\"",
+            vm.FetchCommandText);
+        Assert.EndsWith(" -Force", vm.RepairCommandText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ModelMissingOnUnixRunsTheShippedScriptThroughBash()
+    {
+        using var vm = Create(UiFlavor.Linux);
+        vm.SetModelMissing("/home/u/.local/share/valafind/models/embeddinggemma-300m");
+        Assert.Equal("bash '/opt/Valafind/tools/fetch-model.sh'", vm.FetchCommandText);
+        Assert.Equal("bash '/opt/Valafind/tools/fetch-model.sh' --force", vm.RepairCommandText);
+        Assert.Equal("/home/u/.local/share/valafind/models/embeddinggemma-300m", vm.ModelTargetDirectory);
+    }
+
+    [Fact]
+    public void CheckAgainAsksTheHostToLookForTheModel()
+    {
+        var actions = new RecordingActions();
+        using var vm = Create();
+        vm.Actions = actions;
+        vm.SetModelMissing("/m");
+        vm.CheckModelCommand.Execute(null);
+        Assert.Equal(["check-model"], actions.Log);
     }
 
     [Fact]
@@ -209,14 +236,39 @@ public sealed class LauncherViewModelTests
         var actions = new RecordingActions();
         using var vm = Create();
         vm.Actions = actions;
+        vm.SetUserPaused(true);
         vm.UpdateStatus(IndexStatus.Initial with { State = IndexingState.PausedByUser });
         vm.ResumeNowCommand.Execute(null);
         Assert.Equal(["paused False", "resume-now"], actions.Log);
 
         actions.Log.Clear();
+        vm.SetUserPaused(false);
         vm.UpdateStatus(IndexStatus.Initial with { State = IndexingState.Running });
         vm.TogglePauseCommand.Execute(null);
         Assert.Equal(["paused True"], actions.Log);
+    }
+
+    [Theory]
+    [InlineData(IndexingState.Starting)]
+    [InlineData(IndexingState.ModelUnavailable)]
+    [InlineData(IndexingState.Running)]
+    public void PauseToggleFollowsTheSettingWhateverTheIndexerReports(IndexingState state)
+    {
+        // Regression: the caption came from the indexer state (PausedByUser only once the Core ran), while the tray
+        // toggled the setting — with UserPaused=true and no Core, "Pause indexing" actually resumed.
+        var actions = new RecordingActions();
+        using var vm = Create(settings: new ValafindSettings { UserPaused = true });
+        vm.Actions = actions;
+        vm.UpdateStatus(IndexStatus.Initial with { State = state });
+
+        Assert.True(vm.Status.IsUserPaused);
+        Assert.Equal("Resume indexing", vm.Status.PauseMenuText);
+        Assert.Equal("Resume", vm.Status.ResumeActionText);
+        vm.TogglePauseCommand.Execute(null);
+        Assert.Equal(["paused False"], actions.Log);
+
+        vm.SetUserPaused(false);
+        Assert.Equal("Pause indexing", vm.Status.PauseMenuText);
     }
 
     [Fact]
@@ -246,7 +298,6 @@ public sealed class LauncherViewModelTests
         Assert.Equal("Documents", item.Breadcrumb);
         Assert.Equal("0.76", item.ScoreText);
         Assert.Equal("Depositum kr. 28.500", item.Snippet);
-        Assert.True(item.HasTextInImage);
         Assert.Equal("HEIC", item.ExtensionLabel);
         Assert.Same(vm, item.Launcher);
     }
@@ -259,13 +310,188 @@ public sealed class LauncherViewModelTests
             using var vm = DesignData.Create(flavor);
             Assert.Equal(LauncherContent.Results, vm.Content);
             Assert.True(vm.Results.Count >= 5);
-            Assert.All(vm.Results, r => Assert.NotEmpty(r.Highlights));
+            Assert.All(vm.Results.Where(r => r.Kind != FileKind.Image), r => Assert.NotEmpty(r.Highlights));
+            // Only states the real app produces: images are matched by file name, without a passage (no OCR).
+            Assert.All(vm.Results.Where(r => r.Kind == FileKind.Image), r =>
+            {
+                Assert.False(r.HasSnippet);
+                Assert.Empty(r.Highlights);
+            });
+            Assert.Contains(vm.Results, r => r.Kind == FileKind.Image);
             Assert.Equal("41%", vm.Status.AllPercentText);
+            // The default chord in the platform's notation, not a hard-coded label.
+            Assert.Equal(flavor == UiFlavor.Mac ? "⌃⌥Space" : "Ctrl+Alt+Space", vm.HotkeyLabel);
         }
+    }
+
+    [Fact]
+    public async Task ExplanationPatchesHighlightsInPlaceAndKeepsTheSelection()
+    {
+        var explainGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var search = new RecordingSearch(_ => [Hit("a.pdf", FileKind.Pdf, 0.9f, "alpha beta gamma"), Hit("b.pdf", FileKind.Pdf, 0.8f, "delta epsilon")])
+        {
+            Explain = async (results, ct) =>
+            {
+                await explainGate.Task.WaitAsync(ct);
+                return [results[0], results[1] with { Highlights = [new TextSpan(6, 7)] }];
+            },
+        };
+        using var vm = Create();
+        vm.AttachSearch(search);
+        vm.Query = "q";
+        await WaitUntil(() => vm.Results.Count == 2);
+        var rows = vm.Results.ToList();
+        vm.MoveDownCommand.Execute(null);
+        Assert.Equal([new TextSpan(0, 4)], rows[1].Highlights);
+
+        var changed = new List<string?>();
+        rows[1].PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        explainGate.SetResult();
+        await WaitUntil(() => rows[1].Highlights.Count == 1 && rows[1].Highlights[0] == new TextSpan(6, 7));
+
+        Assert.Equal(rows, vm.Results);             // same row objects: no list rebuild / flicker
+        Assert.Equal(1, vm.SelectedIndex);          // selection kept
+        Assert.Same(rows[1], vm.SelectedResult);
+        Assert.Equal([new TextSpan(0, 4)], rows[0].Highlights); // unchanged result left alone
+        Assert.Contains(nameof(ResultItemViewModel.Highlights), changed);
+    }
+
+    [Fact]
+    public async Task NextKeystrokeCancelsTheExplanation()
+    {
+        CancellationToken explainToken = default;
+        var explainStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var search = new RecordingSearch(q => [Hit(q + ".md", FileKind.Text, 0.5f)])
+        {
+            Explain = async (results, ct) =>
+            {
+                if (results[0].FileName == "first.md")
+                {
+                    explainToken = ct;
+                    explainStarted.TrySetResult();
+                    // Ignores the token on purpose: a late answer must still be discarded.
+                    await release.Task;
+                    return [results[0] with { Highlights = [new TextSpan(0, 1)] }];
+                }
+                return results;
+            },
+        };
+        using var vm = Create();
+        vm.AttachSearch(search);
+        vm.Query = "first";
+        await explainStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        vm.Query = "second";
+        await WaitUntil(() => vm.Results.Count == 1 && vm.Results[0].FileName == "second.md");
+        Assert.True(explainToken.IsCancellationRequested);
+
+        release.SetResult();
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        Assert.Equal([new TextSpan(0, 4)], vm.Results[0].Highlights);
+    }
+
+    [Fact]
+    public async Task ExplanationFailureKeepsTheLexicalHighlights()
+    {
+        var search = new RecordingSearch(_ => [Hit("a.pdf", FileKind.Pdf, 0.9f)])
+        {
+            Explain = (_, _) => throw new InvalidOperationException("model busy"),
+        };
+        using var vm = Create();
+        vm.AttachSearch(search);
+        vm.Query = "q";
+        await WaitUntil(() => vm.Results.Count == 1);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        Assert.Equal(LauncherContent.Results, vm.Content);
+        Assert.Equal([new TextSpan(0, 4)], vm.Results[0].Highlights);
+    }
+
+    [Fact]
+    public async Task ResultsOfASearchInFlightAreDroppedWhenTheCoreIsStopped()
+    {
+        // Regression: a restart disposed the store/model while the launcher still searched them, and a search that
+        // started before SetModelLoading could still post its result or "Cannot access a disposed object".
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationToken token = default;
+        var search = new RecordingSearch(async (_, ct) =>
+        {
+            token = ct;
+            started.TrySetResult();
+            await release.Task; // ignores cancellation, like a search stuck in the model
+            throw new ObjectDisposedException("SqliteIndexStore");
+        });
+        using var vm = Create();
+        vm.AttachSearch(search);
+        vm.Query = "lease";
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+
+        vm.SetModelLoading();
+        Assert.True(token.IsCancellationRequested);
+        Assert.False(vm.IsSearching);
+        release.SetResult();
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+
+        Assert.Equal(LauncherContent.ModelLoading, vm.Content);
+        Assert.Null(vm.ErrorText);
+        Assert.Single(search.Queries); // nothing new was sent to the stopped Core
+    }
+
+    [Fact]
+    public void SnippetEllipsesComeOnlyFromTheSnippet()
+    {
+        // Core's Snippet.Build already puts "…" at cut ends; the views must not add another pair.
+        using var vm = Create(UiFlavor.Windows);
+        vm.LoadSnapshot("q", [Hit("a.pdf", FileKind.Pdf, 0.9f, "…met on Tuesday to review…"), Hit("b.md", FileKind.Text, 0.8f, "Start of file")],
+            TimeSpan.Zero);
+        Assert.EndsWith(" · “…met on Tuesday to review…”", vm.Results[0].CaptionWithSnippet, StringComparison.Ordinal);
+        Assert.EndsWith(" · “Start of file”", vm.Results[1].CaptionWithSnippet, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(UiFlavor.Mac, "Ctrl+Alt+Space", "⌃⌥Space")]
+    [InlineData(UiFlavor.Mac, "Cmd+Shift+K", "⇧⌘K")]
+    [InlineData(UiFlavor.Windows, "Ctrl+Alt+Space", "Ctrl+Alt+Space")]
+    [InlineData(UiFlavor.Windows, "Super+F", "Win+F")]
+    [InlineData(UiFlavor.Linux, "Ctrl+Alt+Space", "Ctrl+Alt+Space")]
+    [InlineData(UiFlavor.Linux, "Meta+Space", "Super+Space")]
+    public void HotkeyLabelShowsTheConfiguredChordPerPlatform(UiFlavor flavor, string chord, string expected)
+    {
+        using var vm = Create(flavor, new ValafindSettings { Hotkey = chord });
+        Assert.Equal(expected, vm.HotkeyLabel);
+    }
+
+    [Fact]
+    public void DefaultHotkeyIsCtrlAltSpaceEverywhere()
+    {
+        using var vm = Create(UiFlavor.Mac, new ValafindSettings());
+        Assert.Equal("⌃⌥Space", vm.HotkeyLabel);
+    }
+
+    [Fact]
+    public void IndexScopeNamesTheHomeFolderOrTheConfiguredFolders()
+    {
+        var settings = new ValafindSettings();
+        using var vm = Create(UiFlavor.Linux, settings);
+        Assert.Equal("Home folder", vm.IndexScopeText);
+        Assert.Equal("Home", vm.IndexScopeShortText);
+        Assert.Equal("Everything in your home folder (~)", vm.IndexScopeDetail);
+
+        settings.Roots = ["/home/u/Documents"];
+        vm.RefreshIndexScope();
+        Assert.Equal("Documents", vm.IndexScopeText);
+        Assert.Equal("Everything in ~/Documents", vm.IndexScopeDetail);
+
+        settings.Roots = ["/home/u/Documents", "/media/u/Photos"];
+        vm.RefreshIndexScope();
+        Assert.Equal("2 folders", vm.IndexScopeText);
+        Assert.Equal("Everything in ~/Documents, /media/u/Photos", vm.IndexScopeDetail);
     }
 
     private sealed class RecordingSearch(Func<string, CancellationToken, Task<IReadOnlyList<SearchResult>>> handler) : ISearchService
     {
+        public Func<IReadOnlyList<SearchResult>, CancellationToken, Task<IReadOnlyList<SearchResult>>>? Explain { get; init; }
+
         public RecordingSearch(Func<string, IReadOnlyList<SearchResult>> results)
             : this((q, _) => Task.FromResult(results(q)))
         {
@@ -285,7 +511,7 @@ public sealed class LauncherViewModelTests
         }
 
         public Task<IReadOnlyList<SearchResult>> ExplainAsync(string query, IReadOnlyList<SearchResult> results, CancellationToken cancellationToken) =>
-            Task.FromResult(results);
+            Explain?.Invoke(results, cancellationToken) ?? Task.FromResult(results);
     }
 
     private sealed class RecordingActions : ILauncherActions
@@ -304,5 +530,6 @@ public sealed class LauncherViewModelTests
         public void Quit() => Log.Add("quit");
         public void SetUserPaused(bool paused) => Log.Add("paused " + paused);
         public void ResumeNow() => Log.Add("resume-now");
+        public void CheckModel() => Log.Add("check-model");
     }
 }

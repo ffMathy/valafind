@@ -56,6 +56,31 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
             Save(frame, $"{flavor.ToString().ToLowerInvariant()}-model-missing.png");
         }, TestContext.Current.CancellationToken);
 
+    [Theory]
+    [InlineData(UiFlavor.Windows)]
+    [InlineData(UiFlavor.Mac)]
+    [InlineData(UiFlavor.Linux)]
+    public Task RendersModelFailedState(UiFlavor flavor) =>
+        fixture.Session.Dispatch(() =>
+        {
+            var vm = DesignData.CreateModelFailed(flavor);
+            Assert.True(vm.IsModelFailedVisible);
+            var frame = Render(flavor, vm, ThemeVariant.Light, out _);
+            Assert.True(frame.PixelSize.Width >= 700);
+            Save(frame, $"{flavor.ToString().ToLowerInvariant()}-model-failed.png");
+        }, TestContext.Current.CancellationToken);
+
+    [Fact]
+    public Task RendersHotkeyFallbackBanner() =>
+        fixture.Session.Dispatch(() =>
+        {
+            var vm = DesignData.Create(UiFlavor.Linux);
+            vm.SetHotkey("Ctrl+Alt+Space", Valafind.App.Platform.GlobalHotkeyFactory.WaylandUnavailableMessage);
+            var frame = Render(UiFlavor.Linux, vm, ThemeVariant.Light, out _);
+            Assert.True(frame.PixelSize.Width >= 700);
+            Save(frame, "linux-wayland-hotkey.png");
+        }, TestContext.Current.CancellationToken);
+
     [Fact]
     public Task TogglingPreviewCollapsesTheExpandedRow() =>
         fixture.Session.Dispatch(() =>

@@ -41,9 +41,37 @@ internal static partial class Log
     [LoggerMessage(12, LogLevel.Debug, "Platform call failed: {What}")]
     public static partial void PlatformCallFailed(ILogger logger, string what, Exception exception);
 
-    [LoggerMessage(13, LogLevel.Warning, "Could not {Verb} {Path}")]
-    public static partial void ShellFailed(ILogger logger, string verb, string path, Exception exception);
+    // Paths are only logged at Debug level (see ShellFailedPath); the warning carries the verb and the error.
+    [LoggerMessage(13, LogLevel.Warning, "Could not {Verb} the selected file")]
+    public static partial void ShellFailed(ILogger logger, string verb, Exception exception);
 
     [LoggerMessage(14, LogLevel.Warning, "Clipboard write failed")]
     public static partial void ClipboardFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(15, LogLevel.Debug, "Could not {Verb} {Path}")]
+    public static partial void ShellFailedPath(ILogger logger, string verb, string path);
+
+    [LoggerMessage(16, LogLevel.Critical, "Valafind could not start its user interface")]
+    public static partial void UiStartFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(17, LogLevel.Critical, "Valafind stopped after an unexpected error")]
+    public static partial void StoppedUnexpectedly(ILogger logger, Exception exception);
+
+    [LoggerMessage(18, LogLevel.Information, "Valafind {Version} starting ({Os}, UI {Flavor})")]
+    public static partial void Starting(ILogger logger, string version, string os, string flavor);
+
+    [LoggerMessage(19, LogLevel.Information, "Model not installed; waiting for it to appear")]
+    public static partial void ModelMissing(ILogger logger);
+
+    [LoggerMessage(20, LogLevel.Information, "Model files changed; reloading")]
+    public static partial void ModelChanged(ILogger logger);
+
+    [LoggerMessage(21, LogLevel.Warning, "Could not switch indexing to interactive={Interactive}")]
+    public static partial void SetInteractiveFailed(ILogger logger, bool interactive, Exception exception);
+
+    [LoggerMessage(22, LogLevel.Information, "Shutting down")]
+    public static partial void ShuttingDown(ILogger logger);
+
+    [LoggerMessage(23, LogLevel.Warning, "Shutdown did not finish within {TimeoutMs} ms")]
+    public static partial void ShutdownTimedOut(ILogger logger, long timeoutMs);
 }

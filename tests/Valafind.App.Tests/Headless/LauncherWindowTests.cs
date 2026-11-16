@@ -24,8 +24,11 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
             var window = new LauncherWindow(vm, flavor);
             try
             {
+                Assert.False(vm.IsLauncherVisible);
                 window.ShowLauncher();
                 Assert.True(window.IsVisible);
+                // The host makes indexing yield while this is true (IIndexingService.SetInteractive).
+                Assert.True(vm.IsLauncherVisible);
                 Assert.True(window.View.FindControl<TextBox>("SearchBox")!.IsFocused);
 
                 window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
@@ -43,6 +46,7 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
 
                 window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
                 Assert.False(window.IsVisible);
+                Assert.False(vm.IsLauncherVisible);
                 Assert.True(actions.Hidden > 0);
 
                 // Re-showing keeps the window alive; closing via the OS only hides it.
@@ -69,5 +73,6 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
         public void Quit() { }
         public void SetUserPaused(bool paused) { }
         public void ResumeNow() { }
+        public void CheckModel() { }
     }
 }

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Valafind.App.Platform;
 using Valafind.Core.Abstractions;
 
 namespace Valafind.App.ViewModels;
@@ -169,9 +170,22 @@ internal static class DisplayFormat
         return keys;
     }
 
-    /// <summary>Single-line hotkey label: "⌥ Space" on macOS, "Super+Space" elsewhere.</summary>
-    public static string HotkeyLabel(string chord, UiFlavor flavor) =>
-        string.Join(flavor == UiFlavor.Mac ? " " : "+", HotkeyKeys(chord, flavor));
+    /// <summary>Single-line label of the configured chord in the platform's notation: "⌃⌥Space" on macOS,
+    /// "Ctrl+Alt+Space" on Windows/Linux, "Win+K" / "Super+K" for the logo key.</summary>
+    public static string HotkeyLabel(string chord, UiFlavor flavor)
+    {
+        if (HotkeyChord.TryParse(chord, out var parsed, out _))
+        {
+            return parsed.DisplayString(flavor switch
+            {
+                UiFlavor.Mac => ChordDisplayStyle.MacOS,
+                UiFlavor.Windows => ChordDisplayStyle.Windows,
+                _ => ChordDisplayStyle.Linux,
+            });
+        }
+        // Unparseable (hand-edited settings): show it as written.
+        return string.Join(flavor == UiFlavor.Mac ? string.Empty : "+", HotkeyKeys(chord, flavor));
+    }
 
     private static string KeyName(string raw) =>
         raw.Length == 1 ? raw.ToUpperInvariant() : char.ToUpperInvariant(raw[0]) + raw[1..];

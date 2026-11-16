@@ -29,16 +29,14 @@ public sealed partial class ResultItemViewModel : ObservableObject
         ExtensionLabel = DisplayFormat.ExtensionLabel(result.Path);
         SizeText = DisplayFormat.FileSize(result.Size);
         (Snippet, Highlights) = DisplayFormat.CollapseWhitespace(result.Snippet ?? string.Empty, result.Highlights);
-        HasSnippet = Snippet.Length > 0;
-        HasTextInImage = result.Kind == FileKind.Image && HasSnippet;
         GroupName = FileKindGroups.GroupName(result.Kind);
     }
 
     /// <summary>The launcher that owns this row (lets row buttons reach the launcher commands).</summary>
     public LauncherViewModel? Launcher { get; internal set; }
 
-    /// <summary>The underlying search result.</summary>
-    public SearchResult Result { get; }
+    /// <summary>The underlying search result (replaced when the semantic explanation arrives).</summary>
+    public SearchResult Result { get; private set; }
 
     /// <summary>Absolute path of the file.</summary>
     public string Path => Result.Path;
@@ -70,8 +68,9 @@ public sealed partial class ResultItemViewModel : ObservableObject
     /// <summary>"Documents › Bolig · 12 Sep 2025" (macOS list).</summary>
     public string BreadcrumbCaption => Breadcrumb + " · " + DateText;
 
-    /// <summary>"C:\Users\…\Bolig · 12 Sep 2025 · “…snippet…”" (compact Windows row).</summary>
-    public string CaptionWithSnippet => HasSnippet ? Caption + " · “…" + Snippet + "…”" : Caption;
+    /// <summary>"C:\Users\…\Bolig · 12 Sep 2025 · “…snippet…”" (compact Windows row). The snippet already carries
+    /// "…" where it was cut (Core Snippet.Build), so only quotes are added here.</summary>
+    public string CaptionWithSnippet => HasSnippet ? Caption + " · “" + Snippet + "”" : Caption;
 
     /// <summary>"PDF · 412 KB · Modified 3 Mar 2024" (macOS preview).</summary>
     public string MetaText => ExtensionLabel + " · " + SizeText + " · " + ModifiedText;
@@ -88,20 +87,29 @@ public sealed partial class ResultItemViewModel : ObservableObject
     /// <summary>Human-readable size.</summary>
     public string SizeText { get; }
 
-    /// <summary>Best-matching passage, whitespace-collapsed.</summary>
-    public string Snippet { get; }
+    /// <summary>Best-matching passage, whitespace-collapsed. Empty for files matched by name only (images, media).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSnippet), nameof(CaptionWithSnippet))]
+    public partial string Snippet { get; private set; }
 
     /// <summary>Spans of <see cref="Snippet"/> that explain the match.</summary>
-    public IReadOnlyList<TextSpan> Highlights { get; }
+    [ObservableProperty]
+    public partial IReadOnlyList<TextSpan> Highlights { get; private set; }
 
     /// <summary>True when there is a passage to show.</summary>
-    public bool HasSnippet { get; }
+    public bool HasSnippet => Snippet.Length > 0;
 
-    /// <summary>Image whose match came from recognised text.</summary>
-    public bool HasTextInImage { get; }
-
-    /// <summary>" · text in image" for OCR'd images (macOS row), otherwise empty.</summary>
-    public string TextInImageSuffix => HasTextInImage ? " · text in image" : string.Empty;
+    /// <summary>Takes over the snippet and highlights of the explained result (semantic second pass) in place, so the
+    /// list is not rebuilt and the selection stays.</summary>
+    internal void ApplyExplanation(SearchResult explained)
+    {
+        ArgumentNullException.ThrowIfNull(explained);
+        Result = explained;
+        var (snippet, highlights) = DisplayFormat.CollapseWhitespace(explained.Snippet ?? string.Empty, explained.Highlights);
+        // HighlightedTextBlock re-renders on each change and clamps spans, so the brief text/spans mismatch is harmless.
+        Snippet = snippet;
+        Highlights = highlights;
+    }
 
     /// <summary>Category section name ("Documents", "Mail", …).</summary>
     public string GroupName { get; }

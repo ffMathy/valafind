@@ -245,10 +245,7 @@
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                           <c:FileKindIcon Kind="{Binding Kind}" Width="26" Height="26" GlyphSize="26" StrokeThickness="1.5" ShowTile="False" />
                           <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
-                            <TextBlock FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis">
-                              <Run Text="{Binding FileName}" />
-                              <Run Text="{Binding TextInImageSuffix}" FontSize="11" FontWeight="Normal" />
-                            </TextBlock>
+                            <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                             <TextBlock Classes="meta" Text="{Binding BreadcrumbCaption}" FontSize="11"
                                        Foreground="{DynamicResource VfSubtleBrush}" TextTrimming="CharacterEllipsis" />
                           </StackPanel>
@@ -306,7 +303,7 @@
                           Padding="14,12" IsVisible="{Binding HasSnippet}">
                     <StackPanel Spacing="6">
                       <TextBlock Text="Why it matched" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VfSubtleBrush}" />
-                      <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="… " Suffix=" …"
+                      <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}"
                                               FontSize="12.5" LineHeight="19.4" TextWrapping="Wrap" MaxLines="6"
                                               TextTrimming="CharacterEllipsis"
                                               HighlightBackground="{DynamicResource MacHighlightBrush}" HighlightFontWeight="SemiBold" />
@@ -350,7 +347,7 @@
         </DockPanel>
       </Border>
       <Border Padding="18,6,18,9" IsVisible="{Binding HasHotkeyError}">
-        <TextBlock Text="{Binding HotkeyError}" FontSize="11" Foreground="{DynamicResource VfWarningBrush}" TextWrapping="Wrap" />
+        <SelectableTextBlock Text="{Binding HotkeyError}" FontSize="11" Foreground="{DynamicResource VfWarningBrush}" TextWrapping="Wrap" />
       </Border>
     </StackPanel>
   </Border>

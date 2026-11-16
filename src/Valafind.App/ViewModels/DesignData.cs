@@ -5,7 +5,8 @@ namespace Valafind.App.ViewModels;
 
 /// <summary>
 /// Realistic sample data matching the approved mockups. Used as the XAML previewer design context and by the
-/// headless screenshot tests.
+/// headless screenshot tests. Only shows states the real app can produce: images (and other media) are matched by
+/// file name only, so their rows have no passage and no highlights.
 /// </summary>
 public static class DesignData
 {
@@ -29,17 +30,15 @@ public static class DesignData
     /// <summary>Builds a populated launcher for <paramref name="flavor"/>.</summary>
     public static LauncherViewModel Create(UiFlavor flavor)
     {
-        var settings = new ValafindSettings
-        {
-            Hotkey = flavor switch { UiFlavor.Mac => "Alt+Space", UiFlavor.Windows => "Ctrl+Alt+Space", _ => "Super+Space" },
-        };
+        // The default chord (Ctrl+Alt+Space, ⌃⌥Space on macOS), as a fresh install shows it.
+        var settings = new ValafindSettings();
         var home = flavor switch
         {
             UiFlavor.Windows => @"C:\Users\mathi",
             UiFlavor.Mac => "/Users/mathias",
             _ => "/home/mathias",
         };
-        var vm = new LauncherViewModel(flavor, settings, new FixedTime(Now), static a => a(), home);
+        var vm = new LauncherViewModel(flavor, settings, new FixedTime(Now), static a => a(), home, AppDirectory(flavor));
         vm.LoadSnapshot(SampleQuery, Results(flavor, home), TimeSpan.FromMilliseconds(flavor == UiFlavor.Linux ? 42 : 38));
         vm.UpdateStatus(flavor == UiFlavor.Mac ? IdleStatus : BusyStatus);
         return vm;
@@ -48,13 +47,32 @@ public static class DesignData
     /// <summary>A launcher in the "model not installed" state.</summary>
     public static LauncherViewModel CreateModelMissing(UiFlavor flavor)
     {
-        var vm = new LauncherViewModel(flavor, new ValafindSettings(), new FixedTime(Now), static a => a(), null);
-        vm.SetModelMissing(flavor == UiFlavor.Windows
-            ? @"C:\Users\mathi\AppData\Local\Valafind\models\embeddinggemma-300m"
-            : "/home/mathias/.local/share/valafind/models/embeddinggemma-300m");
+        var vm = new LauncherViewModel(flavor, new ValafindSettings(), new FixedTime(Now), static a => a(), null, AppDirectory(flavor));
+        vm.SetModelMissing(flavor switch
+        {
+            UiFlavor.Windows => @"C:\Users\mathi\AppData\Local\Valafind\models\embeddinggemma-300m",
+            UiFlavor.Mac => "/Users/mathias/Library/Application Support/Valafind/models/embeddinggemma-300m",
+            _ => "/home/mathias/.local/share/valafind/models/embeddinggemma-300m",
+        });
         vm.UpdateStatus(IndexStatus.Initial with { State = IndexingState.ModelUnavailable });
         return vm;
     }
+
+    /// <summary>A launcher whose model could not be loaded.</summary>
+    public static LauncherViewModel CreateModelFailed(UiFlavor flavor)
+    {
+        var vm = CreateModelMissing(flavor);
+        vm.SetModelFailed("Protobuf parsing failed: onnx/model_quantized.onnx is truncated.");
+        return vm;
+    }
+
+    /// <summary>Where a typical install keeps the executable (and tools/fetch-model.*).</summary>
+    internal static string AppDirectory(UiFlavor flavor) => flavor switch
+    {
+        UiFlavor.Windows => @"C:\Users\mathi\AppData\Local\Programs\Valafind",
+        UiFlavor.Mac => "/Applications/Valafind.app/Contents/MacOS",
+        _ => "/home/mathias/Applications/Valafind",
+    };
 
     internal static IndexStatus BusyStatus { get; } = new(
         IndexingState.PausedSystemBusy, IndexPhase.All, 6214, 6214, 182_930, 446_120, true,
@@ -66,9 +84,19 @@ public static class DesignData
 
     private static DateTimeOffset Date(int y, int m, int d, int h = 10, int min = 0) => new(y, m, d, h, min, 0, TimeSpan.Zero);
 
+    /// <summary>A file matched by its name only (images, audio, video): no passage, no highlights.</summary>
+    private static SearchResult NameOnly(string dir, string name, FileKind kind, DateTimeOffset modified, long size, float score)
+    {
+        var sep = dir.Contains('\\') ? "\\" : "/";
+        return new SearchResult(dir + sep + name, name, dir, kind, modified, size, score, string.Empty, []);
+    }
+
     private static SearchResult Hit(string dir, string name, FileKind kind, DateTimeOffset modified, long size, float score,
         string snippet, params string[] highlights)
     {
+        // Like Core's Snippet.Build: a passage cut out of a longer chunk carries "…" at both cut ends.
+        if (snippet.Length > 0)
+            snippet = "…" + snippet + "…";
         var sep = dir.Contains('\\') ? "\\" : "/";
         var spans = new List<TextSpan>();
         foreach (var h in highlights)
@@ -95,8 +123,7 @@ public static class DesignData
                     "happy to accept two months if you sign by Friday", "accept two months"),
                 Hit(P("Documents", "notes"), "2025-09-12 landlord call.md", FileKind.Text, Date(2025, 9, 12), 2_310, 0.78f,
                     "deposit refund: he'll deduct for the hallway paint", "deposit refund"),
-                Hit(P("Pictures", "Camera Roll"), "IMG_4412.HEIC", FileKind.Image, Date(2024, 3, 2), 2_811_004, 0.71f,
-                    "Depositum 2 mdr. — aftalt", "Depositum 2 mdr."),
+                NameOnly(P("Pictures", "Camera Roll", "Lejlighed"), "Depositum_kvittering.HEIC", FileKind.Image, Date(2024, 3, 2), 2_811_004, 0.71f),
                 Hit(P("OneDrive", "Finance"), "budget_2025.xlsx", FileKind.Spreadsheet, Date(2025, 1, 8), 48_120, 0.58f,
                     "Sheet “Bolig”: Deposit (Nørrebrogade) 31,500", "Deposit (Nørrebrogade)"),
                 Hit(P("Downloads"), "Fremleje_tillæg_udkast.docx", FileKind.Document, Date(2024, 2, 19), 31_877, 0.54f,
@@ -111,8 +138,7 @@ public static class DesignData
                     "we can accept two months if you sign the 24-month term", "accept two months"),
                 Hit(P("Documents", "notes"), "2025-09-12 landlord call.md", FileKind.Text, Date(2025, 9, 12), 2_310, 0.84f,
                     "He confirmed the deposit comes back in full after the move-out inspection", "the deposit comes back in full"),
-                Hit(P("Pictures", "2024"), "IMG_4412.HEIC", FileKind.Image, Date(2024, 3, 3), 2_811_004, 0.79f,
-                    "Depositum kr. 28.500 betales senest 1. april", "Depositum kr. 28.500"),
+                NameOnly(P("Pictures", "2024"), "Depositum_kvittering.HEIC", FileKind.Image, Date(2024, 3, 3), 2_811_004, 0.79f),
                 Hit(P("Documents", "Økonomi"), "budget_2025.xlsx", FileKind.Spreadsheet, Date(2025, 1, 8), 48_120, 0.62f,
                     "Deposit refund, Nørrebrogade 28,500 DKK", "Deposit refund"),
             ],
@@ -127,9 +153,7 @@ public static class DesignData
                 Hit(P("Documents", "notes"), "2025-09-12 landlord call.md", FileKind.Text, Date(2025, 9, 12), 2_310, 0.84f,
                     "He confirmed the deposit comes back in full after the move-out inspection, per clause 7",
                     "the deposit comes back in full after the move-out inspection"),
-                Hit(P("Pictures", "2024", "03"), "IMG_4412.HEIC", FileKind.Image, Date(2024, 3, 4), 2_811_004, 0.76f,
-                    "Signed page 4 of 6 — Depositum kr. 28.500 betales senest 1. april",
-                    "Depositum kr. 28.500 betales senest 1. april"),
+                NameOnly(P("Pictures", "2024", "03"), "Depositum_kvittering.HEIC", FileKind.Image, Date(2024, 3, 4), 2_811_004, 0.76f),
                 Hit(P("Documents", "Økonomi"), "budget_2025.xlsx", FileKind.Spreadsheet, Date(2025, 1, 8), 48_120, 0.61f,
                     "Sheet “Bolig”, row 14 — Deposit refund, Nørrebrogade 28,500 DKK", "Deposit refund, Nørrebrogade"),
             ],

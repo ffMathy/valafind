@@ -61,8 +61,18 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsActive))]
     public partial bool IsPaused { get; private set; }
 
-    /// <summary>Paused by the user (tray / launcher toggle).</summary>
+    /// <summary>Paused by the user (tray / launcher toggle). Mirrors the persisted setting pushed through
+    /// <see cref="SetUserPaused"/>, not the indexer's state, so the tray and launcher toggles always agree with their
+    /// captions, also while the Core is starting or the model is unavailable.</summary>
     [ObservableProperty] public partial bool IsUserPaused { get; private set; }
+
+    /// <summary>Sets the user-pause flag (the persisted setting) and updates the captions that depend on it.</summary>
+    public void SetUserPaused(bool paused)
+    {
+        IsUserPaused = paused;
+        ResumeActionText = paused ? "Resume" : "Index Now";
+        PauseMenuText = paused ? "Resume indexing" : "Pause indexing";
+    }
 
     /// <summary>All phases done.</summary>
     [ObservableProperty] public partial bool IsUpToDate { get; private set; }
@@ -194,7 +204,6 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         }
 
         // State.
-        IsUserPaused = status.State == IndexingState.PausedByUser;
         IsPaused = status.State is IndexingState.PausedByUser or IndexingState.PausedSystemBusy or IndexingState.PausedOnBattery;
         IsUpToDate = status.State == IndexingState.UpToDate;
         (StateText, ShortStateText, Tone) = status.State switch
@@ -236,8 +245,7 @@ public sealed partial class IndexStatusViewModel : ObservableObject
             _ => string.Empty,
         };
         BannerDetail = DisplayFormat.Percent(SearchableFraction) + " of your files are searchable";
-        ResumeActionText = IsUserPaused ? "Resume" : "Index Now";
-        PauseMenuText = IsUserPaused ? "Resume indexing" : "Pause indexing";
+        SetUserPaused(IsUserPaused);
         PolicyText = status.State is IndexingState.PausedSystemBusy or IndexingState.PausedOnBattery
             ? "Resumes automatically when CPU and disk are idle"
             : string.Create(inv, $"Pauses automatically when CPU passes {maxCpuPercent:0}% or disk activity is high");

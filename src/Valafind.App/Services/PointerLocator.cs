@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Valafind.App.Platform;
 
 namespace Valafind.App.Services;
 
@@ -24,7 +25,7 @@ internal static partial class PointerLocator
                 return Windows();
             if (OperatingSystem.IsMacOS())
                 return Mac();
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD())
+            if ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD()) && UseX11(Environment.GetEnvironmentVariable))
                 return X11();
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or MarshalDirectiveException or BadImageFormatException)
@@ -94,7 +95,15 @@ internal static partial class PointerLocator
     [SupportedOSPlatform("macos")]
     private static partial void CFRelease(IntPtr cf);
 
-    // ------------------------------------------------------------------ X11 (also XWayland)
+    // ------------------------------------------------------------------ X11
+
+    /// <summary>
+    /// Only in a real X11 session. Under Wayland, DISPLAY points at XWayland, whose XQueryPointer "succeeds" with the
+    /// last position the pointer had over an X11 window — a stale answer that would put the launcher on the wrong
+    /// monitor. Returning null there lets the caller fall back (same rule as the hotkey's session detection).
+    /// </summary>
+    internal static bool UseX11(Func<string, string?> env) =>
+        GlobalHotkeyFactory.DetectLinuxSession(env) == GlobalHotkeyFactory.LinuxSession.X11;
 
     private static PointerPosition? X11()
     {

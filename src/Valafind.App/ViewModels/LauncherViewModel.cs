@@ -55,6 +55,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     private readonly TimeProvider _time;
     private readonly Action<Action> _post;
     private readonly string? _home;
+    private readonly string _appDirectory;
     private ISearchService? _search;
     private CancellationTokenSource? _searchCts;
     private int _searchGeneration;
@@ -68,13 +69,22 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     {
     }
 
-    internal LauncherViewModel(UiFlavor flavor, ValafindSettings settings, TimeProvider time, Action<Action> post, string? home)
+    /// <param name="flavor">Design flavor.</param>
+    /// <param name="settings">Live settings instance.</param>
+    /// <param name="time">Clock (fake in tests).</param>
+    /// <param name="post">Marshals to the UI thread.</param>
+    /// <param name="home">Home directory used to shorten paths.</param>
+    /// <param name="appDirectory">Folder of the executable (where tools/fetch-model.* ship); defaults to
+    /// <see cref="AppContext.BaseDirectory"/>.</param>
+    internal LauncherViewModel(UiFlavor flavor, ValafindSettings settings, TimeProvider time, Action<Action> post, string? home,
+        string? appDirectory = null)
     {
         Flavor = flavor;
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _time = time;
         _post = post;
         _home = home;
+        _appDirectory = appDirectory ?? AppContext.BaseDirectory;
         Filters = FilterChipViewModel.CreateDefaults();
         TimeRanges = TimeRangeOption.CreateDefaults();
         SelectedFilter = Filters[0];
@@ -86,7 +96,10 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
         SelectedTimeRange = TimeRanges[0];
         SetHotkey(settings.EffectiveHotkey, null);
         ModelTargetDirectory = settings.ModelDirectory ?? AppPaths.ModelsDirectory;
-        FetchCommandText = BuildFetchCommand(null);
+        FetchCommandText = BuildFetchCommand(null, force: false);
+        RepairCommandText = BuildFetchCommand(null, force: true);
+        Status.SetUserPaused(settings.UserPaused);
+        RefreshIndexScope();
     }
 
     /// <summary>Design flavor.</summary>
@@ -174,20 +187,59 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string? ModelErrorText { get; private set; }
 
-    /// <summary>Where tools/fetch-model.* installs the model.</summary>
+    /// <summary>Where tools/fetch-model.* installs the model (the folder Valafind looks in).</summary>
     [ObservableProperty]
     public partial string ModelTargetDirectory { get; private set; }
 
-    /// <summary>Command that installs the model.</summary>
+    /// <summary>Command that installs the model: the shipped script by absolute path, e.g.
+    /// <c>bash '/opt/Valafind/tools/fetch-model.sh'</c>.</summary>
     [ObservableProperty]
     public partial string FetchCommandText { get; private set; }
 
-    private string BuildFetchCommand(string? customTarget)
+    /// <summary>Same as <see cref="FetchCommandText"/> but re-downloads every file (repairs a broken install).</summary>
+    [ObservableProperty]
+    public partial string RepairCommandText { get; private set; }
+
+    private string BuildFetchCommand(string? customTarget, bool force) =>
+        ModelInstallHelp.FetchCommand(Flavor == UiFlavor.Windows, _appDirectory, customTarget, force);
+
+    /// <summary>What phase 2 covers: "Home folder", the single configured folder's name, or "3 folders".</summary>
+    [ObservableProperty]
+    public partial string IndexScopeText { get; private set; } = string.Empty;
+
+    /// <summary>Compact form for tight status strips: "Home", the folder's name, or "3 folders".</summary>
+    [ObservableProperty]
+    public partial string IndexScopeShortText { get; private set; } = string.Empty;
+
+    /// <summary>Longer form for tooltips: "Everything in your home folder (~)".</summary>
+    [ObservableProperty]
+    public partial string IndexScopeDetail { get; private set; } = string.Empty;
+
+    /// <summary>Recomputes <see cref="IndexScopeText"/> from the configured folders (call after settings change).</summary>
+    public void RefreshIndexScope()
     {
-        var command = Flavor == UiFlavor.Windows
-            ? @"powershell -ExecutionPolicy Bypass -File tools\fetch-model.ps1"
-            : "tools/fetch-model.sh";
-        return customTarget is null ? command : command + " \"" + customTarget + "\"";
+        var roots = _settings.Roots.Where(r => !string.IsNullOrWhiteSpace(r)).ToList();
+        var comparison = Flavor == UiFlavor.Linux ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        if (roots.Count == 0)
+        {
+            IndexScopeText = "Home folder";
+            IndexScopeShortText = "Home";
+            IndexScopeDetail = "Everything in your home folder" + (_home is null ? string.Empty : " (" + DisplayHome() + ")");
+            return;
+        }
+        if (roots.Count == 1)
+        {
+            var name = Path.GetFileName(roots[0].TrimEnd('/', '\\'));
+            IndexScopeText = string.IsNullOrEmpty(name) ? roots[0] : name;
+        }
+        else
+        {
+            IndexScopeText = roots.Count.ToString(CultureInfo.InvariantCulture) + " folders";
+        }
+        IndexScopeShortText = IndexScopeText;
+        IndexScopeDetail = "Everything in " + string.Join(", ", roots.Select(r => DisplayFormat.ShortenHome(r, _home, comparison)));
+
+        string DisplayHome() => Flavor == UiFlavor.Windows ? _home! : "~";
     }
 
     /// <summary>What the main area shows.</summary>
@@ -216,7 +268,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// <summary>Index status projection.</summary>
     public IndexStatusViewModel Status { get; } = new();
 
-    /// <summary>Hotkey as one label: "Ctrl+Alt+Space", "⌥ Space".</summary>
+    /// <summary>Hotkey as one label: "Ctrl+Alt+Space", "⌃⌥Space".</summary>
     [ObservableProperty]
     public partial string HotkeyLabel { get; private set; } = string.Empty;
 
@@ -242,10 +294,11 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
 
     // ------------------------------------------------------------------ host API
 
-    /// <summary>Marks the model as loading (search unavailable).</summary>
+    /// <summary>Marks the model as loading (search unavailable). Also called before the Core is stopped for a restart,
+    /// so no search reaches services that are being disposed and late results of the old Core are dropped.</summary>
     public void SetModelLoading()
     {
-        _search = null;
+        DetachSearch();
         ModelState = ModelState.Loading;
         ModelErrorText = null;
         ClearResults();
@@ -257,9 +310,10 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// <param name="customTarget">True when the directory is a user override (passed to the fetch script).</param>
     public void SetModelMissing(string targetDirectory, bool customTarget = false)
     {
-        _search = null;
+        DetachSearch();
         ModelTargetDirectory = targetDirectory;
-        FetchCommandText = BuildFetchCommand(customTarget ? targetDirectory : null);
+        FetchCommandText = BuildFetchCommand(customTarget ? targetDirectory : null, force: false);
+        RepairCommandText = BuildFetchCommand(customTarget ? targetDirectory : null, force: true);
         ModelState = ModelState.Missing;
         ClearResults();
         UpdateContent();
@@ -268,11 +322,23 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// <summary>Marks the model as failed to load.</summary>
     public void SetModelFailed(string message)
     {
-        _search = null;
+        DetachSearch();
         ModelErrorText = message;
         ModelState = ModelState.Failed;
         ClearResults();
         UpdateContent();
+    }
+
+    // Drops the search service and everything in flight against it (results and explanations of an older Core).
+    private void DetachSearch()
+    {
+        _search = null;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = null;
+        _searchGeneration++;
+        IsSearching = false;
+        ErrorText = null;
     }
 
     /// <summary>Makes search available and runs the pending query, if any.</summary>
@@ -289,6 +355,14 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// <summary>Applies a new index status (must be called on the UI thread).</summary>
     public void UpdateStatus(IndexStatus status) =>
         Status.Update(status, _settings.MaxCpuPercent, _settings.MaxDiskBusyPercent);
+
+    /// <summary>Shows whether indexing is paused by the user. The persisted setting is the single source of truth, so
+    /// the captions are right even before the Core runs (or while the model is unavailable).</summary>
+    public void SetUserPaused(bool paused) => Status.SetUserPaused(paused);
+
+    /// <summary>True while the launcher window is on screen (set by the window; the host makes indexing yield).</summary>
+    [ObservableProperty]
+    public partial bool IsLauncherVisible { get; set; }
 
     /// <summary>Sets the hotkey shown in the UI and any registration error.</summary>
     public void SetHotkey(string chord, string? error)
@@ -389,6 +463,10 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void TogglePause() => Actions?.SetUserPaused(!Status.IsUserPaused);
+
+    /// <summary>"Check again": looks for the model right away (it is also detected automatically).</summary>
+    [RelayCommand]
+    private void CheckModel() => Actions?.CheckModel();
 
     [RelayCommand]
     private void TogglePreview() => IsPreviewVisible = !IsPreviewVisible;
@@ -504,8 +582,11 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
             ct.ThrowIfCancellationRequested();
             _post(() =>
             {
-                if (generation == _searchGeneration && !_disposed)
-                    ApplyResults(query, results, elapsed);
+                if (generation != _searchGeneration || _disposed)
+                    return;
+                ApplyResults(query, results, elapsed);
+                if (results.Count > 0)
+                    _ = RunExplainAsync(search, query, results, generation, ct);
             });
         }
         catch (OperationCanceledException)
@@ -523,6 +604,50 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
                 ClearResults();
                 Content = LauncherContent.Error;
             });
+        }
+    }
+
+    // Second pass: semantic "why it matched" highlights for the top results. Shown results are patched in place (no
+    // list rebuild, selection kept). Cancelled by the next keystroke through the same token.
+    private async Task RunExplainAsync(ISearchService search, string query, IReadOnlyList<SearchResult> results, int generation, CancellationToken ct)
+    {
+        try
+        {
+            var explained = await Task.Run(() => search.ExplainAsync(query, results, ct), ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            _post(() =>
+            {
+                if (generation == _searchGeneration && !_disposed)
+                    ApplyExplanations(results, explained);
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer keystroke.
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            // Optional pass: the lexical highlights already shown stay.
+        }
+    }
+
+    /// <summary>Replaces snippets/highlights of the shown rows with the explained ones (matched by path).</summary>
+    internal void ApplyExplanations(IReadOnlyList<SearchResult> shown, IReadOnlyList<SearchResult> explained)
+    {
+        if (explained.Count != shown.Count)
+            return;
+        var byPath = new Dictionary<string, SearchResult>(StringComparer.Ordinal);
+        for (var i = 0; i < shown.Count; i++)
+        {
+            if (!ReferenceEquals(shown[i], explained[i]) && string.Equals(shown[i].Path, explained[i].Path, StringComparison.Ordinal))
+                byPath[explained[i].Path] = explained[i];
+        }
+        if (byPath.Count == 0)
+            return;
+        foreach (var item in Results)
+        {
+            if (byPath.TryGetValue(item.Path, out var better))
+                item.ApplyExplanation(better);
         }
     }
 

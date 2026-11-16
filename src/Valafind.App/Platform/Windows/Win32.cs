@@ -105,4 +105,13 @@ internal static unsafe partial class Win32
     [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool UnregisterHotKey(nint hwnd, int id);
+
+    /// <summary>Lets any process take the foreground (passed to <see cref="AllowSetForegroundWindow"/>).</summary>
+    public const int ASFW_ANY = -1;
+
+    /// <summary>Grants another process the right to call SetForegroundWindow. Only the process that currently may set
+    /// the foreground (e.g. the one that just received the user's input) can grant it.</summary>
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool AllowSetForegroundWindow(int processId);
 }

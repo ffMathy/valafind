@@ -4,9 +4,27 @@ namespace Valafind.App.Platform;
 /// <summary>Creates the <see cref="IGlobalHotkeyService"/> implementation for the current OS and session.</summary>
 public static class GlobalHotkeyFactory
 {
-    /// <summary>Message shown when a Wayland session offers no way to register a global shortcut.</summary>
-    internal const string WaylandUnavailableMessage =
-        "Global hotkeys are not available on Wayland. Bind a shortcut in your desktop settings to run: valafind --toggle";
+    /// <summary>Message shown when a Wayland session offers no way to register a global shortcut. Names the real
+    /// executable: nothing installs a "valafind" command on PATH, so a bare name would fail silently.</summary>
+    internal static string WaylandUnavailableMessage =>
+        "Global hotkeys are not available on Wayland. Bind a shortcut in your desktop settings to run: " + ToggleCommand;
+
+    /// <summary>The command that toggles the running launcher, e.g. <c>/opt/Valafind/Valafind --toggle</c>.</summary>
+    internal static string ToggleCommand => BuildToggleCommand(Environment.ProcessPath, System.Reflection.Assembly.GetEntryAssembly()?.Location);
+
+    /// <summary>Builds the toggle command for an executable path (quoted when it contains spaces). Under
+    /// <c>dotnet Valafind.dll</c> the host is "dotnet", so the assembly is passed to it.</summary>
+    internal static string BuildToggleCommand(string? processPath, string? entryAssemblyPath)
+    {
+        if (string.IsNullOrWhiteSpace(processPath))
+            return "Valafind --toggle";
+        var host = Path.GetFileNameWithoutExtension(processPath);
+        if (string.Equals(host, "dotnet", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(entryAssemblyPath))
+            return Quote(processPath) + " " + Quote(entryAssemblyPath) + " --toggle";
+        return Quote(processPath) + " --toggle";
+
+        static string Quote(string path) => path.Any(char.IsWhiteSpace) ? "\"" + path + "\"" : path;
+    }
 
     /// <summary>
     /// Windows: RegisterHotKey on a message-only window thread. macOS: Carbon RegisterEventHotKey.

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Valafind.App.Platform;
 using Valafind.Core.Configuration;
 
 namespace Valafind.App.ViewModels;
@@ -15,15 +16,24 @@ public interface ISettingsHost
     /// <summary>Folder the fetch script installs the model into by default.</summary>
     string DefaultModelDirectory { get; }
 
+    /// <summary>Folder of the executable; the fetch scripts ship in its <c>tools</c> sub-folder.</summary>
+    string AppDirectory { get; }
+
+    /// <summary>Folder holding Valafind's log files.</summary>
+    string LogDirectory { get; }
+
+    /// <summary>Opens <see cref="LogDirectory"/> in the file manager.</summary>
+    void OpenLogFolder();
+
     /// <summary>Whether Valafind starts at login.</summary>
     bool IsAutostartEnabled();
 
     /// <summary>Enables/disables start at login.</summary>
     void SetAutostartEnabled(bool enabled);
 
-    /// <summary>Applies saved settings live (hotkey re-registration, core restart, …).
-    /// Returns a hotkey error message, or null when the hotkey registered.</summary>
-    string? Apply(SettingsSnapshot before, ValafindSettings after);
+    /// <summary>Applies saved settings live (hotkey re-registration, core restart, …). Completes with a hotkey error
+    /// message, or null when the hotkey registered. Registration can take seconds (Wayland portal), so it is async.</summary>
+    Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after);
 }
 
 /// <summary>The settings that need action when they change.</summary>
@@ -47,16 +57,30 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ValafindSettings _settings;
     private readonly ISettingsHost _host;
     private readonly int _originalDimensions;
+    private readonly bool _macOS;
+    private readonly string _home;
 
     /// <summary>Creates the view model over the live <paramref name="settings"/> instance.</summary>
     public SettingsViewModel(ValafindSettings settings, ISettingsHost host)
+        : this(settings, host, OperatingSystem.IsMacOS(), AppPaths.Home)
+    {
+    }
+
+    /// <param name="settings">Live settings.</param>
+    /// <param name="host">Application services.</param>
+    /// <param name="macOS">Apply macOS hotkey rules (tests can simulate macOS).</param>
+    /// <param name="home">The home folder (indexed when no folders are listed).</param>
+    internal SettingsViewModel(ValafindSettings settings, ISettingsHost host, bool macOS, string home)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _host = host ?? throw new ArgumentNullException(nameof(host));
+        _macOS = macOS;
+        _home = home;
         _originalDimensions = settings.EmbeddingDimensions;
 
         Hotkey = settings.EffectiveHotkey;
         Roots = new ObservableCollection<string>(settings.Roots);
+        Roots.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoRoots));
         MaxCpuPercent = settings.MaxCpuPercent;
         MaxDiskBusyPercent = settings.MaxDiskBusyPercent;
         PauseOnBattery = settings.PauseOnBattery;
@@ -84,8 +108,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Indexed folders; empty means the home folder.</summary>
     public ObservableCollection<string> Roots { get; }
 
-    /// <summary>Hint shown when <see cref="Roots"/> is empty.</summary>
-    public static string RootsEmptyText => "Your home folder (" + AppPaths.Home + ") is indexed when no folders are listed.";
+    /// <summary>True when no folder is listed, i.e. the home folder is indexed.</summary>
+    public bool HasNoRoots => Roots.Count == 0;
+
+    /// <summary>Empty-state row: "Your home folder (/home/me)".</summary>
+    public string RootsEmptyText => "Your home folder (" + _home + ")";
+
+    /// <summary>Explains what is (not) covered and how to add more.</summary>
+    public static string RootsHint =>
+        "Only the folders listed here are indexed — by default your home folder. Add other drives, external disks or "
+        + "network folders with “Add folder…”. Adding a folder replaces the default, so add your home folder too if you "
+        + "still want it.";
+
+    /// <summary>Where the log files are written.</summary>
+    public string LogDirectory => _host.LogDirectory;
 
     /// <summary>Index only while CPU stays below this.</summary>
     [ObservableProperty]
@@ -146,10 +182,11 @@ public sealed partial class SettingsViewModel : ObservableObject
             found = null;
         }
         IsModelDetected = found is not null;
+        var custom = string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim();
         ModelDetectionText = found is not null
             ? "Detected: " + found
-            : "Not found — install it with " + (OperatingSystem.IsWindows() ? @"tools\fetch-model.ps1" : "tools/fetch-model.sh")
-              + " (target: " + (string.IsNullOrWhiteSpace(ModelDirectory) ? _host.DefaultModelDirectory : ModelDirectory.Trim()) + ")";
+            : "Not found — install it by running " + ModelInstallHelp.FetchCommand(OperatingSystem.IsWindows(), _host.AppDirectory, custom)
+              + " (installs into " + (custom ?? _host.DefaultModelDirectory) + "). Valafind picks it up automatically.";
     }
 
     [RelayCommand]
@@ -186,8 +223,29 @@ public sealed partial class SettingsViewModel : ObservableObject
     private void Cancel() => CloseRequested?.Invoke(this, EventArgs.Empty);
 
     [RelayCommand]
-    private void Save()
+    private void OpenLogFolder() => _host.OpenLogFolder();
+
+    /// <summary>Checks the chord before saving; returns a message for the user, or null when it is acceptable.</summary>
+    internal string? ValidateHotkey(string? chord)
     {
+        if (string.IsNullOrWhiteSpace(chord))
+            return null; // Default.
+        if (!HotkeyChord.TryParse(chord.Trim(), out var parsed, out var error))
+            return error;
+        return _macOS ? HotkeyChord.MacRestriction(parsed) : null;
+    }
+
+    [RelayCommand]
+    private async Task Save()
+    {
+        ErrorText = null;
+        if (ValidateHotkey(Hotkey) is { } invalid)
+        {
+            // Keep the window open on the shortcut problem; nothing is saved.
+            HotkeyMessage = invalid;
+            return;
+        }
+
         var before = SettingsSnapshot.Of(_settings);
         var previous = Capture(_settings);
 
@@ -223,7 +281,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
 
         var hotkeyChanged = !string.Equals(before.Hotkey, _settings.EffectiveHotkey, StringComparison.OrdinalIgnoreCase);
-        HotkeyMessage = _host.Apply(before, _settings);
+        HotkeyMessage = await _host.ApplyAsync(before, _settings).ConfigureAwait(true);
         // Stay open when the user just picked a chord that could not be registered, so they can choose another.
         if (ErrorText is null && (HotkeyMessage is null || !hotkeyChanged))
             CloseRequested?.Invoke(this, EventArgs.Empty);
@@ -253,8 +311,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         public static DesignHost Instance { get; } = new();
         public string? DetectModel(string? configuredDirectory) => null;
         public string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, "embeddinggemma-300m");
+        public string AppDirectory => AppContext.BaseDirectory;
+        public string LogDirectory => AppPaths.LogDirectory;
+        public void OpenLogFolder() { }
         public bool IsAutostartEnabled() => true;
         public void SetAutostartEnabled(bool enabled) { }
-        public string? Apply(SettingsSnapshot before, ValafindSettings after) => null;
+        public Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after) => Task.FromResult<string?>(null);
     }
 }

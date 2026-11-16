@@ -62,7 +62,9 @@ public sealed class IndexStatusViewModelTests
     [Fact]
     public void UserPauseOffersResume()
     {
+        // The user-pause flag is the persisted setting pushed by the host (single source of truth for tray + launcher).
         var vm = new IndexStatusViewModel();
+        vm.SetUserPaused(true);
         vm.Update(IndexStatus.Initial with { State = IndexingState.PausedByUser }, 30, 25);
         Assert.True(vm.IsUserPaused);
         Assert.Equal("Resume", vm.ResumeActionText);

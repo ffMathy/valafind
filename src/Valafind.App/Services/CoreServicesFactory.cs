@@ -50,6 +50,30 @@ internal static class CoreServicesFactory
     /// <summary>Finds the installed EmbeddingGemma model directory, honouring the configured override.</summary>
     public static string? LocateModel(string? configuredDirectory) => ModelLocator.Find(configuredDirectory);
 
+    /// <summary>
+    /// Identifies the model install that <see cref="LocateModel"/> would load right now: its folder plus the size and
+    /// time stamp of the files that matter, or null when no valid model is installed. Cheap (a few file probes); used
+    /// to notice an install (or a repaired one) without restarting.
+    /// </summary>
+    public static string? ModelSignature(string? configuredDirectory) => SignatureOf(ModelLocator.Find(configuredDirectory));
+
+    /// <summary>Signature of the model in <paramref name="directory"/>, or null when it is not a valid model folder.</summary>
+    internal static string? SignatureOf(string? directory)
+    {
+        if (directory is null || !ModelLocator.IsValid(directory, out var modelFile))
+            return null;
+        var sb = new System.Text.StringBuilder(directory).Append('|').Append(modelFile);
+        var model = Path.Combine(directory, modelFile.Replace('/', Path.DirectorySeparatorChar));
+        foreach (var file in new[] { model, model + "_data", Path.Combine(directory, "tokenizer.json"), Path.Combine(directory, "tokenizer.model") })
+        {
+            var info = new FileInfo(file);
+            sb.Append('|');
+            if (info.Exists)
+                sb.Append(info.Length).Append('@').Append(info.LastWriteTimeUtc.Ticks);
+        }
+        return sb.ToString();
+    }
+
     /// <summary>Where the user should install the model (configured directory or the default models folder).</summary>
     public static string ExpectedModelDirectory(ValafindSettings settings) =>
         string.IsNullOrWhiteSpace(settings.ModelDirectory) ? DefaultModelDirectory : settings.ModelDirectory;
