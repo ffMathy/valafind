@@ -31,7 +31,9 @@ public interface IEmbeddingModel : IDisposable
 
 // ---------------------------------------------------------------- Extraction (Valafind.Core.Extraction)
 
-public sealed record ExtractionLimits(long MaxFileBytes = 64L * 1024 * 1024, int MaxChars = 400_000);
+/// <summary>Per-file extraction budget. MaxChars is sized to what the first indexing pass embeds
+/// (≈ ChunkerOptions.MaxChunks × TargetTokens × ~4–5 chars/token) plus headroom; parsing more is wasted CPU.</summary>
+public sealed record ExtractionLimits(long MaxFileBytes = 64L * 1024 * 1024, int MaxChars = 32_000);
 
 /// <summary>Plain text pulled out of a file. <paramref name="Text"/> may be empty for files that only
 /// carry a name (images, media) — callers then embed the file name/path only.</summary>
@@ -120,7 +122,14 @@ public sealed record SearchResult(
 
 public interface ISearchService
 {
+    /// <summary>Fast path: ranked results with snippets and LEXICAL highlights. Must not wait on extra model work
+    /// beyond embedding the query.</summary>
     Task<IReadOnlyList<SearchResult>> SearchAsync(string query, SearchFilter filter, int topK, CancellationToken cancellationToken);
+
+    /// <summary>Optional second pass the UI runs after showing <paramref name="results"/>: returns the same list (same order,
+    /// same length) where the top few results carry SEMANTIC "why it matched" highlights (best-matching sentence by
+    /// embedding). Results it does not improve are returned unchanged. Cheap by design (a handful of short sentences).</summary>
+    Task<IReadOnlyList<SearchResult>> ExplainAsync(string query, IReadOnlyList<SearchResult> results, CancellationToken cancellationToken);
 }
 
 // ---------------------------------------------------------------- System pressure & indexing (Valafind.Core.Indexing / .Platform)
@@ -176,6 +185,9 @@ public interface IIndexingService : IAsyncDisposable
     void SetUserPaused(bool paused);
     /// <summary>"Resume now": ignore system-pressure throttling for the given duration.</summary>
     void OverrideThrottle(TimeSpan duration);
+    /// <summary>True while the user is interacting with search (launcher visible). Indexing yields: no new model
+    /// batches start until it is set back to false, so query embedding never queues behind indexing.</summary>
+    void SetInteractive(bool active);
 }
 
 /// <summary>Finds candidate files. Phase 1 = frequently / recently used, Phase 2 = everything under user roots.</summary>

@@ -283,6 +283,9 @@ public sealed class LauncherViewModelTests
             _filters.Enqueue(filter);
             return handler(query, cancellationToken);
         }
+
+        public Task<IReadOnlyList<SearchResult>> ExplainAsync(string query, IReadOnlyList<SearchResult> results, CancellationToken cancellationToken) =>
+            Task.FromResult(results);
     }
 
     private sealed class RecordingActions : ILauncherActions

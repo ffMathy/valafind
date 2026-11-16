@@ -171,6 +171,9 @@ public sealed class IndexingCoordinator : IIndexingService
     public void SetUserPaused(bool paused) => _gate.SetUserPaused(paused);
 
     /// <inheritdoc />
+    // INTEGRATION-STUB: replaced by the indexing fix (yield to interactive search).
+    public void SetInteractive(bool active) => throw new NotImplementedException("INTEGRATION-STUB");
+
     public void OverrideThrottle(TimeSpan duration) =>
         _gate.OverrideUntil = duration > TimeSpan.Zero ? _time.GetUtcNow() + duration : null;
 

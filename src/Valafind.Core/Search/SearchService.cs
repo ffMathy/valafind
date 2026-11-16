@@ -42,6 +42,10 @@ public sealed class SearchService : ISearchService
     internal TimeSpan HighlightBudget { get; set; } = TimeSpan.FromSeconds(2);
 
     /// <inheritdoc />
+    // INTEGRATION-STUB: replaced by the search-performance fix (progressive semantic highlights).
+    public Task<IReadOnlyList<SearchResult>> ExplainAsync(string query, IReadOnlyList<SearchResult> results, CancellationToken cancellationToken) =>
+        throw new NotImplementedException("INTEGRATION-STUB");
+
     public async Task<IReadOnlyList<SearchResult>> SearchAsync(string query, SearchFilter filter, int topK, CancellationToken cancellationToken)
     {
         var text = query?.Trim() ?? string.Empty;

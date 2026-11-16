@@ -35,11 +35,10 @@ public sealed class ValafindSettings
     /// <summary>Directory holding EmbeddingGemma (tokenizer.model + onnx/model*.onnx). Null = auto-locate.</summary>
     public string? ModelDirectory { get; set; }
 
+    /// <summary>Ctrl+Alt+Space (⌃⌥Space on macOS) everywhere. Deliberately not ⌥Space (macOS 15+ refuses Option-only
+    /// hotkeys), Super+Space (GNOME's input-source switch), Alt+Space (Windows window menu, KRunner) or Cmd+Space (Spotlight).</summary>
     [JsonIgnore]
-    public static string DefaultHotkey =>
-        OperatingSystem.IsMacOS() ? "Alt+Space" :
-        OperatingSystem.IsWindows() ? "Ctrl+Alt+Space" :
-        "Super+Space";
+    public static string DefaultHotkey => "Ctrl+Alt+Space";
 
     [JsonIgnore]
     public string EffectiveHotkey => string.IsNullOrWhiteSpace(Hotkey) ? DefaultHotkey : Hotkey;
