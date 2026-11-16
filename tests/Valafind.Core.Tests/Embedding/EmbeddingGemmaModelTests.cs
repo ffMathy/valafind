@@ -257,6 +257,135 @@ public sealed class EmbeddingGemmaModelTests(ModelFixture fixture) : IClassFixtu
     }
 
     [Fact]
+    public async Task Query_preempts_a_running_document_batch_which_is_then_rerun_correctly()
+    {
+        var dir = fixture.RequireModel();
+        var ct = TestContext.Current.CancellationToken;
+        ModelLocator.IsValid(dir, out var file);
+        using var model = new EmbeddingGemmaModel(new EmbeddingOptions
+        {
+            ModelDirectory = dir,
+            ModelFile = file,
+            Dimensions = 256,
+            BatchSize = 8,
+            IntraOpThreads = 2,
+        });
+
+        // Eight ~400-token documents: one batch that takes seconds on a laptop-class CPU.
+        var docs = Enumerable.Range(0, 8)
+            .Select(i => new DocumentText($"report-{i}.txt", string.Join(' ', Enumerable.Range(0, 20)
+                .Select(j => $"Section {i}.{j} describes quarterly revenue, staffing and the lease of building {i * 20 + j}."))))
+            .ToArray();
+        Assert.All(docs, d => Assert.InRange(model.CountTokens(d.Text), 300, model.MaxInputTokens));
+
+        model.EnsureLoaded();
+        var idle = System.Diagnostics.Stopwatch.StartNew();
+        var expectedQuery = model.EmbedQuery(ReadmeQuery, ct);
+        idle.Restart();
+        model.EmbedQuery(ReadmeQuery, ct);
+        var idleQuery = idle.Elapsed;
+
+        var alone = System.Diagnostics.Stopwatch.StartNew();
+        var expectedDocs = model.EmbedDocuments(docs, ct);
+        var batchAlone = alone.Elapsed;
+
+        var preemptedBefore = model.PreemptedRuns;
+        var docTask = Task.Run(() => model.EmbedDocuments(docs, ct), ct);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!model.IsBackgroundRunActive && DateTime.UtcNow < deadline)
+            Thread.Sleep(5);
+        Assert.True(model.IsBackgroundRunActive, "document batch did not start");
+        Thread.Sleep(TimeSpan.FromTicks(Math.Min(batchAlone.Ticks / 5, TimeSpan.FromMilliseconds(500).Ticks)));
+        Assert.False(docTask.IsCompleted, "document batch finished before the query was issued");
+
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        var query = model.EmbedQuery(ReadmeQuery, ct);
+        var queryDuringBatch = timer.Elapsed;
+
+        var docsDuringQuery = await docTask;
+
+        TestContext.Current.TestOutputHelper?.WriteLine(
+            $"idle query {idleQuery.TotalMilliseconds:F0} ms, batch alone {batchAlone.TotalMilliseconds:F0} ms, query during batch {queryDuringBatch.TotalMilliseconds:F0} ms");
+        Assert.True(model.PreemptedRuns > preemptedBefore, "the document run was not preempted");
+        // Without preemption the query would wait for the rest of the batch (most of batchAlone).
+        var bound = TimeSpan.FromTicks(Math.Max(TimeSpan.FromSeconds(1.5).Ticks, idleQuery.Ticks * 3));
+        Assert.True(queryDuringBatch < bound, $"query took {queryDuringBatch.TotalMilliseconds:F0} ms during a batch (bound {bound.TotalMilliseconds:F0} ms)");
+        Assert.True(ModelFixture.Cosine(expectedQuery, query) > 0.99999);
+        Assert.Equal(docs.Length, docsDuringQuery.Count);
+        for (var i = 0; i < docs.Length; i++)
+            Assert.True(ModelFixture.Cosine(expectedDocs[i], docsDuringQuery[i]) > 0.99999, $"document {i}");
+    }
+
+    [Fact]
+    public async Task Interactive_document_embedding_preempts_a_running_document_batch()
+    {
+        var dir = fixture.RequireModel();
+        var ct = TestContext.Current.CancellationToken;
+        ModelLocator.IsValid(dir, out var file);
+        using var model = new EmbeddingGemmaModel(new EmbeddingOptions
+        {
+            ModelDirectory = dir,
+            ModelFile = file,
+            Dimensions = 256,
+            BatchSize = 8,
+            IntraOpThreads = 2,
+        });
+        var docs = Enumerable.Range(0, 8)
+            .Select(i => new DocumentText($"report-{i}.txt", string.Join(' ', Enumerable.Range(0, 20)
+                .Select(j => $"Section {i}.{j} describes quarterly revenue, staffing and the lease of building {i * 20 + j}."))))
+            .ToArray();
+        DocumentText[] sentences =
+        [
+            new("none", "The finance team estimated the lost revenue at roughly twelve thousand euros."),
+            new("none", "The outage started at 14:02 when the database failed over."),
+        ];
+        model.EnsureLoaded();
+        var expected = model.EmbedDocuments(sentences, ct);
+        var expectedDocs = model.EmbedDocuments(docs, ct);
+
+        var preemptedBefore = model.PreemptedRuns;
+        var docTask = Task.Run(() => model.EmbedDocuments(docs, ct), ct);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!model.IsBackgroundRunActive && DateTime.UtcNow < deadline)
+            Thread.Sleep(5);
+        Assert.True(model.IsBackgroundRunActive, "document batch did not start");
+        Thread.Sleep(100);
+        Assert.False(docTask.IsCompleted, "document batch finished before the interactive call was issued");
+
+        var explained = model.EmbedDocumentsInteractive(sentences, ct);
+        Assert.False(docTask.IsCompleted, "the interactive call waited for the background batch");
+        var docsAfter = await docTask;
+
+        Assert.True(model.PreemptedRuns > preemptedBefore, "the document run was not preempted");
+        for (var i = 0; i < sentences.Length; i++)
+            Assert.True(ModelFixture.Cosine(expected[i], explained[i]) > 0.99999, $"sentence {i}");
+        for (var i = 0; i < docs.Length; i++)
+            Assert.True(ModelFixture.Cosine(expectedDocs[i], docsAfter[i]) > 0.99999, $"document {i}");
+    }
+
+    [Fact]
+    public async Task Cancelling_a_document_batch_while_it_runs_aborts_it()
+    {
+        var dir = fixture.RequireModel();
+        ModelLocator.IsValid(dir, out var file);
+        using var model = new EmbeddingGemmaModel(new EmbeddingOptions { ModelDirectory = dir, ModelFile = file, Dimensions = 256 });
+        var docs = Enumerable.Range(0, 8)
+            .Select(i => new DocumentText("x", string.Join(' ', Enumerable.Repeat($"Paragraph {i} about leases and budgets.", 60))))
+            .ToArray();
+        model.EnsureLoaded();
+        using var cts = new CancellationTokenSource();
+        var task = Task.Run(() => model.EmbedDocuments(docs, cts.Token), TestContext.Current.CancellationToken);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!model.IsBackgroundRunActive && DateTime.UtcNow < deadline)
+            Thread.Sleep(5);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+        Assert.False(model.IsBackgroundRunActive);
+        // The model is still usable afterwards.
+        Assert.Equal(256, model.EmbedQuery("still works", TestContext.Current.CancellationToken).Length);
+    }
+
+    [Fact]
     public void Empty_document_list_and_empty_text_are_handled()
     {
         fixture.RequireModel();

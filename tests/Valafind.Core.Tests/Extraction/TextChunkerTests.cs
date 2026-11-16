@@ -269,10 +269,10 @@ public sealed class TextChunkerTests
     {
         var text = Prose(paragraphs: 5000, sentencesPerParagraph: 5); // several MB
         var calls = 0;
-        var options = new ChunkerOptions(); // 320 / 48 / 48
+        var options = new ChunkerOptions(); // defaults: 320 / 48 / first-pass MaxChunks
         var chunks = new TextChunker(options, s => { calls++; return WordCounter(s); }).Chunk(text);
 
-        Assert.Equal(48, chunks.Count);
+        Assert.Equal(options.MaxChunks, chunks.Count);
         Assert.True(calls < 20_000, $"token counter called {calls} times");
     }
 

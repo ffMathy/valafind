@@ -11,12 +11,21 @@ namespace Valafind.Core.Embedding;
 /// <remarks>
 /// <para>The tokenizer and inference session are loaded on first use (or by <see cref="EnsureLoaded"/>). Load
 /// failures are not cached, so a later call retries.</para>
-/// <para>Thread-safe: tokenisation runs concurrently, inference calls are serialised on one session.</para>
+/// <para>Thread-safe: tokenisation runs concurrently, inference calls are serialised on one session with query
+/// priority. <see cref="EmbedQuery"/> never waits behind a document batch: when a query arrives while
+/// <see cref="EmbedDocuments"/> is running a batch, that ORT run is terminated (<see cref="RunOptions.Terminate"/>),
+/// the query runs, and the interrupted batch is re-run transparently (the document call just takes longer; its
+/// cancellation token is still honoured). Document batches also wait while any query is queued.
+/// <see cref="EmbedDocumentsInteractive"/> (the search "explain" pass) gets the same priority as a query.</para>
+/// <para>ORT's intra-op worker threads are created by native code when the session is built; they are not managed
+/// threads, so their OS priority cannot be changed from C# (BackgroundPriority on the calling thread does not reach
+/// them). To keep them cheap when idle, spin-waiting is disabled (<c>session.intra_op.allow_spinning = 0</c>,
+/// likewise inter-op), so they block instead of burning CPU between runs.</para>
 /// <para>Queries are embedded as <c>"task: search result | query: {query}"</c> and documents as
 /// <c>"title: {title|none} | text: {text}"</c>. The model's 768-d output is truncated to
 /// <see cref="Dimensions"/> (Matryoshka) and re-normalised.</para>
 /// </remarks>
-public sealed class EmbeddingGemmaModel : IEmbeddingModel
+public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
 {
     /// <summary>Model family part of <see cref="ModelId"/>.</summary>
     public const string ModelName = "embeddinggemma-300m";
@@ -34,6 +43,9 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
     internal const string AttentionMaskName = "attention_mask";
     internal const string SentenceEmbeddingName = "sentence_embedding";
 
+    internal const string IntraOpSpinningKey = "session.intra_op.allow_spinning";
+    internal const string InterOpSpinningKey = "session.inter_op.allow_spinning";
+
     private readonly string _modelDirectory;
     private readonly string _modelPath;
     private readonly int _maxTokens;
@@ -41,7 +53,8 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
     private readonly int _batchSize;
 
     private readonly Lock _loadLock = new();
-    private readonly Lock _runLock = new();
+    private readonly RunScheduler _scheduler = new();
+    private int _preemptedRuns;
     private volatile ITextTokenizer? _tokenizer;
     private volatile InferenceSession? _session;
     private SessionOptions? _sessionOptions;
@@ -122,11 +135,18 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
         ObjectDisposedException.ThrowIf(_disposed, this);
         cancellationToken.ThrowIfCancellationRequested();
         var input = BuildInput(EmbeddingPrompts.Query(query));
-        return RunBatch([input], cancellationToken)[0];
+        return RunBatch([input], cancellationToken, interactive: true)[0];
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<float[]> EmbedDocuments(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default)
+    public IReadOnlyList<float[]> EmbedDocuments(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default) =>
+        EmbedDocumentsCore(documents, interactive: false, cancellationToken);
+
+    /// <inheritdoc />
+    public IReadOnlyList<float[]> EmbedDocumentsInteractive(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default) =>
+        EmbedDocumentsCore(documents, interactive: true, cancellationToken);
+
+    private float[][] EmbedDocumentsCore(IReadOnlyList<DocumentText> documents, bool interactive, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -152,7 +172,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
             var end = Math.Min(order.Length, start + _batchSize);
             for (var k = start; k < end; k++)
                 batch.Add(inputs[order[k]]);
-            var vectors = RunBatch(batch, cancellationToken);
+            var vectors = RunBatch(batch, cancellationToken, interactive);
             for (var k = start; k < end; k++)
                 results[order[k]] = vectors[k - start];
         }
@@ -219,7 +239,11 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
     }
 
     /// <summary>Runs one padded batch and returns Matryoshka-truncated, normalised vectors in input order.</summary>
-    internal float[][] RunBatch(IReadOnlyList<int[]> sequences, CancellationToken cancellationToken)
+    /// <param name="sequences">Token sequences (BOS/EOS included).</param>
+    /// <param name="cancellationToken">Aborts the ORT run (<see cref="RunOptions.Terminate"/>) and throws.</param>
+    /// <param name="interactive">True for a query: it preempts a running document batch and runs before any
+    /// waiting one. False for a document batch: it yields to queries and is transparently re-run when preempted.</param>
+    internal float[][] RunBatch(IReadOnlyList<int[]> sequences, CancellationToken cancellationToken, bool interactive = false)
     {
         var session = GetSession();
         var padId = GetTokenizer().PadId;
@@ -244,32 +268,179 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
         long[] shape = [batch, seqLen];
         using var idsValue = OrtValue.CreateTensorValueFromMemory(inputIds, shape);
         using var maskValue = OrtValue.CreateTensorValueFromMemory(mask, shape);
-        using var runOptions = new RunOptions();
-        using var registration = cancellationToken.Register(static state => ((RunOptions)state!).Terminate = true, runOptions);
 
-        var results = new float[batch][];
-        lock (_runLock)
+        while (true)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
             cancellationToken.ThrowIfCancellationRequested();
+            var run = new ActiveRun(new RunOptions());
             try
             {
-                using var outputs = session.Run(runOptions, [InputIdsName, AttentionMaskName], [idsValue, maskValue], [SentenceEmbeddingName]);
-                var output = outputs[0];
-                var outShape = output.GetTensorTypeAndShape().Shape;
-                if (outShape.Length != 2 || outShape[0] != batch || outShape[1] < Dimensions)
-                    throw new InvalidDataException($"Unexpected {SentenceEmbeddingName} shape [{string.Join(", ", outShape)}].");
-                var width = (int)outShape[1];
-                var data = output.GetTensorDataAsSpan<float>();
-                for (var b = 0; b < batch; b++)
-                    results[b] = Matryoshka.TruncateAndNormalize(data.Slice(b * width, width), Dimensions);
+                using var registration = cancellationToken.Register(static state => ((RunOptions)state!).Terminate = true, run.Options);
+                if (interactive)
+                    _scheduler.EnterInteractive(cancellationToken);
+                else
+                    _scheduler.EnterBackground(run, cancellationToken);
+                try
+                {
+                    ObjectDisposedException.ThrowIf(_disposed, this);
+                    return Execute(session, run.Options, idsValue, maskValue, batch);
+                }
+                catch (OnnxRuntimeException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException("Embedding was cancelled.", cancellationToken);
+                }
+                catch (OnnxRuntimeException) when (run.Preempted)
+                {
+                    // A query terminated this document run; re-run it once the query is done.
+                    Interlocked.Increment(ref _preemptedRuns);
+                }
+                finally
+                {
+                    _scheduler.Exit(run);
+                }
             }
-            catch (OnnxRuntimeException) when (cancellationToken.IsCancellationRequested)
+            finally
             {
-                throw new OperationCanceledException("Embedding was cancelled.", cancellationToken);
+                run.Options.Dispose();
             }
         }
+    }
+
+    private float[][] Execute(InferenceSession session, RunOptions runOptions, OrtValue idsValue, OrtValue maskValue, int batch)
+    {
+        var results = new float[batch][];
+        using var outputs = session.Run(runOptions, [InputIdsName, AttentionMaskName], [idsValue, maskValue], [SentenceEmbeddingName]);
+        var output = outputs[0];
+        var outShape = output.GetTensorTypeAndShape().Shape;
+        if (outShape.Length != 2 || outShape[0] != batch || outShape[1] < Dimensions)
+            throw new InvalidDataException($"Unexpected {SentenceEmbeddingName} shape [{string.Join(", ", outShape)}].");
+        var width = (int)outShape[1];
+        var data = output.GetTensorDataAsSpan<float>();
+        for (var b = 0; b < batch; b++)
+            results[b] = Matryoshka.TruncateAndNormalize(data.Slice(b * width, width), Dimensions);
         return results;
+    }
+
+    /// <summary>Number of document runs that were terminated by a query and re-run (diagnostics and tests).</summary>
+    internal int PreemptedRuns => Volatile.Read(ref _preemptedRuns);
+
+    /// <summary>True while a document batch holds the session (tests).</summary>
+    internal bool IsBackgroundRunActive => _scheduler.IsBackgroundRunActive;
+
+    /// <summary>One ORT run and whether a query asked it to stop.</summary>
+    internal sealed class ActiveRun(RunOptions options)
+    {
+        public RunOptions Options { get; } = options;
+
+        public volatile bool Preempted;
+    }
+
+    /// <summary>
+    /// Serialises inference on the single session with query priority: a query that arrives while a document
+    /// batch runs terminates that run and goes next; document batches wait while any query is pending.
+    /// </summary>
+    internal sealed class RunScheduler
+    {
+        // Monitor (not System.Threading.Lock) because waiting needs Monitor.Wait/PulseAll.
+        private readonly object _gate = new();
+        private bool _busy;
+        private int _pendingInteractive;
+        private ActiveRun? _background;
+
+        public bool IsBackgroundRunActive
+        {
+            get
+            {
+                lock (_gate)
+                    return _background is not null;
+            }
+        }
+
+        public void EnterInteractive(CancellationToken cancellationToken)
+        {
+            lock (_gate)
+            {
+                _pendingInteractive++;
+                try
+                {
+                    if (_background is { } running)
+                    {
+                        running.Preempted = true;
+                        running.Options.Terminate = true;
+                    }
+                    WaitUntil(() => !_busy, cancellationToken);
+                    _busy = true;
+                }
+                finally
+                {
+                    _pendingInteractive--;
+                    if (_pendingInteractive == 0)
+                        Monitor.PulseAll(_gate);
+                }
+            }
+        }
+
+        public void EnterBackground(ActiveRun run, CancellationToken cancellationToken)
+        {
+            lock (_gate)
+            {
+                WaitUntil(() => !_busy && _pendingInteractive == 0, cancellationToken);
+                _busy = true;
+                _background = run;
+            }
+        }
+
+        /// <summary>Waits for the session to be idle (used by Dispose) and keeps it reserved.</summary>
+        public void EnterExclusive()
+        {
+            lock (_gate)
+            {
+                WaitUntil(() => !_busy, CancellationToken.None);
+                _busy = true;
+            }
+        }
+
+        public void Exit(ActiveRun? run)
+        {
+            lock (_gate)
+            {
+                if (run is not null && ReferenceEquals(_background, run))
+                    _background = null;
+                _busy = false;
+                Monitor.PulseAll(_gate);
+            }
+        }
+
+        private void WaitUntil(Func<bool> condition, CancellationToken cancellationToken)
+        {
+            if (condition())
+                return;
+            // The callback takes _gate, and this method runs while holding it. Disposing the registration here would
+            // block until a callback already running on another thread (the canceller) finishes, while that callback
+            // blocks on _gate: a deadlock. Unregister() never waits; a callback that already started just pulses the
+            // monitor after we release it, which is harmless.
+            var registration = cancellationToken.CanBeCanceled
+                ? cancellationToken.Register(static state => ((RunScheduler)state!).Wake(), this)
+                : default;
+            try
+            {
+                while (!condition())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Monitor.Wait(_gate);
+                }
+            }
+            finally
+            {
+                registration.Unregister();
+            }
+        }
+
+        private void Wake()
+        {
+            lock (_gate)
+                Monitor.PulseAll(_gate);
+        }
     }
 
     private ITextTokenizer GetTokenizer()
@@ -309,6 +480,10 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
                 GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
                 LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR,
             };
+            // Idle ORT pool threads must sleep, not spin: spinning burns CPU between ops and batches, and that CPU is
+            // invisible to the throttle gate (it subtracts the process's own usage).
+            options.AddSessionConfigEntry(IntraOpSpinningKey, "0");
+            options.AddSessionConfigEntry(InterOpSpinningKey, "0");
             InferenceSession? created = null;
             try
             {
@@ -340,21 +515,27 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
             throw new InvalidDataException($"Model produces {_outputWidth}-d embeddings; {Dimensions} requested.");
     }
 
-    /// <summary>Releases the ONNX Runtime session. Waits for an in-flight inference call to finish.</summary>
+    /// <summary>Releases the ONNX Runtime session. Waits for an in-flight inference call to finish; calls waiting
+    /// for the session then throw <see cref="ObjectDisposedException"/>.</summary>
     public void Dispose()
     {
         lock (_loadLock)
         {
-            lock (_runLock)
+            if (_disposed)
+                return;
+            _disposed = true;
+            _scheduler.EnterExclusive();
+            try
             {
-                if (_disposed)
-                    return;
-                _disposed = true;
                 _session?.Dispose();
                 _session = null;
                 _sessionOptions?.Dispose();
                 _sessionOptions = null;
                 _tokenizer = null;
+            }
+            finally
+            {
+                _scheduler.Exit(null);
             }
         }
     }

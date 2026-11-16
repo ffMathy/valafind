@@ -46,6 +46,64 @@ public sealed class TextAnalysisTests
         Assert.Equal("invoices", text.Substring(match.Start, match.Length));
     }
 
+    private static List<string> Highlighted(string text, string query)
+    {
+        var (stems, last) = TextAnalysis.QueryTerms(query);
+        return TextAnalysis.LexicalMatches(text, stems, last).Select(s => text.Substring(s.Start, s.Length)).ToList();
+    }
+
+    [Theory]
+    [InlineData("本賃貸借契約は、2024年に締結された。", "賃貸契約", new[] { "賃貸", "契約" })]
+    [InlineData("本契約の期間は一年とする。", "契約", new[] { "契約" })]
+    [InlineData("租赁合同已于去年签署。", "租赁合同", new[] { "租赁合同" })]
+    [InlineData("임대차계약서를 확인했습니다", "계약서", new[] { "계약서" })]
+    [InlineData("สัญญาเช่าบ้านหลังนี้", "สัญญาเช่า", new[] { "สัญญาเช่า" })]
+    public void Unspaced_scripts_highlight_query_substrings_inside_runs(string text, string query, string[] expected) =>
+        Assert.Equal(expected, Highlighted(text, query));
+
+    [Fact]
+    public void Unspaced_script_matching_needs_two_chars_and_ignores_unrelated_runs()
+    {
+        Assert.Empty(Highlighted("本賃貸借契約は", "約束")); // single shared char "約" is not enough
+        Assert.Empty(Highlighted("今日は晴れです", "契約"));
+        Assert.Equal(["契約"], Highlighted("Lease 契約 signed", "契約 lease").Where(w => w != "Lease"));
+    }
+
+    [Theory]
+    [InlineData("Depositumbeløbet udbetales senere.", "depositum", "Depositumbeløbet")]
+    [InlineData("Lejekontrakten er underskrevet.", "lejekontrakt udløb", "Lejekontrakten")]
+    [InlineData("Die Mietvertragsdauer beträgt ein Jahr.", "mietvertrag", "Mietvertragsdauer")]
+    public void Long_terms_match_compounds_by_prefix(string text, string query, string expected) =>
+        Assert.Contains(expected, Highlighted(text, query));
+
+    [Fact]
+    public void Short_terms_do_not_match_compound_prefixes()
+    {
+        // "tax" (3 chars) must not light up "taxonomy"; only whole stems match for short terms.
+        Assert.Empty(Highlighted("The taxonomy is new.", "tax ok"));
+        Assert.Equal(["tax"], Highlighted("The tax is new.", "tax ok"));
+    }
+
+    [Theory]
+    [InlineData("TaxReturn2024", new[] { "Tax", "Return", "2024" })]
+    [InlineData("HTMLParser", new[] { "HTML", "Parser" })]
+    [InlineData("incident-2024-11", new[] { "incident", "2024", "11" })]
+    [InlineData("Brother HL-L2350 manual", new[] { "Brother", "HL", "L", "2350", "manual" })]
+    [InlineData("賃貸契約書", new[] { "賃貸契約書" })]
+    public void Name_tokens_split_on_separators_digits_and_camel_case(string name, string[] expected) =>
+        Assert.Equal(expected, TextAnalysis.NameTokens(name));
+
+    [Theory]
+    [InlineData("the", true)]
+    [InlineData("The", true)]
+    [InlineData("und", true)]
+    [InlineData("til", true)]
+    [InlineData("pour", true)]
+    [InlineData("budget", false)]
+    [InlineData("payment", false)]
+    public void Stopwords_cover_common_function_words(string word, bool expected) =>
+        Assert.Equal(expected, TextAnalysis.IsStopword(word));
+
     [Fact]
     public void Sentences_split_on_punctuation_and_lines()
     {
