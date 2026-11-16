@@ -411,7 +411,9 @@ public sealed class SqliteIndexStoreTests : IDisposable
             store.UpsertFile(File($"/c/{i}"), [Chunk(0, Vectors.Random(rng, 32)), Chunk(1, Vectors.Random(rng, 32))]);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-        var writer = Task.Run(() =>
+        // Dedicated threads (LongRunning): with blocking loops on the shared thread pool, a busy CI box running
+        // the whole suite in parallel can leave a reader unscheduled for the entire window.
+        var writer = Task.Factory.StartNew(() =>
         {
             var wrng = new Random(10);
             var n = 0;
@@ -426,9 +428,9 @@ public sealed class SqliteIndexStoreTests : IDisposable
                     store.RemoveUnder($"/c/{wrng.Next(10)}");
             }
             return n;
-        });
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
-        var readers = Enumerable.Range(0, 4).Select(seed => Task.Run(() =>
+        var readers = Enumerable.Range(0, 4).Select(seed => Task.Factory.StartNew(() =>
         {
             var rrng = new Random(100 + seed);
             var searches = 0;
@@ -442,7 +444,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
                 searches++;
             }
             return searches;
-        })).ToArray();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
 
         var writes = await writer;
         var searchCounts = await Task.WhenAll(readers);
