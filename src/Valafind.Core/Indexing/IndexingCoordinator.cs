@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Valafind.Core.Abstractions;
@@ -7,14 +9,36 @@ using Valafind.Core.Platform;
 
 namespace Valafind.Core.Indexing;
 
+/// <summary>An indexed file as listed by <see cref="IIndexedPathSource"/>: its uniqueness key (the paging cursor)
+/// and the path as stored.</summary>
+public readonly record struct IndexedPath(string Key, string Path);
+
 /// <summary>
-/// Optional capability of an <see cref="IIndexStore"/>: listing every indexed path. When the store implements it,
-/// <see cref="IndexingCoordinator"/> removes entries for files that vanished while Valafind was not running.
+/// Optional capability of an <see cref="IIndexStore"/>: listing indexed paths page by page. When the store implements
+/// it, <see cref="IndexingCoordinator"/> removes entries for files that vanished while Valafind was not running, that
+/// became excluded, or whose root was removed, and cleans up after watcher overflows.
 /// </summary>
 public interface IIndexedPathSource
 {
-    /// <summary>Returns a snapshot of all indexed file paths.</summary>
-    IReadOnlyList<string> GetIndexedPaths();
+    /// <summary>Returns at most <paramref name="limit"/> indexed files in ascending key order, starting after
+    /// <paramref name="afterKey"/> (null = from the start). With <paramref name="directory"/>, only that path and
+    /// paths below it (whole components) are listed. Paging never holds the whole list in memory and tolerates
+    /// removals between pages.</summary>
+    IReadOnlyList<IndexedPath> GetIndexedPaths(string? directory, string? afterKey, int limit);
+}
+
+/// <summary>What the store knows about one indexed file.</summary>
+/// <param name="Path">The path as stored (its spelling may differ in case from a lookup on case-insensitive systems).</param>
+/// <param name="Size">Size when indexed.</param>
+/// <param name="ModifiedUtc">Last write time when indexed.</param>
+public sealed record IndexedEntry(string Path, long Size, DateTimeOffset ModifiedUtc);
+
+/// <summary>Optional capability of an <see cref="IIndexStore"/>: fingerprint lookup that also returns the stored
+/// spelling, so case-only renames (Windows, macOS) are noticed and re-indexed under the new name.</summary>
+public interface IIndexedEntrySource
+{
+    /// <summary>The entry <paramref name="path"/> resolves to (by the store's key rules), or null.</summary>
+    IndexedEntry? GetEntry(string path);
 }
 
 /// <summary>
@@ -31,13 +55,15 @@ public sealed class IndexingCoordinator : IIndexingService
     internal const string MetaPhase2Count = "phase2_count";
     internal const string MetaLastFullScan = "phase2_last_full_scan_utc";
     internal const string MetaModelId = "indexing_model_id";
+    internal const string MetaConfig = "indexing_config";
 
-    private static readonly TimeSpan FingerprintTolerance = TimeSpan.FromSeconds(2);
+    /// <summary>FAT stores mtimes with 2 s resolution, SMB/exFAT and some tools round to whole seconds.</summary>
+    private static readonly TimeSpan CoarseTimestampTolerance = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan MaxModelBackoff = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan RootRescanMinInterval = TimeSpan.FromMinutes(10);
     private const int DiscoveryGateEvery = 256;
     private const int DiscoveryChannelCapacity = 50_000;
-    private const int SweepBatch = 500;
+    private const int SweepPage = 500;
     private const int ModelAttemptsPerBatch = 3;
 
     private readonly IFileDiscovery _discovery;
@@ -51,12 +77,17 @@ public sealed class IndexingCoordinator : IIndexingService
     private readonly ThrottleGate _gate;
     private readonly PendingChanges _pending;
     private readonly AutoResetEvent _pendingSignal = new(false);
-    private readonly List<FileSystemWatcher> _watchers = [];
+    private readonly List<IDisposable> _watchers = [];
     private readonly Dictionary<string, DateTimeOffset> _lastRootRescan;
     private readonly StringComparer _pathComparer;
     private readonly Lock _lifecycleLock = new();
     private readonly Lock _statusLock = new();
     private readonly ITimer _statusTimer;
+    private readonly ValafindSettings _settings;
+    private readonly Lock _interactiveLock = new();
+    private readonly ManualResetEventSlim _notInteractive = new(true);
+    private bool _interactive;
+    private long _interactiveSince;
 
     private CancellationTokenSource? _cts;
     private Task? _worker;
@@ -70,6 +101,7 @@ public sealed class IndexingCoordinator : IIndexingService
     private string? _currentFile;
     private int _consecutiveModelFailures;
     private bool _sweepUnsupportedLogged;
+    private int _watchLimitLogged;
 
     private IndexStatus _status = IndexStatus.Initial;
     private bool _raisePending;
@@ -118,8 +150,9 @@ public sealed class IndexingCoordinator : IIndexingService
         _logger = logger;
         _time = time ?? TimeProvider.System;
         _tuning = tuning;
+        _settings = settings;
         _pathComparer = OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
-        _pending = new PendingChanges(_time, tuning.Debounce, _pathComparer);
+        _pending = new PendingChanges(_time, tuning.Debounce, _pathComparer, path => FindRoot(path), tuning.PendingCapacity);
         _lastRootRescan = new Dictionary<string, DateTimeOffset>(_pathComparer);
         _gate = new ThrottleGate(monitor, () => tuning.Throttle ?? ThrottleOptions.From(settings), _time);
         _gate.SetUserPaused(settings.UserPaused);
@@ -171,8 +204,60 @@ public sealed class IndexingCoordinator : IIndexingService
     public void SetUserPaused(bool paused) => _gate.SetUserPaused(paused);
 
     /// <inheritdoc />
-    // INTEGRATION-STUB: replaced by the indexing fix (yield to interactive search).
-    public void SetInteractive(bool active) => throw new NotImplementedException("INTEGRATION-STUB");
+    /// <remarks>While active, the worker finishes the model batch in flight (at most <see cref="CoordinatorTuning.BatchSize"/>
+    /// documents) and then waits before reading the next file or starting the next batch, like a closed gate but
+    /// without changing <see cref="Status"/>. It resumes as soon as this is set back to false, or after
+    /// <see cref="CoordinatorTuning.InteractiveTimeout"/> if the flag is never cleared (e.g. the launcher was left open).</remarks>
+    public void SetInteractive(bool active)
+    {
+        lock (_interactiveLock)
+        {
+            if (_disposed)
+                return;
+            _interactive = active;
+            if (active)
+            {
+                _interactiveSince = _time.GetTimestamp();
+                _notInteractive.Reset();
+            }
+            else
+            {
+                _notInteractive.Set();
+            }
+        }
+    }
+
+    /// <summary>Blocks while the user is searching (bounded by the interactive timeout).</summary>
+    /// <returns>True when it waited.</returns>
+    private bool WaitWhileInteractive(CancellationToken cancellationToken)
+    {
+        var waited = false;
+        while (true)
+        {
+            TimeSpan remaining;
+            lock (_interactiveLock)
+            {
+                if (!_interactive)
+                    return waited;
+                remaining = _tuning.InteractiveTimeout - _time.GetElapsedTime(_interactiveSince);
+                if (remaining <= TimeSpan.Zero)
+                    return waited; // left on too long: indexing must not starve
+            }
+            waited = true;
+            WaitHandle.WaitAny([cancellationToken.WaitHandle, _notInteractive.WaitHandle], remaining);
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+    }
+
+    /// <summary>Waits until the gate is open and the user is not searching.</summary>
+    private void WaitForTurn(CancellationToken cancellationToken)
+    {
+        do
+        {
+            WaitForGate(cancellationToken);
+        }
+        while (WaitWhileInteractive(cancellationToken));
+    }
 
     public void OverrideThrottle(TimeSpan duration) =>
         _gate.OverrideUntil = duration > TimeSpan.Zero ? _time.GetUtcNow() + duration : null;
@@ -222,6 +307,29 @@ public sealed class IndexingCoordinator : IIndexingService
             TrySetMeta(MetaPhase2Complete, "0");
             TrySetMeta(MetaModelId, modelId);
         }
+
+        // Roots / excludes changed (Settings restarts the core): the files now in scope must be walked now, not at the
+        // next daily scan, and entries that fell out of scope are swept at the end of that walk.
+        var config = ConfigurationFingerprint();
+        var storedConfig = TryGetMeta(MetaConfig);
+        if (storedConfig is not null && !string.Equals(storedConfig, config, StringComparison.Ordinal))
+        {
+            IndexingLog.ConfigurationChanged(_logger);
+            TrySetMeta(MetaPhase2Complete, "0");
+        }
+        if (!string.Equals(storedConfig, config, StringComparison.Ordinal))
+            TrySetMeta(MetaConfig, config);
+    }
+
+    /// <summary>Hash of everything that decides which files are in scope: the effective roots and user excludes.</summary>
+    internal string ConfigurationFingerprint()
+    {
+        var text = new StringBuilder();
+        foreach (var root in _discovery.Roots.Order(StringComparer.Ordinal))
+            text.Append("root:").Append(root).Append('\n');
+        foreach (var exclude in _settings.Excludes.Where(e => !string.IsNullOrWhiteSpace(e)).Select(e => e.Trim()).Order(StringComparer.Ordinal))
+            text.Append("exclude:").Append(exclude).Append('\n');
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
     }
 
     private void RunPhase1(CancellationToken cancellationToken)
@@ -273,13 +381,15 @@ public sealed class IndexingCoordinator : IIndexingService
     private void RunPhase2(CancellationToken cancellationToken)
     {
         var complete = TryGetMeta(MetaPhase2Complete) == "1";
-        if (complete && !IsFullScanDue())
+        if (complete)
         {
+            // Show the last completed totals; a due re-walk below runs quietly in the background.
             var count = ParseLong(TryGetMeta(MetaPhase2Count));
             Interlocked.Exchange(ref _allTotal, count);
             Interlocked.Exchange(ref _allDone, count);
             _discoveryComplete = true;
-            return;
+            if (!IsFullScanDue())
+                return;
         }
         RunFullScan(complete ? IndexPhase.Incremental : IndexPhase.All, cancellationToken);
     }
@@ -292,13 +402,25 @@ public sealed class IndexingCoordinator : IIndexingService
         return _time.GetUtcNow() - at >= _tuning.FullRescanInterval;
     }
 
-    /// <summary>Walks every root (producer thread) and indexes what it finds (this thread).</summary>
+    /// <summary>Walks every root (producer thread) and indexes what it finds (this thread). Phase 2 publishes its
+    /// progress; a periodic re-walk (<paramref name="entryPhase"/> = Incremental) keeps showing the last completed
+    /// totals and only replaces them when it finishes, so the UI does not look like the index is being rebuilt.</summary>
     private void RunFullScan(IndexPhase entryPhase, CancellationToken cancellationToken)
     {
-        _phase = IndexPhase.All;
-        Interlocked.Exchange(ref _allDone, 0);
-        Interlocked.Exchange(ref _allTotal, 0);
-        _discoveryComplete = false;
+        var visible = entryPhase != IndexPhase.Incremental;
+        long walked = 0, done = 0;
+        if (visible)
+        {
+            _phase = IndexPhase.All;
+            Interlocked.Exchange(ref _allDone, 0);
+            Interlocked.Exchange(ref _allTotal, 0);
+            _discoveryComplete = false;
+        }
+        else
+        {
+            _phase = IndexPhase.Incremental;
+        }
+        _gate.SetIdle(false);
         SetActivity(Activity.Working);
         IndexingLog.Phase2Started(_logger, _discovery.Roots.Count);
 
@@ -322,8 +444,12 @@ public sealed class IndexingCoordinator : IIndexingService
                         WaitForGate(cancellationToken);
                     if (!channel.Writer.TryWrite(path))
                         channel.Writer.WriteAsync(path, cancellationToken).AsTask().GetAwaiter().GetResult();
-                    Interlocked.Increment(ref _allTotal);
-                    Publish();
+                    Interlocked.Increment(ref walked);
+                    if (visible)
+                    {
+                        Interlocked.Increment(ref _allTotal);
+                        Publish();
+                    }
                 }
                 walkSucceeded = true;
             }
@@ -337,8 +463,11 @@ public sealed class IndexingCoordinator : IIndexingService
             finally
             {
                 channel.Writer.TryComplete();
-                _discoveryComplete = true;
-                Publish();
+                if (visible)
+                {
+                    _discoveryComplete = true;
+                    Publish();
+                }
             }
         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
@@ -351,8 +480,12 @@ public sealed class IndexingCoordinator : IIndexingService
                     cancellationToken.ThrowIfCancellationRequested();
                     DrainPending(cancellationToken);
                     ProcessFile(path, entryPhase, cancellationToken);
-                    Interlocked.Increment(ref _allDone);
-                    Publish();
+                    done++;
+                    if (visible)
+                    {
+                        Interlocked.Increment(ref _allDone);
+                        Publish();
+                    }
                 }
             }
         }
@@ -368,17 +501,29 @@ public sealed class IndexingCoordinator : IIndexingService
         }
         cancellationToken.ThrowIfCancellationRequested();
 
+        var total = Interlocked.Read(ref walked);
+        if (!visible)
+        {
+            Interlocked.Exchange(ref _allTotal, total);
+            Interlocked.Exchange(ref _allDone, done);
+            _discoveryComplete = true;
+            Publish();
+        }
         if (walkSucceeded)
         {
-            TrySetMeta(MetaPhase2Count, Interlocked.Read(ref _allTotal).ToString(CultureInfo.InvariantCulture));
+            TrySetMeta(MetaPhase2Count, total.ToString(CultureInfo.InvariantCulture));
             TrySetMeta(MetaPhase2Complete, "1");
             TrySetMeta(MetaLastFullScan, _time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture));
-            SweepStale(cancellationToken);
+            SweepStale(null, cancellationToken);
         }
     }
 
-    /// <summary>Removes index entries whose file vanished or became excluded (requires <see cref="IIndexedPathSource"/>).</summary>
-    private void SweepStale(CancellationToken cancellationToken)
+    /// <summary>Removes index entries (all, or those under <paramref name="directory"/>) whose file vanished, became
+    /// excluded or is no longer under any root. Pages through the store, so memory stays flat for any index size.
+    /// Entries under a root that is currently unavailable (unmounted drive, offline share) are kept: their files are
+    /// most likely still there and would otherwise all be re-embedded when the volume comes back.
+    /// Requires <see cref="IIndexedPathSource"/>.</summary>
+    private void SweepStale(string? directory, CancellationToken cancellationToken)
     {
         if (_store is not IIndexedPathSource source)
         {
@@ -390,40 +535,101 @@ public sealed class IndexingCoordinator : IIndexingService
             return;
         }
 
-        IReadOnlyList<string> paths;
-        try
-        {
-            paths = source.GetIndexedPaths();
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            IndexingLog.ListPathsFailed(_logger, e);
-            return;
-        }
-
+        var rootAvailable = new Dictionary<string, bool>(_pathComparer);
+        string? after = null;
         var removed = 0;
-        for (var i = 0; i < paths.Count; i++)
+        while (true)
         {
-            if (i % SweepBatch == 0)
-            {
-                WaitForGate(cancellationToken);
-                DrainPending(cancellationToken);
-            }
-            var path = paths[i];
-            bool gone;
+            WaitForGate(cancellationToken);
+            if (directory is null)
+                DrainPending(cancellationToken); // not when called from a change handler (no re-entrancy)
+            IReadOnlyList<IndexedPath> page;
             try
             {
-                gone = !File.Exists(path) || _discovery.IsExcluded(path);
+                page = source.GetIndexedPaths(directory, after, SweepPage);
             }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            catch (Exception e) when (e is not OperationCanceledException)
             {
-                continue;
+                IndexingLog.ListPathsFailed(_logger, e);
+                return;
             }
-            if (gone && TryStore(() => _store.RemoveFile(path), "remove"))
-                removed++;
+            if (page.Count == 0)
+                break;
+            foreach (var entry in page)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (IsStale(entry.Path, rootAvailable) && TryStore(() => _store.RemoveFile(entry.Path), "remove"))
+                    removed++;
+            }
+            after = page[^1].Key;
+            if (page.Count < SweepPage)
+                break;
         }
         if (removed > 0)
             IndexingLog.StaleRemoved(_logger, removed);
+    }
+
+    private bool IsStale(string path, Dictionary<string, bool> rootAvailable)
+    {
+        try
+        {
+            var root = FindRoot(path);
+            if (root is null)
+                return true; // root removed from the settings
+            if (!rootAvailable.TryGetValue(root, out var available))
+                rootAvailable[root] = available = IsRootAvailable(root);
+            if (!available)
+                return false;
+            return !File.Exists(path) || _discovery.IsExcluded(path);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>A root counts as available when it exists and is not empty: an unmounted mount point (or a
+    /// disconnected network drive) shows up as a missing or empty directory.</summary>
+    private static bool IsRootAvailable(string root)
+    {
+        try
+        {
+            return Directory.Exists(root) && Directory.EnumerateFileSystemEntries(root).Any();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>The longest root containing <paramref name="path"/> (whole components), or null.</summary>
+    private string? FindRoot(string path)
+    {
+        string? best = null;
+        var comparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        foreach (var root in _discovery.Roots)
+        {
+            var trimmed = Path.TrimEndingDirectorySeparator(root);
+            if (!path.StartsWith(trimmed, comparison))
+                continue;
+            var under = path.Length == trimmed.Length || Path.EndsInDirectorySeparator(trimmed) ||
+                        path[trimmed.Length] == Path.DirectorySeparatorChar || path[trimmed.Length] == Path.AltDirectorySeparatorChar;
+            if (under && (best is null || root.Length > best.Length))
+                best = root;
+        }
+        return best;
+    }
+
+    /// <summary>True when <paramref name="path"/> is a root or lies under a root that is currently unavailable.</summary>
+    private bool IsRootOrOnUnavailableRoot(string path)
+    {
+        var root = FindRoot(path);
+        if (root is null)
+            return false;
+        if (string.Equals(Path.TrimEndingDirectorySeparator(root), Path.TrimEndingDirectorySeparator(path),
+                OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+            return true;
+        return !IsRootAvailable(root);
     }
 
     private void RunIncremental(CancellationToken cancellationToken)
@@ -433,7 +639,10 @@ public sealed class IndexingCoordinator : IIndexingService
         while (!cancellationToken.IsCancellationRequested)
         {
             if (_pending.Count == 0)
+            {
                 SetActivity(Activity.Idle);
+                _gate.SetIdle(true);
+            }
 
             var wait = _pending.NextDueIn() ?? _tuning.IdlePoll;
             if (wait > _tuning.IdlePoll)
@@ -459,6 +668,7 @@ public sealed class IndexingCoordinator : IIndexingService
         if (due.Count == 0)
             return;
         var previous = _activity;
+        _gate.SetIdle(false);
         SetActivity(Activity.Working);
         foreach (var change in due)
         {
@@ -485,15 +695,20 @@ public sealed class IndexingCoordinator : IIndexingService
         switch (change.Kind)
         {
             case ChangeKind.Delete:
-                RemovePath(change.Path);
+                // A root "deleted" is usually a volume going away: keep its entries (see SweepStale).
+                if (!IsRootOrOnUnavailableRoot(change.Path))
+                    RemovePath(change.Path);
                 break;
             case ChangeKind.Rescan:
                 RescanDirectory(change.Path, cancellationToken);
+                SweepStale(change.Path, cancellationToken); // events were lost: deletes too
                 break;
             default:
                 if (Directory.Exists(change.Path))
                 {
-                    if (!_discovery.IsExcluded(change.Path))
+                    // Changed on a directory only means an entry inside it changed (Windows raises it for every
+                    // create / delete / rename below); those entries have events of their own.
+                    if (change.Kind == ChangeKind.Upsert && !_discovery.IsExcluded(change.Path))
                         RescanDirectory(change.Path, cancellationToken);
                 }
                 else if (File.Exists(change.Path))
@@ -503,7 +718,7 @@ public sealed class IndexingCoordinator : IIndexingService
                     else
                         ProcessFile(change.Path, IndexPhase.Incremental, cancellationToken);
                 }
-                else
+                else if (!IsRootOrOnUnavailableRoot(change.Path))
                 {
                     RemovePath(change.Path);
                 }
@@ -522,7 +737,8 @@ public sealed class IndexingCoordinator : IIndexingService
     {
         if (!Directory.Exists(directory))
         {
-            RemovePath(directory);
+            if (!IsRootOrOnUnavailableRoot(directory))
+                RemovePath(directory);
             return;
         }
         IEnumerable<string> files = _discovery is UserFileDiscovery user
@@ -602,9 +818,21 @@ public sealed class IndexingCoordinator : IIndexingService
         }
 
         FileFingerprint? fingerprint = null;
+        string? storedPath = null;
         try
         {
-            fingerprint = _store.GetFingerprint(path);
+            if (_store is IIndexedEntrySource entries)
+            {
+                if (entries.GetEntry(path) is { } entry)
+                {
+                    fingerprint = new FileFingerprint(entry.Size, entry.ModifiedUtc);
+                    storedPath = entry.Path;
+                }
+            }
+            else
+            {
+                fingerprint = _store.GetFingerprint(path);
+            }
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -617,11 +845,13 @@ public sealed class IndexingCoordinator : IIndexingService
                 TryStore(() => _store.RemoveFile(path), "remove");
             return false;
         }
-        if (fingerprint is not null && fingerprint.Size == size &&
-            (fingerprint.ModifiedUtc - modified).Duration() < FingerprintTolerance)
+        // A case-only rename (Windows, macOS) keeps size and mtime: re-index so the stored path and the name that is
+        // part of every embedding follow the new spelling.
+        var renamed = storedPath is not null && IsDifferentSpelling(storedPath, path);
+        if (fingerprint is not null && !renamed && IsUnchanged(fingerprint, size, modified))
             return true;
 
-        WaitForGate(cancellationToken);
+        WaitForTurn(cancellationToken);
 
         ExtractedText? extracted;
         try
@@ -676,8 +906,12 @@ public sealed class IndexingCoordinator : IIndexingService
         var vectors = new List<float[]>(documents.Count);
         for (var start = 0; start < documents.Count; start += _tuning.BatchSize)
         {
+            // Between batches: yield to system pressure and to interactive search. Before the first one only to search
+            // (the gate was checked right before extraction; a file already read is finished rather than held).
             if (start > 0)
-                WaitForGate(cancellationToken);
+                WaitForTurn(cancellationToken);
+            else
+                WaitWhileInteractive(cancellationToken);
             var batch = documents.GetRange(start, Math.Min(_tuning.BatchSize, documents.Count - start));
             var embedded = EmbedWithBackoff(batch, path, cancellationToken);
             if (embedded is null)
@@ -690,6 +924,45 @@ public sealed class IndexingCoordinator : IIndexingService
             records.Add(new ChunkRecord(chunks[i].Index, chunks[i].Start, chunks[i].Length, chunks[i].Text, vectors[i]));
 
         return TryStore(() => _store.UpsertFile(new FileEntry(path, size, modified, kind, phase), records), "write");
+    }
+
+    /// <summary>Same size and same mtime. A difference below 2 s is tolerated only when one side has whole-second
+    /// resolution (FAT, exFAT, SMB, some copy tools); on NTFS / ext4 / APFS any mtime change is a real edit.</summary>
+    internal static bool IsUnchanged(FileFingerprint stored, long size, DateTimeOffset modified)
+    {
+        if (stored.Size != size)
+            return false;
+        var a = stored.ModifiedUtc.UtcTicks;
+        var b = modified.UtcTicks;
+        if (a == b)
+            return true;
+        var coarse = a % TimeSpan.TicksPerSecond == 0 || b % TimeSpan.TicksPerSecond == 0;
+        return coarse && Math.Abs(a - b) < CoarseTimestampTolerance.Ticks;
+    }
+
+    /// <summary>True when the stored spelling differs from <paramref name="path"/> other than by Unicode normalisation
+    /// (macOS APIs hand out NFC or NFD for the same name).</summary>
+    internal static bool IsDifferentSpelling(string storedPath, string path)
+    {
+        string current;
+        try
+        {
+            current = Path.GetFullPath(path);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+        if (string.Equals(storedPath, current, StringComparison.Ordinal))
+            return false;
+        try
+        {
+            return !string.Equals(storedPath.Normalize(NormalizationForm.FormC), current.Normalize(NormalizationForm.FormC), StringComparison.Ordinal);
+        }
+        catch (ArgumentException)
+        {
+            return true;
+        }
     }
 
     /// <summary>Name-only embedding text: path relative to its root with separators shown as " / ".</summary>
@@ -763,6 +1036,13 @@ public sealed class IndexingCoordinator : IIndexingService
 
     // ------------------------------------------------------------------ watchers
 
+    /// <summary>
+    /// Watches every root. Linux uses <see cref="InotifyTreeWatcher"/>, which places watches only on directories that
+    /// are indexed (a recursive <see cref="FileSystemWatcher"/> puts one on every subdirectory, node_modules, .git and
+    /// ~/.cache included, and can exhaust the per-user limit shared with IDEs and sync clients). Windows
+    /// (ReadDirectoryChangesW) and macOS (FSEvents) watch a whole tree with one handle at no per-directory cost, so
+    /// they keep <see cref="FileSystemWatcher"/>; excluded paths are dropped by a string check before queueing.
+    /// </summary>
     private void StartWatchers()
     {
         foreach (var root in _discovery.Roots)
@@ -771,23 +1051,7 @@ public sealed class IndexingCoordinator : IIndexingService
             {
                 if (!Directory.Exists(root))
                     continue;
-                var watcher = new FileSystemWatcher(root)
-                {
-                    IncludeSubdirectories = true,
-                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
-                    InternalBufferSize = 64 * 1024,
-                };
-                watcher.Created += (_, e) => OnWatcherEvent(e.FullPath, ChangeKind.Upsert);
-                watcher.Changed += (_, e) => OnWatcherEvent(e.FullPath, ChangeKind.Upsert);
-                watcher.Deleted += (_, e) => OnWatcherEvent(e.FullPath, ChangeKind.Delete);
-                watcher.Renamed += (_, e) =>
-                {
-                    OnWatcherEvent(e.OldFullPath, ChangeKind.Delete);
-                    OnWatcherEvent(e.FullPath, ChangeKind.Upsert);
-                };
-                var capturedRoot = root;
-                watcher.Error += (_, e) => OnWatcherError(capturedRoot, watcher, e.GetException());
-                watcher.EnableRaisingEvents = true;
+                IDisposable watcher = (OperatingSystem.IsLinux() ? StartInotify(root) : null) ?? (IDisposable)StartFileSystemWatcher(root);
                 lock (_watchers)
                     _watchers.Add(watcher);
             }
@@ -798,13 +1062,88 @@ public sealed class IndexingCoordinator : IIndexingService
         }
     }
 
-    private void OnWatcherEvent(string path, ChangeKind kind)
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+    private InotifyTreeWatcher? StartInotify(string root)
+    {
+        Func<string, string, bool> isExcludedDirectory = _discovery is UserFileDiscovery user
+            ? (directory, parent) => user.Rules.IsExcludedDirectory(directory, parent)
+            : (directory, _) => _discovery.IsExcluded(directory);
+        InotifyTreeWatcher watcher;
+        try
+        {
+            watcher = new InotifyTreeWatcher(root, isExcludedDirectory,
+                (path, kind) => OnWatcherEvent(path, kind switch
+                {
+                    TreeEventKind.Created => ChangeKind.Upsert,
+                    TreeEventKind.Changed => ChangeKind.Changed,
+                    _ => ChangeKind.Delete,
+                }),
+                problem => OnWatchProblem(root, problem));
+        }
+        catch (PlatformNotSupportedException e)
+        {
+            IndexingLog.InotifyUnavailable(_logger, e);
+            return null;
+        }
+        watcher.Start();
+        return watcher;
+    }
+
+    private FileSystemWatcher StartFileSystemWatcher(string root)
+    {
+        var watcher = new FileSystemWatcher(root)
+        {
+            IncludeSubdirectories = true,
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
+            InternalBufferSize = 64 * 1024,
+        };
+        try
+        {
+            watcher.Created += (_, e) => OnWatcherEvent(e.FullPath, ChangeKind.Upsert);
+            watcher.Changed += (_, e) => OnWatcherEvent(e.FullPath, ChangeKind.Changed);
+            watcher.Deleted += (_, e) => OnWatcherEvent(e.FullPath, ChangeKind.Delete);
+            watcher.Renamed += (_, e) =>
+            {
+                OnWatcherEvent(e.OldFullPath, ChangeKind.Delete);
+                OnWatcherEvent(e.FullPath, ChangeKind.Upsert);
+            };
+            watcher.Error += (_, e) => OnWatcherError(root, watcher, e.GetException());
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
+        catch
+        {
+            watcher.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>Test hook: the inotify watchers (Linux) once their initial watches are in place.</summary>
+    internal async Task<int> WaitForWatchersAsync()
+    {
+        List<IDisposable> watchers;
+        lock (_watchers)
+            watchers = [.. _watchers];
+        var count = 0;
+        foreach (var watcher in watchers)
+        {
+            if (OperatingSystem.IsLinux() && watcher is InotifyTreeWatcher inotify)
+            {
+                await inotify.Ready.ConfigureAwait(false);
+                count += inotify.WatchCount;
+            }
+        }
+        return count;
+    }
+
+    internal void OnWatcherEvent(string path, ChangeKind kind)
     {
         try
         {
             if (_discovery is UserFileDiscovery user && user.IsExcludedByNameOnly(path))
                 return;
             _pending.Add(path, kind);
+            _gate.SetIdle(false);
             _pendingSignal.Set();
         }
         catch (ObjectDisposedException)
@@ -812,16 +1151,23 @@ public sealed class IndexingCoordinator : IIndexingService
         }
     }
 
+    private void OnWatchProblem(string root, TreeWatchProblem problem)
+    {
+        if (problem == TreeWatchProblem.WatchLimitReached)
+        {
+            // Not an event loss: some directories are simply not watched. Rescanning the root would not fix that;
+            // the periodic full scan picks up their changes.
+            if (Interlocked.Exchange(ref _watchLimitLogged, 1) == 0)
+                IndexingLog.WatchLimitReached(_logger, root);
+            return;
+        }
+        ScheduleRootRescan(root, null);
+    }
+
     private void OnWatcherError(string root, FileSystemWatcher watcher, Exception? error)
     {
-        var now = _time.GetUtcNow();
-        lock (_lastRootRescan)
-        {
-            if (_lastRootRescan.TryGetValue(root, out var last) && now - last < RootRescanMinInterval)
-                return;
-            _lastRootRescan[root] = now;
-        }
-        IndexingLog.WatcherError(_logger, error, root);
+        if (!ScheduleRootRescan(root, error))
+            return;
         try
         {
             // Overflow keeps the watcher running; other errors may have stopped it.
@@ -832,7 +1178,23 @@ public sealed class IndexingCoordinator : IIndexingService
         {
             IndexingLog.WatcherRestartFailed(_logger, e, root);
         }
+    }
+
+    /// <summary>Events under <paramref name="root"/> were lost: re-walk it (fingerprints make that a stat per file)
+    /// and sweep entries that vanished. At most once per <see cref="RootRescanMinInterval"/> per root.</summary>
+    /// <returns>False when rate-limited.</returns>
+    private bool ScheduleRootRescan(string root, Exception? error)
+    {
+        var now = _time.GetUtcNow();
+        lock (_lastRootRescan)
+        {
+            if (_lastRootRescan.TryGetValue(root, out var last) && now - last < RootRescanMinInterval)
+                return false;
+            _lastRootRescan[root] = now;
+        }
+        IndexingLog.WatcherError(_logger, error, root);
         OnWatcherEvent(root, ChangeKind.Rescan);
+        return true;
     }
 
     // ------------------------------------------------------------------ status
@@ -988,7 +1350,8 @@ public sealed class IndexingCoordinator : IIndexingService
             {
                 try
                 {
-                    watcher.EnableRaisingEvents = false;
+                    if (watcher is FileSystemWatcher fsw)
+                        fsw.EnableRaisingEvents = false;
                     watcher.Dispose();
                 }
                 catch (Exception e) when (e is IOException or ObjectDisposedException)
@@ -1018,6 +1381,8 @@ public sealed class IndexingCoordinator : IIndexingService
         _gate.Dispose();
         await _statusTimer.DisposeAsync().ConfigureAwait(false);
         _pendingSignal.Dispose();
+        lock (_interactiveLock)
+            _notInteractive.Dispose();
         cts?.Dispose();
     }
 }
@@ -1032,13 +1397,21 @@ internal sealed record CoordinatorTuning(
     int BatchSize,
     ThrottleOptions? Throttle)
 {
+    /// <summary>Longest time <see cref="IndexingCoordinator.SetInteractive"/>(true) holds indexing back.</summary>
+    public TimeSpan InteractiveTimeout { get; init; } = TimeSpan.FromMinutes(2);
+
+    /// <summary>Pending watcher paths kept individually before they collapse into root rescans.</summary>
+    public int PendingCapacity { get; init; } = PendingChanges.DefaultCapacity;
+
+    /// <summary>Batch size 2: a model batch cannot be cancelled once started, and two chunks take about a second on
+    /// a laptop CPU, which bounds how long a query can wait behind indexing.</summary>
     public static CoordinatorTuning Default { get; } = new(
         Debounce: TimeSpan.FromSeconds(2),
         StatusInterval: TimeSpan.FromMilliseconds(250),
         IdlePoll: TimeSpan.FromMinutes(1),
         FullRescanInterval: TimeSpan.FromHours(24),
         ModelBackoffUnit: TimeSpan.FromSeconds(1),
-        BatchSize: 8,
+        BatchSize: 2,
         Throttle: null);
 }
 
@@ -1115,4 +1488,13 @@ internal static partial class IndexingLog
 
     [LoggerMessage(24, LogLevel.Debug, "Indexing worker faulted during shutdown")]
     public static partial void ShutdownFault(ILogger logger, Exception exception);
+
+    [LoggerMessage(25, LogLevel.Information, "Index roots or excludes changed; re-walking all roots")]
+    public static partial void ConfigurationChanged(ILogger logger);
+
+    [LoggerMessage(26, LogLevel.Warning, "inotify watch limit reached under {Root}; some folders are not watched and are refreshed by the daily scan (raise fs.inotify.max_user_watches to watch all)")]
+    public static partial void WatchLimitReached(ILogger logger, string root);
+
+    [LoggerMessage(27, LogLevel.Debug, "inotify unavailable; falling back to FileSystemWatcher")]
+    public static partial void InotifyUnavailable(ILogger logger, Exception exception);
 }

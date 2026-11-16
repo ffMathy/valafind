@@ -9,15 +9,27 @@ namespace Valafind.Core.Indexing;
 /// <param name="CalmFor">Pressure must stay below the thresholds this long before the gate (re)opens.</param>
 /// <param name="PauseOnBattery">Close immediately when the machine runs on battery.</param>
 /// <param name="SampleInterval">How often the gate samples system pressure. Null = 2 seconds.</param>
+/// <param name="IdleSampleInterval">Sampling interval while the indexer is idle and nobody waits on the gate.
+/// Null = 60 seconds.</param>
 public sealed record ThrottleOptions(
     double MaxCpuPercent,
     double MaxDiskBusyPercent,
     TimeSpan CalmFor,
     bool PauseOnBattery,
-    TimeSpan? SampleInterval = null)
+    TimeSpan? SampleInterval = null,
+    TimeSpan? IdleSampleInterval = null)
 {
     /// <summary>Default sampling interval.</summary>
     public static readonly TimeSpan DefaultSampleInterval = TimeSpan.FromSeconds(2);
+
+    /// <summary>Default sampling interval while idle.</summary>
+    public static readonly TimeSpan DefaultIdleSampleInterval = TimeSpan.FromSeconds(60);
+
+    /// <summary>The effective idle sampling interval (never shorter than <see cref="EffectiveSampleInterval"/>).</summary>
+    public TimeSpan EffectiveIdleSampleInterval =>
+        IdleSampleInterval is { } s && s > TimeSpan.Zero
+            ? (s > EffectiveSampleInterval ? s : EffectiveSampleInterval)
+            : (DefaultIdleSampleInterval > EffectiveSampleInterval ? DefaultIdleSampleInterval : EffectiveSampleInterval);
 
     /// <summary>The effective sampling interval.</summary>
     public TimeSpan EffectiveSampleInterval =>
@@ -35,6 +47,9 @@ public sealed record ThrottleOptions(
 /// the thresholds for <see cref="ThrottleOptions.CalmFor"/> and closes after two consecutive samples above them
 /// (immediately when switching to battery with <see cref="ThrottleOptions.PauseOnBattery"/>).
 /// A user pause always wins; <see cref="OverrideUntil"/> forces the gate open otherwise.
+/// While the owner reports it is idle (<see cref="SetIdle"/>) and nobody waits on the gate, sampling slows to
+/// <see cref="ThrottleOptions.EffectiveIdleSampleInterval"/> to save wake-ups; new work or a waiter wakes the loop
+/// for an immediate fresh sample.
 /// </summary>
 public sealed class ThrottleGate : IDisposable
 {
@@ -50,6 +65,9 @@ public sealed class ThrottleGate : IDisposable
     private readonly CancellationTokenSource _cts = new();
 
     private TaskCompletionSource _openSignal = NewSignal();
+    private TaskCompletionSource _wakeSignal = NewSignal();
+    private bool _idle;
+    private int _waiters;
     private Task? _loop;
     private IndexingState _state = IndexingState.PausedSystemBusy;
     private bool _userPaused;
@@ -151,7 +169,8 @@ public sealed class ThrottleGate : IDisposable
         return Task.CompletedTask;
     }
 
-    /// <summary>Completes when the gate is open (immediately if it already is).</summary>
+    /// <summary>Completes when the gate is open (immediately if it already is). A waiter keeps sampling at the
+    /// normal rate even while the owner is idle.</summary>
     public Task WaitUntilOpenAsync(CancellationToken cancellationToken)
     {
         Task signal;
@@ -160,18 +179,70 @@ public sealed class ThrottleGate : IDisposable
             if (_state == IndexingState.Running)
                 return Task.CompletedTask;
             signal = _openSignal.Task;
+            if (_idle && _waiters == 0)
+                WakeLocked(); // the loop sleeps at the idle rate: sample now
+            _waiters++;
         }
-        return signal.WaitAsync(cancellationToken);
+        return WaitAsync(signal, cancellationToken);
     }
+
+    private async Task WaitAsync(Task signal, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await signal.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            lock (_lock)
+                _waiters--;
+        }
+    }
+
+    /// <summary>Tells the gate whether its owner has work. While idle (and nobody waits), sampling slows down;
+    /// switching to busy wakes the loop for an immediate sample.</summary>
+    public void SetIdle(bool idle)
+    {
+        lock (_lock)
+        {
+            if (_idle == idle)
+                return;
+            _idle = idle;
+            if (!idle)
+                WakeLocked();
+        }
+    }
+
+    /// <summary>True while samples are taken at the slow idle rate.</summary>
+    internal bool IsDormant
+    {
+        get { lock (_lock) return _idle && _waiters == 0; }
+    }
+
+    private void WakeLocked() => _wakeSignal.TrySetResult();
 
     private async Task LoopAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
+            Task wake;
+            lock (_lock)
+            {
+                // Replaced before sampling: a wake request arriving during Tick() is not lost.
+                if (_wakeSignal.Task.IsCompleted)
+                    _wakeSignal = NewSignal();
+                wake = _wakeSignal.Task;
+            }
             Tick();
+            var options = _options();
+            var interval = IsDormant ? options.EffectiveIdleSampleInterval : options.EffectiveSampleInterval;
+            using var delayCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             try
             {
-                await Task.Delay(_options().EffectiveSampleInterval, _time, cancellationToken).ConfigureAwait(false);
+                var delay = Task.Delay(interval, _time, delayCts.Token);
+                await Task.WhenAny(delay, wake).ConfigureAwait(false);
+                await delayCts.CancelAsync().ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
             }
             catch (OperationCanceledException)
             {

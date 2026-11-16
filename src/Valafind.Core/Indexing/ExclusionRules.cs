@@ -112,7 +112,13 @@ internal sealed class ExclusionRules
                 break;
             case PathFlavor.MacOS:
                 _systemPrefixes.Add(Combine(_home, "Library"));
-                _allowedPrefixes = [Combine(Combine(_home, "Library"), "Mobile Documents")];
+                // iCloud Drive and the File Provider home of Dropbox, OneDrive, Google Drive, Box, … (macOS 12.3+).
+                // Online-only (dataless) files there are skipped individually, so walking them downloads nothing.
+                _allowedPrefixes =
+                [
+                    Combine(Combine(_home, "Library"), "Mobile Documents"),
+                    Combine(Combine(_home, "Library"), "CloudStorage"),
+                ];
                 break;
             default:
                 _allowedPrefixes = [];
@@ -143,7 +149,8 @@ internal sealed class ExclusionRules
 
     public IReadOnlyList<string> Roots => _roots;
 
-    /// <summary>Directories inside excluded ones that must still be walked (macOS ~/Library/Mobile Documents).</summary>
+    /// <summary>Directories inside excluded ones that must still be walked (macOS ~/Library/Mobile Documents and
+    /// ~/Library/CloudStorage).</summary>
     public IReadOnlyList<string> AllowedPrefixes => _allowedPrefixes;
 
     public string Normalize(string path)
