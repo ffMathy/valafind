@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Valafind.Core.Abstractions;
+using Valafind.Core.Indexing;
 
 namespace Valafind.Core.Storage;
 
@@ -19,9 +20,16 @@ namespace Valafind.Core.Storage;
 /// <see cref="Open"/> loads every vector once (seconds for a large index).</para>
 /// <para>Paths are stored as full paths. Uniqueness uses a <c>path_key</c> column which is lower-cased on Windows and
 /// macOS (case-insensitive file systems; NFC on macOS) and the exact path on Linux.</para>
+/// <para>Privacy: the database holds plain text copied from the user's documents, so on Unix its directory is created
+/// 0700 and the database, -wal and -shm files 0600 regardless of the umask (existing ones are tightened on open).</para>
 /// </remarks>
-public sealed class SqliteIndexStore : IIndexStore
+public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexedEntrySource
 {
+    private const UnixFileMode PrivateDirectoryMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+    private const UnixFileMode PrivateFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+    private const UnixFileMode GroupOtherBits = UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                                                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
+
     private const int SchemaVersion = 1;
     private const int BusyTimeoutMs = 10_000;
     private const int MaxPooledReaders = 8;
@@ -85,9 +93,7 @@ public sealed class SqliteIndexStore : IIndexStore
             ObjectDisposedException.ThrowIf(_disposed, this);
             CloseConnections();
 
-            var directory = Path.GetDirectoryName(_databasePath);
-            if (!string.IsNullOrEmpty(directory))
-                Directory.CreateDirectory(directory);
+            PrepareFiles();
 
             _connectionString = new SqliteConnectionStringBuilder
             {
@@ -106,6 +112,7 @@ public sealed class SqliteIndexStore : IIndexStore
                 Execute(writer, "PRAGMA journal_mode=WAL;");
                 Execute(writer, "PRAGMA synchronous=NORMAL;");
                 Execute(writer, "PRAGMA temp_store=MEMORY;");
+                RestrictDatabaseFiles(); // -wal / -shm exist now
                 CreateSchema(writer);
                 EnsureModel(writer, modelId, dimensions);
                 LoadCounts(writer);
@@ -129,6 +136,73 @@ public sealed class SqliteIndexStore : IIndexStore
                 _connectionString = null;
                 throw;
             }
+        }
+    }
+
+    /// <summary>Creates the directory (0700 on Unix) and an empty database file (0600 on Unix) before SQLite opens it:
+    /// SQLite gives -wal / -shm the permissions of the database file, so all three stay private.</summary>
+    private void PrepareFiles()
+    {
+        var directory = Path.GetDirectoryName(_databasePath);
+        if (OperatingSystem.IsWindows())
+        {
+            // Per-user profile directories are already private (inherited ACLs).
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(directory))
+        {
+            if (Directory.Exists(directory))
+                Restrict(directory);
+            else
+                Directory.CreateDirectory(directory, PrivateDirectoryMode);
+        }
+        if (!File.Exists(_databasePath))
+        {
+            try
+            {
+                using var created = new FileStream(_databasePath, new FileStreamOptions
+                {
+                    Mode = FileMode.CreateNew,
+                    Access = FileAccess.Write,
+                    UnixCreateMode = PrivateFileMode,
+                });
+            }
+            catch (IOException) when (File.Exists(_databasePath))
+            {
+                // Created concurrently; tightened below.
+            }
+        }
+        RestrictDatabaseFiles();
+    }
+
+    private void RestrictDatabaseFiles()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+        Restrict(_databasePath);
+        Restrict(_databasePath + "-wal");
+        Restrict(_databasePath + "-shm");
+        Restrict(_databasePath + "-journal");
+    }
+
+    /// <summary>Removes group/other permission bits (owner bits are left alone). Best effort.</summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    private static void Restrict(string path)
+    {
+        try
+        {
+            if (!File.Exists(path) && !Directory.Exists(path))
+                return;
+            var mode = File.GetUnixFileMode(path);
+            if ((mode & GroupOtherBits) != 0)
+                File.SetUnixFileMode(path, mode & ~GroupOtherBits);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Not ours to change (e.g. a shared directory owned by someone else): leave it.
         }
     }
 
@@ -260,6 +334,59 @@ public sealed class SqliteIndexStore : IIndexStore
             return reader.Read()
                 ? new FileFingerprint(reader.GetInt64(0), new DateTimeOffset(reader.GetInt64(1), TimeSpan.Zero))
                 : null;
+        });
+    }
+
+    /// <inheritdoc />
+    public IndexedEntry? GetEntry(string path)
+    {
+        var key = _paths.KeyForPath(path);
+        return WithReader(db =>
+        {
+            using var cmd = db.CreateCommand();
+            cmd.CommandText = "SELECT path, size, mtime_utc FROM files WHERE path_key = $key;";
+            cmd.Parameters.AddWithValue("$key", key);
+            using var reader = cmd.ExecuteReader();
+            return reader.Read()
+                ? new IndexedEntry(reader.GetString(0), reader.GetInt64(1), new DateTimeOffset(reader.GetInt64(2), TimeSpan.Zero))
+                : null;
+        });
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Pages by <c>path_key</c> (unique index), so each page is an index range scan and removals between
+    /// pages cannot make the cursor skip or repeat entries.</remarks>
+    public IReadOnlyList<IndexedPath> GetIndexedPaths(string? directory, string? afterKey, int limit)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        return WithReader(db =>
+        {
+            using var cmd = db.CreateCommand();
+            var after = afterKey is null ? "" : " AND path_key > $after";
+            if (directory is null)
+            {
+                cmd.CommandText = $"SELECT path_key, path FROM files WHERE 1 = 1{after} ORDER BY path_key LIMIT $limit;";
+            }
+            else
+            {
+                var (exact, lower, upper) = _paths.DirectoryRange(directory);
+                cmd.CommandText = $"""
+                    SELECT path_key, path FROM files
+                    WHERE (path_key = $exact OR (path_key >= $lower AND path_key < $upper)){after}
+                    ORDER BY path_key LIMIT $limit;
+                    """;
+                cmd.Parameters.AddWithValue("$exact", exact);
+                cmd.Parameters.AddWithValue("$lower", lower);
+                cmd.Parameters.AddWithValue("$upper", upper);
+            }
+            if (afterKey is not null)
+                cmd.Parameters.AddWithValue("$after", afterKey);
+            cmd.Parameters.AddWithValue("$limit", limit);
+            var result = new List<IndexedPath>(Math.Min(limit, 1024));
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                result.Add(new IndexedPath(reader.GetString(0), reader.GetString(1)));
+            return result;
         });
     }
 

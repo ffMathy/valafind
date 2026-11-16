@@ -4,10 +4,13 @@ using Valafind.Core.Indexing;
 
 namespace Valafind.Core.Tests.Indexing;
 
-internal sealed class FakeStore : IIndexStore, IIndexedPathSource
+internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, IIndexedPathSource, IIndexedEntrySource
 {
     private readonly Lock _lock = new();
-    public readonly Dictionary<string, (FileEntry Entry, IReadOnlyList<ChunkRecord> Chunks)> Files = new(StringComparer.Ordinal);
+    public readonly Dictionary<string, (FileEntry Entry, IReadOnlyList<ChunkRecord> Chunks)> Files = new(comparer ?? StringComparer.Ordinal);
+    private readonly StringComparison _comparison =
+        (comparer ?? StringComparer.Ordinal).Equals(StringComparer.Ordinal) ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+    public int PageRequests;
     public readonly ConcurrentDictionary<string, string> Meta = new(StringComparer.Ordinal);
     public readonly List<(string Op, string Path, IndexPhase? Phase)> Log = [];
     public string? ModelId;
@@ -24,6 +27,7 @@ internal sealed class FakeStore : IIndexStore, IIndexedPathSource
     {
         lock (_lock)
         {
+            Files.Remove(file.Path); // like the real store: the newest spelling is kept
             Files[file.Path] = (file, chunks);
             Log.Add(("upsert", file.Path, file.Phase));
         }
@@ -65,10 +69,35 @@ internal sealed class FakeStore : IIndexStore, IIndexedPathSource
 
     public void SetMeta(string key, string value) => Meta[key] = value;
 
-    public IReadOnlyList<string> GetIndexedPaths()
+    public IReadOnlyList<IndexedPath> GetIndexedPaths(string? directory, string? afterKey, int limit)
+    {
+        Interlocked.Increment(ref PageRequests);
+        lock (_lock)
+        {
+            string Key(string p) => _comparison == StringComparison.Ordinal ? p : p.ToLowerInvariant();
+            var under = directory is null ? null : Path.TrimEndingDirectorySeparator(directory);
+            return Files.Keys
+                .Where(p => under is null || string.Equals(p, under, _comparison) ||
+                            p.StartsWith(under + Path.DirectorySeparatorChar, _comparison))
+                .Select(p => new IndexedPath(Key(p), p))
+                .Where(e => afterKey is null || string.CompareOrdinal(e.Key, afterKey) > 0)
+                .OrderBy(e => e.Key, StringComparer.Ordinal)
+                .Take(limit)
+                .ToList();
+        }
+    }
+
+    public IndexedEntry? GetEntry(string path)
     {
         lock (_lock)
-            return Files.Keys.ToList();
+        {
+            foreach (var (key, value) in Files)
+            {
+                if (string.Equals(key, path, _comparison))
+                    return new IndexedEntry(key, value.Entry.Size, value.Entry.ModifiedUtc);
+            }
+            return null;
+        }
     }
 
     public bool Contains(string path)

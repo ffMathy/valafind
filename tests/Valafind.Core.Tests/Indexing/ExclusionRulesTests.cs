@@ -77,6 +77,10 @@ public class ExclusionRulesTests
     [InlineData("/Users/u/Library/Mobile Documents/com~apple~CloudDocs/a.pdf", false, false)]
     [InlineData("/Users/u/Library/Mobile Documents/com~apple~CloudDocs/.b.pdf.icloud", false, true)]
     [InlineData("/Users/u/Library/Mobile Documents/com~apple~CloudDocs/b.icloud", false, true)]
+    [InlineData("/Users/u/Library/CloudStorage/Dropbox/Contracts/lease.pdf", false, false)] // File Provider (Dropbox, OneDrive, …)
+    [InlineData("/Users/u/Library/CloudStorage/OneDrive-Personal", true, false)]
+    [InlineData("/Users/u/Library/CloudStorage/GoogleDrive-u@example.com/My Drive/.hidden/x.pdf", false, true)]
+    [InlineData("/Users/u/Library/CloudStorageX/a.pdf", false, true)]
     [InlineData("/Users/u/Library/Application Support/Valafind/index.db", false, true)]
     [InlineData("/Users/u/Applications/Foo.app/Contents/Info.plist", false, true)]
     [InlineData("/Users/u/Pictures/Photos Library.photoslibrary/database/x", false, true)]
