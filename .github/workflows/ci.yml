@@ -33,7 +33,7 @@ jobs:
         run: dotnet build Valafind.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Valafind.slnx --configuration Release --no-build
+        run: dotnet test --solution Valafind.slnx --configuration Release --no-build
 
   model-parity:
     # Downloads EmbeddingGemma once and checks tokenizer + embedding parity against the committed reference.
@@ -58,7 +58,7 @@ jobs:
             bash tools/fetch-model.sh "$VALAFIND_TEST_MODEL_DIR"
           fi
       - name: Embedding tests
-        run: dotnet test tests/Valafind.Core.Tests --configuration Release --filter "FullyQualifiedName~Valafind.Core.Tests.Embedding"
+        run: dotnet test --project tests/Valafind.Core.Tests --configuration Release -- --filter-namespace "Valafind.Core.Tests.Embedding" --filter-namespace "Valafind.Core.Tests.EndToEnd"
 
   publish:
     name: Publish (${{ matrix.rid }})
