@@ -12,3 +12,6 @@ publish/
 models/
 *.onnx
 *.onnx_data
+
+# Temporary compile-check stubs (never commit)
+**/_Pending*Stub*.cs
