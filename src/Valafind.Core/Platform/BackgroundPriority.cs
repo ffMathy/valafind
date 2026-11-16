@@ -41,6 +41,27 @@ public static partial class BackgroundPriority
         return scope;
     }
 
+    /// <summary>
+    /// Linux syscall numbers (ioprio_set, ioprio_get, gettid) for <paramref name="architecture"/>, or null
+    /// where they are unknown. The numbers come from the kernel's per-architecture tables:
+    /// x86_64 <c>arch/x86/entry/syscalls/syscall_64.tbl</c> (251, 252, 186);
+    /// arm64 <c>include/uapi/asm-generic/unistd.h</c> (30, 31, 178);
+    /// i386 <c>arch/x86/entry/syscalls/syscall_32.tbl</c> (289, 290, 224);
+    /// 32-bit ARM EABI <c>arch/arm/tools/syscall.tbl</c> (314, 315, 224).
+    /// </summary>
+    internal static (nint IoPrioSet, nint IoPrioGet, nint GetTid)? LinuxSyscallNumbers(Architecture architecture) => architecture switch
+    {
+        Architecture.X64 => (251, 252, 186),
+        Architecture.Arm64 => (30, 31, 178),
+        Architecture.X86 => (289, 290, 224),
+        Architecture.Arm => (314, 315, 224),
+        _ => null,
+    };
+
+    /// <summary>The calling thread's I/O priority (ioprio_get), or null if unavailable. For tests.</summary>
+    [SupportedOSPlatform("linux")]
+    internal static int? GetLinuxIoPriorityForCurrentThread() => Linux.GetIoPriority();
+
     private sealed class Scope(int threadId) : IDisposable
     {
         public ThreadPriority? PreviousThreadPriority;
@@ -143,14 +164,17 @@ public static partial class BackgroundPriority
                 _ = setpriority(PrioProcess, (uint)tid, nice);
         }
 
-        private static (long IoPrioSet, long IoPrioGet, long GetTid)? Syscalls() => RuntimeInformation.ProcessArchitecture switch
+        private static (nint IoPrioSet, nint IoPrioGet, nint GetTid)? Syscalls() =>
+            LinuxSyscallNumbers(RuntimeInformation.ProcessArchitecture);
+
+        public static int? GetIoPriority()
         {
-            Architecture.X64 => (251, 252, 186),
-            Architecture.Arm64 => (30, 31, 178),
-            Architecture.X86 => (289, 290, 224),
-            Architecture.Arm => (314, 315, 224),
-            _ => null,
-        };
+            var tid = GetTid();
+            if (tid <= 0 || Syscalls() is not { } nr)
+                return null;
+            var value = syscall(nr.IoPrioGet, IoPrioWhoProcess, tid, 0);
+            return value >= 0 ? (int)value : null;
+        }
 
         private static int GetTid()
         {
@@ -173,8 +197,11 @@ public static partial class BackgroundPriority
         [LibraryImport("libc", SetLastError = true)]
         private static partial int setpriority(int which, uint who, int priority);
 
+        // glibc: long syscall(long number, ...). C long is pointer-sized on every Linux ABI (LP64 and ILP32),
+        // so nint is the matching type; a 64-bit C# long would be split across two registers/stack slots on
+        // 32-bit ARM and x86 and shift every argument.
         [LibraryImport("libc", SetLastError = true)]
-        private static partial long syscall(long number, long arg1, long arg2, long arg3);
+        private static partial nint syscall(nint number, nint arg1, nint arg2, nint arg3);
     }
 
     [SupportedOSPlatform("macos")]
