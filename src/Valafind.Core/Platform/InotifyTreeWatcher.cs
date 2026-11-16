@@ -64,6 +64,8 @@ internal sealed partial class InotifyTreeWatcher : IDisposable
     private volatile bool _stopping;
     private bool _limitReached;
     private int _disposed;
+    private int _fdClosed;
+    private readonly Lock _lifecycle = new();
 
     /// <param name="root">Directory to watch recursively.</param>
     /// <param name="isExcludedDirectory">(directory, parent) → true when the directory must not be watched.</param>
@@ -99,31 +101,67 @@ internal sealed partial class InotifyTreeWatcher : IDisposable
         get { lock (_pathByWatch) return _pathByWatch.Count; }
     }
 
+    /// <summary>How long <see cref="Dispose"/> waits for the watcher thread (tests shorten it).</summary>
+    internal TimeSpan DisposeJoinTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>The inotify descriptor (diagnostics and tests).</summary>
+    internal int Descriptor => _fd;
+
+    /// <summary>True once the descriptor was closed (diagnostics and tests).</summary>
+    internal bool DescriptorClosed => Volatile.Read(ref _fdClosed) != 0;
+
     /// <summary>True once the per-user watch limit was hit.</summary>
     public bool LimitReached => Volatile.Read(ref _limitReached);
 
     /// <summary>Starts the watcher thread: adds the initial watches (walking the tree) and then reads events.</summary>
     public void Start()
     {
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
-        if (_thread is not null)
-            return;
-        _thread = new Thread(Run) { IsBackground = true, Name = "Valafind inotify" };
-        _thread.Start();
+        lock (_lifecycle)
+        {
+            ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+            if (_thread is not null)
+                return;
+            _thread = new Thread(Run) { IsBackground = true, Name = "Valafind inotify" };
+            _thread.Start();
+        }
     }
 
+    /// <summary>
+    /// Watcher thread. It is the only user of <see cref="_fd"/> once started and closes it on exit, so the descriptor
+    /// number can never be reused by another component while this thread is still blocked in a syscall on it
+    /// (for example enumerating a hung network directory when <see cref="Dispose"/> gives up waiting).
+    /// </summary>
     private void Run()
     {
-        using var priority = BackgroundPriority.EnterForCurrentThread();
         try
         {
-            AddTree(_root, reportCreated: false);
+            using var priority = BackgroundPriority.EnterForCurrentThread();
+            try
+            {
+                AddTree(_root, reportCreated: false);
+            }
+            finally
+            {
+                _ready.TrySetResult();
+            }
+            ReadLoop();
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            // A callback (exclusion rules, problem sink) threw something unexpected: stop watching this root rather
+            // than crash the process from a background thread. The periodic full scan still covers the tree.
+            System.Diagnostics.Debug.WriteLine($"inotify watcher for {_root} stopped: {e}");
         }
         finally
         {
-            _ready.TrySetResult();
+            CloseFd();
         }
-        ReadLoop();
+    }
+
+    private void CloseFd()
+    {
+        if (Interlocked.Exchange(ref _fdClosed, 1) == 0)
+            _ = close(_fd);
     }
 
     private unsafe void ReadLoop()
@@ -334,12 +372,18 @@ internal sealed partial class InotifyTreeWatcher : IDisposable
 
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
-            return;
-        _stopping = true;
-        if (_thread is { } thread && thread != Thread.CurrentThread)
-            thread.Join(TimeSpan.FromSeconds(5));
-        _ = close(_fd);
+        Thread? thread;
+        lock (_lifecycle)
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+            _stopping = true;
+            thread = _thread;
+        }
+        if (thread is null)
+            CloseFd(); // never started: nobody else can be using the descriptor
+        else if (thread != Thread.CurrentThread)
+            thread.Join(DisposeJoinTimeout); // the thread closes the fd itself when it exits, even after a timeout
         _ready.TrySetResult();
     }
 

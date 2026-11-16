@@ -620,16 +620,44 @@ public sealed class IndexingCoordinator : IIndexingService
         return best;
     }
 
-    /// <summary>True when <paramref name="path"/> is a root or lies under a root that is currently unavailable.</summary>
+    /// <summary>True when <paramref name="path"/> is itself a root.</summary>
+    private static bool IsRoot(string path, string root) =>
+        string.Equals(Path.TrimEndingDirectorySeparator(root), Path.TrimEndingDirectorySeparator(path),
+            OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Guard for live watcher events (Delete, or a changed path that no longer exists): true when
+    /// <paramref name="path"/> is a root or its root no longer exists. Unmounting a volume or losing a share does not
+    /// raise per-file deletes, so the "empty root" heuristic of <see cref="IsRootAvailable"/> is deliberately not used
+    /// here: deleting the last entry of a root leaves it empty, and that delete must still be applied.
+    /// </summary>
+    private bool IsRootOrUnderMissingRoot(string path)
+    {
+        var root = FindRoot(path);
+        if (root is null)
+            return false;
+        if (IsRoot(path, root))
+            return true;
+        try
+        {
+            return !Directory.Exists(root);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Guard for rescans of a directory that is gone (watcher overflow, or a collapsed root rescan): true when
+    /// <paramref name="path"/> is a root or lies under a root that looks unmounted (missing or empty).
+    /// </summary>
     private bool IsRootOrOnUnavailableRoot(string path)
     {
         var root = FindRoot(path);
         if (root is null)
             return false;
-        if (string.Equals(Path.TrimEndingDirectorySeparator(root), Path.TrimEndingDirectorySeparator(path),
-                OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
-            return true;
-        return !IsRootAvailable(root);
+        return IsRoot(path, root) || !IsRootAvailable(root);
     }
 
     private void RunIncremental(CancellationToken cancellationToken)
@@ -696,7 +724,8 @@ public sealed class IndexingCoordinator : IIndexingService
         {
             case ChangeKind.Delete:
                 // A root "deleted" is usually a volume going away: keep its entries (see SweepStale).
-                if (!IsRootOrOnUnavailableRoot(change.Path))
+                // Deleting the last entry of a root empties it; that delete still applies.
+                if (!IsRootOrUnderMissingRoot(change.Path))
                     RemovePath(change.Path);
                 break;
             case ChangeKind.Rescan:
@@ -718,7 +747,7 @@ public sealed class IndexingCoordinator : IIndexingService
                     else
                         ProcessFile(change.Path, IndexPhase.Incremental, cancellationToken);
                 }
-                else if (!IsRootOrOnUnavailableRoot(change.Path))
+                else if (!IsRootOrUnderMissingRoot(change.Path))
                 {
                     RemovePath(change.Path);
                 }

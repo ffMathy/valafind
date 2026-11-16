@@ -114,4 +114,48 @@ public class InotifyTreeWatcherTests
         await WaitFor(() => coordinator.Status.State == IndexingState.UpToDate, "up to date");
         Assert.Equal(2, await coordinator.WaitForWatchersAsync()); // home and home/docs
     }
+
+    [Fact]
+    public async Task DisposeNeverClosesTheDescriptorUnderAStuckWatcherThread()
+    {
+        if (!OperatingSystem.IsLinux())
+            return; // inotify is Linux-only
+
+        using var tree = new TempTree();
+        tree.Dir("home/a/b");
+        using var entered = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        // The exclusion callback stands in for a directory enumeration hung on a dead network mount.
+        var watcher = new InotifyTreeWatcher(tree.P("home"), (_, _) =>
+        {
+            entered.Set();
+            release.Wait(TimeSpan.FromSeconds(30));
+            return false;
+        }, (_, _) => { }, _ => { });
+        watcher.DisposeJoinTimeout = TimeSpan.FromMilliseconds(100);
+        watcher.Start();
+        Assert.True(entered.Wait(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken));
+
+        watcher.Dispose(); // join times out: the thread is still inside AddTree
+        Assert.False(watcher.DescriptorClosed);
+        Assert.Equal("anon_inode:inotify", new FileInfo($"/proc/self/fd/{watcher.Descriptor}").LinkTarget);
+
+        release.Set();
+        await WaitFor(() => OperatingSystem.IsLinux() && watcher.DescriptorClosed, "the watcher thread closes its descriptor on exit");
+    }
+
+    [Fact]
+    public async Task ACallbackThatThrowsStopsTheWatcherWithoutCrashing()
+    {
+        if (!OperatingSystem.IsLinux())
+            return; // inotify is Linux-only
+
+        using var tree = new TempTree();
+        tree.Dir("home/a");
+        using var watcher = new InotifyTreeWatcher(tree.P("home"),
+            (_, _) => throw new InvalidOperationException("boom"), (_, _) => { }, _ => { });
+        watcher.Start();
+        await watcher.Ready.WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken);
+        await WaitFor(() => OperatingSystem.IsLinux() && watcher.DescriptorClosed, "the watcher thread exits and closes its descriptor");
+    }
 }

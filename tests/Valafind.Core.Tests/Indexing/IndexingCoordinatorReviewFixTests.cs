@@ -129,6 +129,41 @@ public class IndexingCoordinatorReviewFixTests
         Assert.True(store.Contains(a));
     }
 
+    [Fact]
+    public async Task DeletingTheOnlySubfolderOfARootRemovesItsEntries()
+    {
+        using var tree = new TempTree();
+        var store = new FakeStore();
+        var root = tree.Dir("work");
+        var a = tree.File("work/projA/a.txt", "alpha");
+        var b = tree.File("work/projA/deep/b.txt", "beta");
+        await using var coordinator = Create(new FakeDiscovery([root], [], [a, b]), store, new FakeModel());
+        await RunUntilUpToDate(coordinator, "up to date");
+        Assert.True(store.Contains(a) && store.Contains(b));
+
+        // The root is empty afterwards, which must not be mistaken for an unmounted volume on a live delete.
+        Directory.Delete(tree.P("work/projA"), recursive: true);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(root));
+        coordinator.OnWatcherEvent(tree.P("work/projA"), ChangeKind.Delete);
+        await WaitFor(() => !store.Contains(a) && !store.Contains(b), "deleted folder removed from the index");
+    }
+
+    [Fact]
+    public async Task DeletingTheOnlyFileOfARootRemovesIt()
+    {
+        using var tree = new TempTree();
+        var store = new FakeStore();
+        var root = tree.Dir("work");
+        var a = tree.File("work/a.txt", "alpha");
+        await using var coordinator = Create(new FakeDiscovery([root], [], [a]), store, new FakeModel());
+        await RunUntilUpToDate(coordinator, "up to date");
+        Assert.True(store.Contains(a));
+
+        File.Delete(a);
+        coordinator.OnWatcherEvent(a, ChangeKind.Changed); // e.g. a Changed raised just before the delete
+        await WaitFor(() => !store.Contains(a), "deleted file removed from the index");
+    }
+
     // ------------------------------------------------------------------ root-change-no-rescan
 
     [Fact]
