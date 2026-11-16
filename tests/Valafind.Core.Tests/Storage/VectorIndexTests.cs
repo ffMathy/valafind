@@ -1,3 +1,4 @@
+using static Valafind.Core.Tests.TestPaths;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Storage;
 using Xunit;
@@ -188,35 +189,40 @@ public sealed class QuantizedVectorIndexTests
 
 public sealed class PathKeyPolicyTests
 {
+    private static readonly char Sep = Path.DirectorySeparatorChar;
+
     [Fact]
     public void Directory_range_covers_children_only()
     {
-        var (exact, lower, upper) = PathKeyPolicy.CaseSensitive.DirectoryRange("/home/a/docs/");
-        Assert.Equal("/home/a/docs", exact);
-        Assert.Equal("/home/a/docs/", lower);
-        Assert.Equal("/home/a/docs0", upper);
+        var (exact, lower, upper) = PathKeyPolicy.CaseSensitive.DirectoryRange(P("/home/a/docs/"));
+        Assert.Equal(P("/home/a/docs"), exact);
+        Assert.Equal(P("/home/a/docs/"), lower);
+        Assert.Equal(P("/home/a/docs") + (char)(Sep + 1), upper);
 
         static bool Under(string key, string lo, string hi) => string.CompareOrdinal(key, lo) >= 0 && string.CompareOrdinal(key, hi) < 0;
-        Assert.True(Under("/home/a/docs/x", lower, upper));
-        Assert.True(Under("/home/a/docs/z/ü/𝄞", lower, upper));
-        Assert.False(Under("/home/a/docs2/x", lower, upper));
-        Assert.False(Under("/home/a/docs.txt", lower, upper));
-        Assert.False(Under("/home/a/docs-old/x", lower, upper));
+        Assert.True(Under(P("/home/a/docs/x"), lower, upper));
+        Assert.True(Under(P("/home/a/docs/z/ü/𝄞"), lower, upper));
+        Assert.False(Under(P("/home/a/docs2/x"), lower, upper));
+        Assert.False(Under(P("/home/a/docs.txt"), lower, upper));
+        Assert.False(Under(P("/home/a/docs-old/x"), lower, upper));
     }
 
     [Fact]
     public void Root_range_covers_everything()
     {
-        var (_, lower, upper) = PathKeyPolicy.CaseSensitive.DirectoryRange("/");
-        Assert.Equal("/", lower);
-        Assert.Equal("0", upper);
+        var root = P("/");
+        var (_, lower, upper) = PathKeyPolicy.CaseSensitive.DirectoryRange(root);
+        Assert.Equal(root, lower);
+        Assert.Equal(root[..^1] + (char)(Sep + 1), upper);
+        Assert.True(string.CompareOrdinal(P("/any/file"), lower) >= 0 && string.CompareOrdinal(P("/any/file"), upper) < 0);
     }
 
     [Fact]
     public void Case_insensitive_keys_are_lowercase_nfc()
     {
-        var policy = PathKeyPolicy.CaseInsensitiveSlash;
-        Assert.Equal(policy.KeyOf("/A/Ä.txt"), policy.KeyOf("/a/Ä.TXT"));
-        Assert.Equal("/a/b", PathKeyPolicy.CaseSensitive.KeyForPath("/a/./c/../b"));
+        var policy = PathKeyPolicy.CaseInsensitiveNfc;
+        // "Ä" precomposed (NFC) vs "A" + combining diaeresis (NFD), as macOS APIs may hand out either.
+        Assert.Equal(policy.KeyForPath(P("/A/\u00C4.txt")), policy.KeyForPath(P("/a/A\u0308.TXT")));
+        Assert.Equal(P("/a/b"), PathKeyPolicy.CaseSensitive.KeyForPath(P("/a/./c/../b")));
     }
 }

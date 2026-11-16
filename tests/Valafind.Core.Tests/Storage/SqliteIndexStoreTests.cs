@@ -1,3 +1,4 @@
+using static Valafind.Core.Tests.TestPaths;
 using Microsoft.Data.Sqlite;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Storage;
@@ -18,18 +19,18 @@ public sealed class SqliteIndexStoreTests : IDisposable
     {
         using var store = _db.OpenStore();
         var modified = new DateTimeOffset(2024, 1, 2, 3, 4, 5, 678, TimeSpan.FromHours(2));
-        store.UpsertFile(File("/home/a/notes.txt", size: 1234, modified: modified), [Chunk(0, Vectors.Axis(Dims, 0), "hello world")]);
+        store.UpsertFile(File(P("/home/a/notes.txt"), size: 1234, modified: modified), [Chunk(0, Vectors.Axis(Dims, 0), "hello world")]);
 
-        var fp = store.GetFingerprint("/home/a/notes.txt");
+        var fp = store.GetFingerprint(P("/home/a/notes.txt"));
         Assert.NotNull(fp);
         Assert.Equal(1234, fp.Size);
         Assert.Equal(modified, fp.ModifiedUtc);
         Assert.Equal(TimeSpan.Zero, fp.ModifiedUtc.Offset);
-        Assert.Null(store.GetFingerprint("/home/a/other.txt"));
+        Assert.Null(store.GetFingerprint(P("/home/a/other.txt")));
 
         var hits = store.Search(Vectors.Axis(Dims, 0), SearchFilter.None, 10);
         var hit = Assert.Single(hits);
-        Assert.Equal("/home/a/notes.txt", hit.Path);
+        Assert.Equal(P("/home/a/notes.txt"), hit.Path);
         Assert.Equal(FileKind.Text, hit.Kind);
         Assert.Equal(1234, hit.Size);
         Assert.Equal("hello world", hit.ChunkText);
@@ -41,13 +42,13 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void Upsert_replaces_previous_chunks()
     {
         using var store = _db.OpenStore();
-        store.UpsertFile(File("/x/a.txt"), [Chunk(0, Vectors.Axis(Dims, 0), "old 0"), Chunk(1, Vectors.Axis(Dims, 1), "old 1")]);
-        store.UpsertFile(File("/x/a.txt", size: 7, phase: IndexPhase.Incremental), [Chunk(0, Vectors.Axis(Dims, 2), "new")]);
+        store.UpsertFile(File(P("/x/a.txt")), [Chunk(0, Vectors.Axis(Dims, 0), "old 0"), Chunk(1, Vectors.Axis(Dims, 1), "old 1")]);
+        store.UpsertFile(File(P("/x/a.txt"), size: 7, phase: IndexPhase.Incremental), [Chunk(0, Vectors.Axis(Dims, 2), "new")]);
 
         var stats = store.GetStats();
         Assert.Equal(1, stats.Files);
         Assert.Equal(1, stats.Chunks);
-        Assert.Equal(7, store.GetFingerprint("/x/a.txt")!.Size);
+        Assert.Equal(7, store.GetFingerprint(P("/x/a.txt"))!.Size);
 
         var hit = Assert.Single(store.Search(Vectors.Axis(Dims, 2), SearchFilter.None, 5));
         Assert.Equal("new", hit.ChunkText);
@@ -63,8 +64,8 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void Upsert_with_no_chunks_records_fingerprint_but_is_not_searchable()
     {
         using var store = _db.OpenStore();
-        store.UpsertFile(File("/x/empty.bin"), []);
-        Assert.NotNull(store.GetFingerprint("/x/empty.bin"));
+        store.UpsertFile(File(P("/x/empty.bin")), []);
+        Assert.NotNull(store.GetFingerprint(P("/x/empty.bin")));
         Assert.Empty(store.Search(Vectors.Axis(Dims, 0), SearchFilter.None, 5));
         Assert.Equal(new IndexStats(1, 0, 0, 1), store.GetStats());
     }
@@ -73,9 +74,9 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void Upsert_rejects_wrong_dimensions_and_duplicates_without_side_effects()
     {
         using var store = _db.OpenStore();
-        Assert.Throws<ArgumentException>(() => store.UpsertFile(File("/x/a"), [Chunk(0, new float[Dims + 1])]));
-        Assert.Throws<ArgumentException>(() => store.UpsertFile(File("/x/a"), [Chunk(0, Vectors.Axis(Dims, 0)), Chunk(0, Vectors.Axis(Dims, 1))]));
-        Assert.Null(store.GetFingerprint("/x/a"));
+        Assert.Throws<ArgumentException>(() => store.UpsertFile(File(P("/x/a")), [Chunk(0, new float[Dims + 1])]));
+        Assert.Throws<ArgumentException>(() => store.UpsertFile(File(P("/x/a")), [Chunk(0, Vectors.Axis(Dims, 0)), Chunk(0, Vectors.Axis(Dims, 1))]));
+        Assert.Null(store.GetFingerprint(P("/x/a")));
         Assert.Equal(new IndexStats(0, 0, 0, 0), store.GetStats());
     }
 
@@ -83,15 +84,15 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void RemoveFile_removes_rows_and_vectors()
     {
         using var store = _db.OpenStore();
-        store.UpsertFile(File("/x/a.txt"), [Chunk(0, Vectors.Axis(Dims, 0))]);
-        store.UpsertFile(File("/x/b.txt"), [Chunk(0, Vectors.Axis(Dims, 1))]);
+        store.UpsertFile(File(P("/x/a.txt")), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/x/b.txt")), [Chunk(0, Vectors.Axis(Dims, 1))]);
 
-        store.RemoveFile("/x/a.txt");
-        store.RemoveFile("/x/never-indexed.txt");
+        store.RemoveFile(P("/x/a.txt"));
+        store.RemoveFile(P("/x/never-indexed.txt"));
 
-        Assert.Null(store.GetFingerprint("/x/a.txt"));
+        Assert.Null(store.GetFingerprint(P("/x/a.txt")));
         var hits = store.Search(Vectors.Axis(Dims, 0), SearchFilter.None, 10);
-        Assert.Equal(["/x/b.txt"], hits.Select(h => h.Path));
+        Assert.Equal([P("/x/b.txt")], hits.Select(h => h.Path));
         Assert.Equal(1, store.GetStats().Files);
     }
 
@@ -104,17 +105,17 @@ public sealed class SqliteIndexStoreTests : IDisposable
         using var store = _db.OpenStore();
         string[] paths =
         [
-            "/home/a/docs/x.txt", "/home/a/docs/sub/y.txt", "/home/a/docs", // removed
-            "/home/a/docs2/x.txt", "/home/a/docs.txt", "/home/a/doc/x.txt", "/home/a/Docs/x.txt", "/home/b/docs/x.txt", // kept
+            P("/home/a/docs/x.txt"), P("/home/a/docs/sub/y.txt"), P("/home/a/docs"), // removed
+            P("/home/a/docs2/x.txt"), P("/home/a/docs.txt"), P("/home/a/doc/x.txt"), P("/home/a/Docs/x.txt"), P("/home/b/docs/x.txt"), // kept
         ];
         for (var i = 0; i < paths.Length; i++)
             store.UpsertFile(File(paths[i]), [Chunk(0, Vectors.Axis(Dims, i % Dims))]);
 
-        Assert.Equal(3, store.RemoveUnder(prefix));
+        Assert.Equal(3, store.RemoveUnder(P(prefix)));
 
-        Assert.Null(store.GetFingerprint("/home/a/docs/x.txt"));
-        Assert.Null(store.GetFingerprint("/home/a/docs/sub/y.txt"));
-        Assert.Null(store.GetFingerprint("/home/a/docs"));
+        Assert.Null(store.GetFingerprint(P("/home/a/docs/x.txt")));
+        Assert.Null(store.GetFingerprint(P("/home/a/docs/sub/y.txt")));
+        Assert.Null(store.GetFingerprint(P("/home/a/docs")));
         foreach (var kept in paths.Skip(3))
             Assert.NotNull(store.GetFingerprint(kept));
         Assert.Equal(5, store.GetStats().Files);
@@ -125,27 +126,27 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void RemoveUnder_root_removes_everything_and_unknown_prefix_nothing()
     {
         using var store = _db.OpenStore();
-        store.UpsertFile(File("/a/x"), [Chunk(0, Vectors.Axis(Dims, 0))]);
-        store.UpsertFile(File("/b/y"), [Chunk(0, Vectors.Axis(Dims, 1))]);
-        Assert.Equal(0, store.RemoveUnder("/c"));
-        Assert.Equal(2, store.RemoveUnder("/"));
+        store.UpsertFile(File(P("/a/x")), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/b/y")), [Chunk(0, Vectors.Axis(Dims, 1))]);
+        Assert.Equal(0, store.RemoveUnder(P("/c")));
+        Assert.Equal(2, store.RemoveUnder(P("/")));
         Assert.Equal(new IndexStats(0, 0, 0, 0), store.GetStats());
     }
 
     [Fact]
     public void Case_insensitive_policy_treats_case_variants_as_one_file()
     {
-        using var store = _db.OpenStore(policy: PathKeyPolicy.CaseInsensitiveSlash);
-        store.UpsertFile(File("/Users/A/Report.PDF"), [Chunk(0, Vectors.Axis(Dims, 0))]);
-        store.UpsertFile(File("/users/a/report.pdf"), [Chunk(0, Vectors.Axis(Dims, 1))]);
+        using var store = _db.OpenStore(policy: PathKeyPolicy.CaseInsensitiveNfc);
+        store.UpsertFile(File(P("/Users/A/Report.PDF")), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/users/a/report.pdf")), [Chunk(0, Vectors.Axis(Dims, 1))]);
 
         Assert.Equal(1, store.GetStats().Files);
-        Assert.NotNull(store.GetFingerprint("/USERS/a/REPORT.pdf"));
+        Assert.NotNull(store.GetFingerprint(P("/USERS/a/REPORT.pdf")));
         // The latest spelling is what is reported.
-        Assert.Equal("/users/a/report.pdf", Assert.Single(store.Search(Vectors.Axis(Dims, 1), SearchFilter.None, 5)).Path);
+        Assert.Equal(P("/users/a/report.pdf"), Assert.Single(store.Search(Vectors.Axis(Dims, 1), SearchFilter.None, 5)).Path);
 
-        store.UpsertFile(File("/Users/A/Docs2/x"), [Chunk(0, Vectors.Axis(Dims, 2))]);
-        Assert.Equal(2, store.RemoveUnder("/USERS/a/"));
+        store.UpsertFile(File(P("/Users/A/Docs2/x")), [Chunk(0, Vectors.Axis(Dims, 2))]);
+        Assert.Equal(2, store.RemoveUnder(P("/USERS/a/")));
         Assert.Equal(0, store.GetStats().Files);
     }
 
@@ -153,10 +154,10 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void Case_sensitive_policy_keeps_case_variants_apart()
     {
         using var store = _db.OpenStore(policy: PathKeyPolicy.CaseSensitive);
-        store.UpsertFile(File("/a/Report.pdf"), [Chunk(0, Vectors.Axis(Dims, 0))]);
-        store.UpsertFile(File("/a/report.pdf"), [Chunk(0, Vectors.Axis(Dims, 1))]);
+        store.UpsertFile(File(P("/a/Report.pdf")), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/a/report.pdf")), [Chunk(0, Vectors.Axis(Dims, 1))]);
         Assert.Equal(2, store.GetStats().Files);
-        Assert.Null(store.GetFingerprint("/a/REPORT.pdf"));
+        Assert.Null(store.GetFingerprint(P("/a/REPORT.pdf")));
     }
 
     [Fact]
@@ -167,7 +168,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
         using (var store = _db.OpenStore())
         {
             for (var i = 0; i < 10; i++)
-                store.UpsertFile(File($"/f/{i}", phase: i < 4 ? IndexPhase.Frequent : IndexPhase.All),
+                store.UpsertFile(File(P($"/f/{i}"), phase: i < 4 ? IndexPhase.Frequent : IndexPhase.All),
                     [Chunk(0, vectors[2 * i]), Chunk(1, vectors[2 * i + 1])]);
             store.SetMeta("custom", "value");
         }
@@ -176,7 +177,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
         Assert.Equal(new IndexStats(10, 20, 4, 6), reopened.GetStats());
         Assert.Equal("value", reopened.GetMeta("custom"));
         var hit = reopened.Search(vectors[7], SearchFilter.None, 1)[0];
-        Assert.Equal("/f/3", hit.Path);
+        Assert.Equal(P("/f/3"), hit.Path);
         Assert.Equal(1, hit.ChunkIndex);
         Assert.Equal(1f, hit.Score, 4);
     }
@@ -188,13 +189,13 @@ public sealed class SqliteIndexStoreTests : IDisposable
     {
         using (var store = _db.OpenStore())
         {
-            store.UpsertFile(File("/f/a"), [Chunk(0, Vectors.Axis(Dims, 0))]);
+            store.UpsertFile(File(P("/f/a")), [Chunk(0, Vectors.Axis(Dims, 0))]);
             store.SetMeta("keep", "me");
         }
 
         using var reopened = _db.OpenStore(modelId, dims);
         Assert.Equal(new IndexStats(0, 0, 0, 0), reopened.GetStats());
-        Assert.Null(reopened.GetFingerprint("/f/a"));
+        Assert.Null(reopened.GetFingerprint(P("/f/a")));
         Assert.Equal(modelId, reopened.GetMeta("model_id"));
         Assert.Equal(dims.ToString(System.Globalization.CultureInfo.InvariantCulture), reopened.GetMeta("dimensions"));
         Assert.Equal("me", reopened.GetMeta("keep"));
@@ -206,20 +207,20 @@ public sealed class SqliteIndexStoreTests : IDisposable
     {
         using var store = _db.OpenStore();
         var q = Vectors.Axis(Dims, 0);
-        store.UpsertFile(File("/f/many"), [
+        store.UpsertFile(File(P("/f/many")), [
             Chunk(0, Vectors.Axis(Dims, 1), "far"),
             Chunk(1, Vectors.Normalize([0.9f, 0.1f, 0, 0, 0, 0, 0, 0]), "best"),
             Chunk(2, Vectors.Normalize([0.5f, 0.5f, 0, 0, 0, 0, 0, 0]), "middle"),
         ]);
-        store.UpsertFile(File("/f/one"), [Chunk(0, Vectors.Normalize([0.7f, 0.3f, 0, 0, 0, 0, 0, 0]), "single")]);
+        store.UpsertFile(File(P("/f/one")), [Chunk(0, Vectors.Normalize([0.7f, 0.3f, 0, 0, 0, 0, 0, 0]), "single")]);
 
         var hits = store.Search(q, SearchFilter.None, 10);
         Assert.Equal(2, hits.Count);
-        Assert.Equal("/f/many", hits[0].Path);
+        Assert.Equal(P("/f/many"), hits[0].Path);
         Assert.Equal(1, hits[0].ChunkIndex);
         Assert.Equal("best", hits[0].ChunkText);
         Assert.Equal(Vectors.Normalize([0.9f, 0.1f, 0, 0, 0, 0, 0, 0])[0], hits[0].Score, 4);
-        Assert.Equal("/f/one", hits[1].Path);
+        Assert.Equal(P("/f/one"), hits[1].Path);
         Assert.True(hits[0].Score >= hits[1].Score);
 
         Assert.Single(store.Search(q, SearchFilter.None, 1));
@@ -230,21 +231,21 @@ public sealed class SqliteIndexStoreTests : IDisposable
     {
         using var store = _db.OpenStore();
         var q = Vectors.Axis(Dims, 0);
-        store.UpsertFile(File("/f/old.pdf", FileKind.Pdf, modified: BaseTime), [Chunk(0, q)]);
-        store.UpsertFile(File("/f/new.pdf", FileKind.Pdf, modified: BaseTime.AddDays(10)), [Chunk(0, q)]);
-        store.UpsertFile(File("/f/new.cs", FileKind.Code, modified: BaseTime.AddDays(10)), [Chunk(0, q)]);
+        store.UpsertFile(File(P("/f/old.pdf"), FileKind.Pdf, modified: BaseTime), [Chunk(0, q)]);
+        store.UpsertFile(File(P("/f/new.pdf"), FileKind.Pdf, modified: BaseTime.AddDays(10)), [Chunk(0, q)]);
+        store.UpsertFile(File(P("/f/new.cs"), FileKind.Code, modified: BaseTime.AddDays(10)), [Chunk(0, q)]);
 
         Assert.Equal(3, store.Search(q, SearchFilter.None, 10).Count);
         Assert.Equal(3, store.Search(q, new SearchFilter(new HashSet<FileKind>()), 10).Count);
 
         var pdfs = store.Search(q, new SearchFilter(new HashSet<FileKind> { FileKind.Pdf }), 10);
-        Assert.Equal(["/f/new.pdf", "/f/old.pdf"], pdfs.Select(h => h.Path).Order(StringComparer.Ordinal));
+        Assert.Equal([P("/f/new.pdf"), P("/f/old.pdf")], pdfs.Select(h => h.Path).Order(StringComparer.Ordinal));
 
         var recent = store.Search(q, new SearchFilter(ModifiedAfter: BaseTime), 10);
-        Assert.Equal(["/f/new.cs", "/f/new.pdf"], recent.Select(h => h.Path).Order(StringComparer.Ordinal));
+        Assert.Equal([P("/f/new.cs"), P("/f/new.pdf")], recent.Select(h => h.Path).Order(StringComparer.Ordinal));
 
         var both = store.Search(q, new SearchFilter(new HashSet<FileKind> { FileKind.Pdf }, BaseTime.AddDays(1)), 10);
-        Assert.Equal("/f/new.pdf", Assert.Single(both).Path);
+        Assert.Equal(P("/f/new.pdf"), Assert.Single(both).Path);
 
         Assert.Empty(store.Search(q, new SearchFilter(new HashSet<FileKind> { FileKind.Image }), 10));
     }
@@ -253,7 +254,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void Search_normalises_query_and_handles_degenerate_input()
     {
         using var store = _db.OpenStore();
-        store.UpsertFile(File("/f/a"), [Chunk(0, Vectors.Axis(Dims, 3))]);
+        store.UpsertFile(File(P("/f/a")), [Chunk(0, Vectors.Axis(Dims, 3))]);
 
         var scaled = Vectors.Axis(Dims, 3).Select(x => x * 42f).ToArray();
         Assert.Equal(1f, Assert.Single(store.Search(scaled, SearchFilter.None, 3)).Score, 4);
@@ -269,7 +270,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
         using var store = _db.OpenStore();
         var rng = new Random(2);
         for (var i = 0; i < 700; i++)
-            store.UpsertFile(File($"/many/{i}"), [Chunk(0, Vectors.Random(rng, Dims))]);
+            store.UpsertFile(File(P($"/many/{i}")), [Chunk(0, Vectors.Random(rng, Dims))]);
         var hits = store.Search(Vectors.Random(rng, Dims), SearchFilter.None, 5000);
         Assert.Equal(700, hits.Count);
         Assert.Equal(700, hits.Select(h => h.Path).Distinct().Count());
@@ -279,16 +280,16 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void Stats_count_files_by_phase()
     {
         using var store = _db.OpenStore();
-        store.UpsertFile(File("/f/1", phase: IndexPhase.Frequent), [Chunk(0, Vectors.Axis(Dims, 0)), Chunk(1, Vectors.Axis(Dims, 1))]);
-        store.UpsertFile(File("/f/2", phase: IndexPhase.Frequent), [Chunk(0, Vectors.Axis(Dims, 0))]);
-        store.UpsertFile(File("/f/3", phase: IndexPhase.All), [Chunk(0, Vectors.Axis(Dims, 0))]);
-        store.UpsertFile(File("/f/4", phase: IndexPhase.Incremental), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/f/1"), phase: IndexPhase.Frequent), [Chunk(0, Vectors.Axis(Dims, 0)), Chunk(1, Vectors.Axis(Dims, 1))]);
+        store.UpsertFile(File(P("/f/2"), phase: IndexPhase.Frequent), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/f/3"), phase: IndexPhase.All), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/f/4"), phase: IndexPhase.Incremental), [Chunk(0, Vectors.Axis(Dims, 0))]);
         Assert.Equal(new IndexStats(4, 5, 2, 1), store.GetStats());
 
         // Re-indexing moves a file between phases.
-        store.UpsertFile(File("/f/2", phase: IndexPhase.All), [Chunk(0, Vectors.Axis(Dims, 0))]);
+        store.UpsertFile(File(P("/f/2"), phase: IndexPhase.All), [Chunk(0, Vectors.Axis(Dims, 0))]);
         Assert.Equal(new IndexStats(4, 5, 1, 2), store.GetStats());
-        store.RemoveFile("/f/1");
+        store.RemoveFile(P("/f/1"));
         Assert.Equal(new IndexStats(3, 3, 0, 2), store.GetStats());
     }
 
@@ -307,20 +308,20 @@ public sealed class SqliteIndexStoreTests : IDisposable
     public void Using_store_before_open_or_after_dispose_throws()
     {
         var store = new SqliteIndexStore(_db.Path);
-        Assert.Throws<InvalidOperationException>(() => store.GetFingerprint("/a"));
+        Assert.Throws<InvalidOperationException>(() => store.GetFingerprint(P("/a")));
         Assert.Throws<InvalidOperationException>(() => store.Search(new float[Dims], SearchFilter.None, 1));
         store.Open("m", Dims);
         store.Dispose();
         store.Dispose();
         Assert.Throws<ObjectDisposedException>(() => store.Search(new float[Dims], SearchFilter.None, 1));
-        Assert.Throws<ObjectDisposedException>(() => store.UpsertFile(File("/a"), []));
+        Assert.Throws<ObjectDisposedException>(() => store.UpsertFile(File(P("/a")), []));
     }
 
     [Fact]
     public void Database_uses_wal_and_expected_schema()
     {
         using (var store = _db.OpenStore())
-            store.UpsertFile(File("/f/a"), [Chunk(0, Vectors.Axis(Dims, 0))]);
+            store.UpsertFile(File(P("/f/a")), [Chunk(0, Vectors.Axis(Dims, 0))]);
 
         using var conn = new SqliteConnection($"Data Source={_db.Path};Pooling=False");
         conn.Open();
@@ -332,8 +333,8 @@ public sealed class SqliteIndexStoreTests : IDisposable
         cmd.CommandText = "SELECT path, path_key, kind, phase FROM files;";
         using var reader = cmd.ExecuteReader();
         Assert.True(reader.Read());
-        Assert.Equal("/f/a", reader.GetString(0));
-        Assert.Equal("/f/a", reader.GetString(1));
+        Assert.Equal(P("/f/a"), reader.GetString(0));
+        Assert.Equal(P("/f/a"), reader.GetString(1));
         Assert.Equal((int)FileKind.Text, reader.GetInt32(2));
         Assert.Equal((int)IndexPhase.All, reader.GetInt32(3));
     }
@@ -349,8 +350,8 @@ public sealed class SqliteIndexStoreTests : IDisposable
             for (var i = 0; i < 50; i++)
             {
                 var v = Vectors.Random(rng, Dims);
-                latest[$"/f/{i}"] = v;
-                store.UpsertFile(File($"/f/{i}"), [Chunk(0, v), Chunk(1, Vectors.Random(rng, Dims))]);
+                latest[P($"/f/{i}")] = v;
+                store.UpsertFile(File(P($"/f/{i}")), [Chunk(0, v), Chunk(1, Vectors.Random(rng, Dims))]);
             }
         }
 
@@ -377,7 +378,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
         for (var i = 0; i < files; i++)
         {
             vectors[i] = Vectors.Random(rng, dims);
-            store.UpsertFile(File($"/r/{i:D5}"), [Chunk(0, vectors[i])]);
+            store.UpsertFile(File(P($"/r/{i:D5}")), [Chunk(0, vectors[i])]);
         }
 
         var totalRecall = 0.0;
@@ -391,7 +392,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
             var exact = Enumerable.Range(0, files)
                 .OrderByDescending(i => Vectors.Dot(vectors[i], query))
                 .Take(10)
-                .Select(i => $"/r/{i:D5}")
+                .Select(i => P($"/r/{i:D5}"))
                 .ToHashSet();
             var got = store.Search(query, SearchFilter.None, 10);
             Assert.Equal(10, got.Count);
@@ -408,7 +409,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
         using var store = _db.OpenStore("conc", 32);
         var rng = new Random(9);
         for (var i = 0; i < 300; i++)
-            store.UpsertFile(File($"/c/{i}"), [Chunk(0, Vectors.Random(rng, 32)), Chunk(1, Vectors.Random(rng, 32))]);
+            store.UpsertFile(File(P($"/c/{i}")), [Chunk(0, Vectors.Random(rng, 32)), Chunk(1, Vectors.Random(rng, 32))]);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         // Dedicated threads (LongRunning): with blocking loops on the shared thread pool, a busy CI box running
@@ -421,11 +422,11 @@ public sealed class SqliteIndexStoreTests : IDisposable
             {
                 var id = wrng.Next(400);
                 if (n++ % 5 == 0)
-                    store.RemoveFile($"/c/{id}");
+                    store.RemoveFile(P($"/c/{id}"));
                 else
-                    store.UpsertFile(File($"/c/{id}"), [Chunk(0, Vectors.Random(wrng, 32))]);
+                    store.UpsertFile(File(P($"/c/{id}")), [Chunk(0, Vectors.Random(wrng, 32))]);
                 if (n % 97 == 0)
-                    store.RemoveUnder($"/c/{wrng.Next(10)}");
+                    store.RemoveUnder(P($"/c/{wrng.Next(10)}"));
             }
             return n;
         }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -440,7 +441,7 @@ public sealed class SqliteIndexStoreTests : IDisposable
                 Assert.True(hits.Count <= 10);
                 Assert.Equal(hits.Count, hits.Select(h => h.Path).Distinct().Count());
                 _ = store.GetStats();
-                _ = store.GetFingerprint($"/c/{rrng.Next(400)}");
+                _ = store.GetFingerprint(P($"/c/{rrng.Next(400)}"));
                 searches++;
             }
             return searches;

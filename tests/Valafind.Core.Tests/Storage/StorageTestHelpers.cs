@@ -1,3 +1,4 @@
+using static Valafind.Core.Tests.TestPaths;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Storage;
 

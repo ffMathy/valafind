@@ -17,11 +17,16 @@ internal sealed record PathKeyPolicy(bool CaseInsensitive, bool NormalizeUnicode
         Separator: Path.DirectorySeparatorChar,
         AltSeparator: Path.AltDirectorySeparatorChar);
 
-    /// <summary>Linux semantics: exact, case-sensitive keys.</summary>
-    public static PathKeyPolicy CaseSensitive { get; } = new(false, false, '/', '/');
+    // Separators always follow the host: NormalizePath uses the host's Path.GetFullPath, so a policy with
+    // foreign separators would build directory ranges that never match the stored keys.
 
-    /// <summary>Case-insensitive keys with '/' separators (macOS-like); used by tests on any OS.</summary>
-    public static PathKeyPolicy CaseInsensitiveSlash { get; } = new(true, true, '/', '/');
+    /// <summary>Linux semantics: exact, case-sensitive keys (host separators).</summary>
+    public static PathKeyPolicy CaseSensitive { get; } =
+        new(false, false, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+    /// <summary>Case-insensitive, NFC-folded keys (macOS semantics, host separators); used by tests on any OS.</summary>
+    public static PathKeyPolicy CaseInsensitiveNfc { get; } =
+        new(true, true, Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
     /// <summary>Path as stored and reported back: the full path (relative segments resolved).</summary>
     public static string NormalizePath(string path)

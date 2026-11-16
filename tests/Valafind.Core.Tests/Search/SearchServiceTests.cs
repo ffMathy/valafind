@@ -1,3 +1,4 @@
+using static Valafind.Core.Tests.TestPaths;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Search;
 using Valafind.Core.Storage;
@@ -22,7 +23,7 @@ public sealed class SearchServiceTests : IDisposable
     [InlineData("\t\n")]
     public async Task Empty_query_returns_nothing_without_embedding(string query)
     {
-        var store = new FixedStore(Hit("/a/b.txt", 0.9f, "text"));
+        var store = new FixedStore(Hit(P("/a/b.txt"), 0.9f, "text"));
         var service = new SearchService(_model, store);
         Assert.Empty(await service.SearchAsync(query, SearchFilter.None, 10, Ct));
         Assert.Equal(0, _model.QueryCalls);
@@ -36,9 +37,9 @@ public sealed class SearchServiceTests : IDisposable
         store.Open(_model.ModelId, _model.Dimensions);
         var docs = new Dictionary<string, string>
         {
-            ["/home/u/finance/plan.txt"] = "Quarterly planning notes. The marketing budget for next year is set at two million. Hiring remains frozen.",
-            ["/home/u/recipes/soup.md"] = "Chop the onions finely. Simmer the soup for forty minutes. Season to taste.",
-            ["/home/u/travel/japan.txt"] = "Flights to Tokyo were booked in March. The hotel near the station was cheap.",
+            [P("/home/u/finance/plan.txt")] = "Quarterly planning notes. The marketing budget for next year is set at two million. Hiring remains frozen.",
+            [P("/home/u/recipes/soup.md")] = "Chop the onions finely. Simmer the soup for forty minutes. Season to taste.",
+            [P("/home/u/travel/japan.txt")] = "Flights to Tokyo were booked in March. The hotel near the station was cheap.",
         };
         foreach (var (path, text) in docs)
         {
@@ -51,9 +52,9 @@ public sealed class SearchServiceTests : IDisposable
 
         Assert.NotEmpty(results);
         var top = results[0];
-        Assert.Equal("/home/u/finance/plan.txt", top.Path);
+        Assert.Equal(P("/home/u/finance/plan.txt"), top.Path);
         Assert.Equal("plan.txt", top.FileName);
-        Assert.Equal("/home/u/finance", top.Directory);
+        Assert.Equal(P("/home/u/finance"), top.Directory);
         Assert.Equal(FileKind.Text, top.Kind);
         Assert.Contains("marketing budget", top.Snippet, StringComparison.Ordinal);
         var highlight = Assert.Single(top.Highlights);
@@ -66,7 +67,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task Sentence_embedding_is_one_batch_for_top_five_only()
     {
         var hits = Enumerable.Range(0, 8)
-            .Select(i => Hit($"/d/file{i}.txt", 0.9f - i * 0.01f, $"First sentence about apples {i}. Second sentence about pears {i}! Third one?"))
+            .Select(i => Hit(P($"/d/file{i}.txt"), 0.9f - i * 0.01f, $"First sentence about apples {i}. Second sentence about pears {i}! Third one?"))
             .ToArray();
         var service = new SearchService(_model, new FixedStore(hits));
 
@@ -98,8 +99,8 @@ public sealed class SearchServiceTests : IDisposable
     {
         _model.OnEmbedDocuments = _ => throw new InvalidOperationException("onnx exploded");
         var service = new SearchService(_model, new FixedStore(
-            Hit("/d/a.txt", 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard."),
-            Hit("/d/b.txt", 0.7f, "Other text. More text.")));
+            Hit(P("/d/a.txt"), 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard."),
+            Hit(P("/d/b.txt"), 0.7f, "Other text. More text.")));
 
         var results = await service.SearchAsync("invoice filing", SearchFilter.None, 5, Ct);
 
@@ -113,7 +114,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task Highlight_budget_exceeded_falls_back_to_lexical_without_throwing()
     {
         _model.OnEmbedDocuments = ct => Task.Delay(Timeout.Infinite, ct).GetAwaiter().GetResult();
-        var service = new SearchService(_model, new FixedStore(Hit("/d/a.txt", 0.8f, "One. Two budget lines. Three.")))
+        var service = new SearchService(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, "One. Two budget lines. Three.")))
         {
             HighlightBudget = TimeSpan.FromMilliseconds(50),
         };
@@ -125,7 +126,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Name_only_files_have_empty_snippet_and_highlights()
     {
-        var service = new SearchService(_model, new FixedStore(Hit("/pics/holiday beach.jpg", 0.6f, "", FileKind.Image)));
+        var service = new SearchService(_model, new FixedStore(Hit(P("/pics/holiday beach.jpg"), 0.6f, "", FileKind.Image)));
         var result = Assert.Single(await service.SearchAsync("beach", SearchFilter.None, 5, Ct));
         Assert.Equal("", result.Snippet);
         Assert.Empty(result.Highlights);
@@ -137,10 +138,10 @@ public sealed class SearchServiceTests : IDisposable
     public async Task File_name_match_boosts_and_resorts()
     {
         var service = new SearchService(_model, new FixedStore(
-            Hit("/d/notes.txt", 0.50f, "Some text."),
-            Hit("/d/Budget-2024.xlsx", 0.48f, "Other text.", FileKind.Spreadsheet)));
+            Hit(P("/d/notes.txt"), 0.50f, "Some text."),
+            Hit(P("/d/Budget-2024.xlsx"), 0.48f, "Other text.", FileKind.Spreadsheet)));
         var results = await service.SearchAsync("budgets", SearchFilter.None, 5, Ct);
-        Assert.Equal("/d/Budget-2024.xlsx", results[0].Path);
+        Assert.Equal(P("/d/Budget-2024.xlsx"), results[0].Path);
         Assert.Equal(0.51f, results[0].Score, 4);
         Assert.Equal(0.50f, results[1].Score, 4);
     }
@@ -148,7 +149,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Boost_never_pushes_score_above_one()
     {
-        var service = new SearchService(_model, new FixedStore(Hit("/d/budget.txt", 0.99f, "x")));
+        var service = new SearchService(_model, new FixedStore(Hit(P("/d/budget.txt"), 0.99f, "x")));
         var result = Assert.Single(await service.SearchAsync("budget", SearchFilter.None, 5, Ct));
         Assert.Equal(1f, result.Score);
     }
@@ -156,7 +157,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Already_cancelled_token_throws_before_embedding()
     {
-        var service = new SearchService(_model, new FixedStore(Hit("/a", 1, "x")));
+        var service = new SearchService(_model, new FixedStore(Hit(P("/a"), 1, "x")));
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.SearchAsync("query", SearchFilter.None, 5, cts.Token));
@@ -173,7 +174,7 @@ public sealed class SearchServiceTests : IDisposable
             entered.Set();
             ct.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
         };
-        var store = new FixedStore(Hit("/a", 1, "x"));
+        var store = new FixedStore(Hit(P("/a"), 1, "x"));
         var service = new SearchService(_model, store);
 
         var task = service.SearchAsync("query", SearchFilter.None, 5, cts.Token);
@@ -188,7 +189,7 @@ public sealed class SearchServiceTests : IDisposable
     {
         using var cts = new CancellationTokenSource();
         // The model finishes normally, but the keystroke that cancels arrives just before it returns.
-        var store = new FixedStore(Hit("/a", 1, "x"));
+        var store = new FixedStore(Hit(P("/a"), 1, "x"));
         var model = new NonThrowingQueryModel(_model, () => cts.Cancel());
         var service = new SearchService(model, store);
 
@@ -212,7 +213,7 @@ public sealed class SearchServiceTests : IDisposable
             var text = string.Join(rng.Next(3) == 0 ? "" : " ", words);
             if (i % 7 == 0)
                 text = new string('a', rng.Next(1, 1000)); // one enormous word
-            hits.Add(Hit($"/r/{i}.txt", 0.9f - i * 0.001f, text));
+            hits.Add(Hit(P($"/r/{i}.txt"), 0.9f - i * 0.001f, text));
         }
 
         foreach (var query in new[] { "budget report", "café straße", "日本語", "😀 alpha", "zzz" })
