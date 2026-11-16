@@ -1,0 +1,475 @@
+<!-- Linux A · GNOME-style dialog (libadwaita look). Mockup: Linux-Adwaita.dc.html -->
+<views:LauncherViewBase xmlns="https://github.com/avaloniaui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                        xmlns:vm="using:Valafind.App.ViewModels"
+                        xmlns:c="using:Valafind.App.Controls"
+                        xmlns:views="using:Valafind.App.Views"
+                        xmlns:common="using:Valafind.App.Views.Common"
+                        mc:Ignorable="d"
+                        x:Class="Valafind.App.Views.Linux.LinuxLauncherView"
+                        x:DataType="vm:LauncherViewModel"
+                        FontFamily="{StaticResource VfFontLinux}"
+                        Foreground="{DynamicResource VfTextBrush}">
+  <Design.DataContext>
+    <x:Static Member="vm:DesignData.Linux" />
+  </Design.DataContext>
+
+  <views:LauncherViewBase.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="VfTextBrush" Color="#1F1F23" />
+          <SolidColorBrush x:Key="VfSubtleBrush" Color="#55555C" />
+          <SolidColorBrush x:Key="VfAccentBrush" Color="#3584E4" />
+          <SolidColorBrush x:Key="VfOnAccentBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfSelectionBrush" Color="#4D3584E4" />
+          <SolidColorBrush x:Key="VfPlaceholderBrush" Color="#6B6B72" />
+          <SolidColorBrush x:Key="VfHoverOverlayBrush" Color="#0F000000" />
+          <SolidColorBrush x:Key="VfPressOverlayBrush" Color="#1F000000" />
+          <SolidColorBrush x:Key="VfDividerBrush" Color="#12000000" />
+          <SolidColorBrush x:Key="VfTrackBrush" Color="#DCDCE0" />
+          <SolidColorBrush x:Key="VfCodeBackgroundBrush" Color="#F2F2F4" />
+          <SolidColorBrush x:Key="VfWarningBrush" Color="#8A4B00" />
+
+          <SolidColorBrush x:Key="GnomeWindowBrush" Color="#FAFAFB" />
+          <SolidColorBrush x:Key="GnomeHeaderBrush" Color="#EBEBED" />
+          <SolidColorBrush x:Key="GnomeHeaderBorderBrush" Color="#1A000000" />
+          <SolidColorBrush x:Key="GnomeIconBrush" Color="#2E2E33" />
+          <SolidColorBrush x:Key="GnomeEntryBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="GnomeEntryIconBrush" Color="#4A4A50" />
+          <SolidColorBrush x:Key="GnomePillBrush" Color="#12000000" />
+          <SolidColorBrush x:Key="GnomeCloseBrush" Color="#14000000" />
+          <SolidColorBrush x:Key="GnomeCardBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="GnomeHeadingBrush" Color="#3D3D43" />
+          <SolidColorBrush x:Key="GnomeSnippetBrush" Color="#3D3D43" />
+          <SolidColorBrush x:Key="GnomeMetaBrush" Color="#4A4A50" />
+          <SolidColorBrush x:Key="GnomeRowSelectedBrush" Color="#173584E4" />
+          <SolidColorBrush x:Key="GnomeRowHoverBrush" Color="#08000000" />
+          <SolidColorBrush x:Key="GnomeHighlightBrush" Color="#333584E4" />
+          <SolidColorBrush x:Key="GnomeBannerBrush" Color="#213584E4" />
+          <SolidColorBrush x:Key="GnomeBannerBorderBrush" Color="#333584E4" />
+          <SolidColorBrush x:Key="GnomeBannerInkBrush" Color="#1B4272" />
+          <SolidColorBrush x:Key="GnomeDeepAccentBrush" Color="#265FA4" />
+          <SolidColorBrush x:Key="GnomeStatusBarBrush" Color="#F2F2F4" />
+          <SolidColorBrush x:Key="GnomeStatusBorderBrush" Color="#14000000" />
+          <SolidColorBrush x:Key="GnomeGoodBrush" Color="#1F7A3D" />
+          <SolidColorBrush x:Key="GnomeGoodBarBrush" Color="#2EC27E" />
+          <SolidColorBrush x:Key="GnomeBusyBrush" Color="#8A4B00" />
+          <SolidColorBrush x:Key="GnomeBusyBarBrush" Color="#C64600" />
+          <SolidColorBrush x:Key="GnomeErrorBrush" Color="#C01C28" />
+          <SolidColorBrush x:Key="GnomeBadgeBrush" Color="#ECECEF" />
+
+          <SolidColorBrush x:Key="VfKindPdfBg" Color="#FDE7E5" />
+          <SolidColorBrush x:Key="VfKindPdfFg" Color="#B3261E" />
+          <SolidColorBrush x:Key="VfKindDocumentBg" Color="#E3EEFC" />
+          <SolidColorBrush x:Key="VfKindDocumentFg" Color="#1C5AA6" />
+          <SolidColorBrush x:Key="VfKindTextBg" Color="#ECECEF" />
+          <SolidColorBrush x:Key="VfKindTextFg" Color="#3D3D43" />
+          <SolidColorBrush x:Key="VfKindCodeBg" Color="#EDE7F8" />
+          <SolidColorBrush x:Key="VfKindCodeFg" Color="#613583" />
+          <SolidColorBrush x:Key="VfKindMailBg" Color="#E3EEFC" />
+          <SolidColorBrush x:Key="VfKindMailFg" Color="#1C5AA6" />
+          <SolidColorBrush x:Key="VfKindImageBg" Color="#F3E8FB" />
+          <SolidColorBrush x:Key="VfKindImageFg" Color="#7A3FA6" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetBg" Color="#E2F4E8" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetFg" Color="#1F7A3D" />
+          <SolidColorBrush x:Key="VfKindPresentationBg" Color="#FDEDE1" />
+          <SolidColorBrush x:Key="VfKindPresentationFg" Color="#B5470E" />
+          <SolidColorBrush x:Key="VfKindMediaBg" Color="#FBE7F1" />
+          <SolidColorBrush x:Key="VfKindMediaFg" Color="#A32B6B" />
+          <SolidColorBrush x:Key="VfKindArchiveBg" Color="#F5EFDD" />
+          <SolidColorBrush x:Key="VfKindArchiveFg" Color="#7D5F0E" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="VfTextBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfSubtleBrush" Color="#B8B8BE" />
+          <SolidColorBrush x:Key="VfAccentBrush" Color="#78AEED" />
+          <SolidColorBrush x:Key="VfOnAccentBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfSelectionBrush" Color="#663584E4" />
+          <SolidColorBrush x:Key="VfPlaceholderBrush" Color="#8E8E95" />
+          <SolidColorBrush x:Key="VfHoverOverlayBrush" Color="#12FFFFFF" />
+          <SolidColorBrush x:Key="VfPressOverlayBrush" Color="#21FFFFFF" />
+          <SolidColorBrush x:Key="VfDividerBrush" Color="#17FFFFFF" />
+          <SolidColorBrush x:Key="VfTrackBrush" Color="#33FFFFFF" />
+          <SolidColorBrush x:Key="VfCodeBackgroundBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="VfWarningBrush" Color="#F8E45C" />
+
+          <SolidColorBrush x:Key="GnomeWindowBrush" Color="#242424" />
+          <SolidColorBrush x:Key="GnomeHeaderBrush" Color="#303030" />
+          <SolidColorBrush x:Key="GnomeHeaderBorderBrush" Color="#5C000000" />
+          <SolidColorBrush x:Key="GnomeIconBrush" Color="#F0F0F0" />
+          <SolidColorBrush x:Key="GnomeEntryBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="GnomeEntryIconBrush" Color="#C0C0C0" />
+          <SolidColorBrush x:Key="GnomePillBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="GnomeCloseBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="GnomeCardBrush" Color="#2E2E32" />
+          <SolidColorBrush x:Key="GnomeHeadingBrush" Color="#E6E6E6" />
+          <SolidColorBrush x:Key="GnomeSnippetBrush" Color="#D6D6DA" />
+          <SolidColorBrush x:Key="GnomeMetaBrush" Color="#C0C0C5" />
+          <SolidColorBrush x:Key="GnomeRowSelectedBrush" Color="#293584E4" />
+          <SolidColorBrush x:Key="GnomeRowHoverBrush" Color="#0AFFFFFF" />
+          <SolidColorBrush x:Key="GnomeHighlightBrush" Color="#593584E4" />
+          <SolidColorBrush x:Key="GnomeBannerBrush" Color="#333584E4" />
+          <SolidColorBrush x:Key="GnomeBannerBorderBrush" Color="#4D3584E4" />
+          <SolidColorBrush x:Key="GnomeBannerInkBrush" Color="#CFE2FA" />
+          <SolidColorBrush x:Key="GnomeDeepAccentBrush" Color="#3584E4" />
+          <SolidColorBrush x:Key="GnomeStatusBarBrush" Color="#2A2A2A" />
+          <SolidColorBrush x:Key="GnomeStatusBorderBrush" Color="#17FFFFFF" />
+          <SolidColorBrush x:Key="GnomeGoodBrush" Color="#8FF0A4" />
+          <SolidColorBrush x:Key="GnomeGoodBarBrush" Color="#26A269" />
+          <SolidColorBrush x:Key="GnomeBusyBrush" Color="#FFBE6F" />
+          <SolidColorBrush x:Key="GnomeBusyBarBrush" Color="#E66100" />
+          <SolidColorBrush x:Key="GnomeErrorBrush" Color="#FF7B63" />
+          <SolidColorBrush x:Key="GnomeBadgeBrush" Color="#1FFFFFFF" />
+
+          <SolidColorBrush x:Key="VfKindPdfBg" Color="#4A2A28" />
+          <SolidColorBrush x:Key="VfKindPdfFg" Color="#FF938A" />
+          <SolidColorBrush x:Key="VfKindDocumentBg" Color="#26364D" />
+          <SolidColorBrush x:Key="VfKindDocumentFg" Color="#99C1F1" />
+          <SolidColorBrush x:Key="VfKindTextBg" Color="#3A3A3E" />
+          <SolidColorBrush x:Key="VfKindTextFg" Color="#DEDDDA" />
+          <SolidColorBrush x:Key="VfKindCodeBg" Color="#362C47" />
+          <SolidColorBrush x:Key="VfKindCodeFg" Color="#DC8ADD" />
+          <SolidColorBrush x:Key="VfKindMailBg" Color="#26364D" />
+          <SolidColorBrush x:Key="VfKindMailFg" Color="#99C1F1" />
+          <SolidColorBrush x:Key="VfKindImageBg" Color="#3B2C47" />
+          <SolidColorBrush x:Key="VfKindImageFg" Color="#DC8ADD" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetBg" Color="#223D2D" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetFg" Color="#8FF0A4" />
+          <SolidColorBrush x:Key="VfKindPresentationBg" Color="#473021" />
+          <SolidColorBrush x:Key="VfKindPresentationFg" Color="#FFBE6F" />
+          <SolidColorBrush x:Key="VfKindMediaBg" Color="#47283A" />
+          <SolidColorBrush x:Key="VfKindMediaFg" Color="#F49AC2" />
+          <SolidColorBrush x:Key="VfKindArchiveBg" Color="#403A24" />
+          <SolidColorBrush x:Key="VfKindArchiveFg" Color="#F9E58F" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </views:LauncherViewBase.Resources>
+
+  <views:LauncherViewBase.Styles>
+    <Style Selector="Border#Card">
+      <Setter Property="Margin" Value="36,20,36,56" />
+      <Setter Property="Background" Value="{DynamicResource GnomeWindowBrush}" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="BoxShadow" Value="0 0 0 1 #2E000000, 0 18 48 0 #6B000000, 0 4 10 0 #33000000" />
+    </Style>
+    <Style Selector="views|LauncherViewBase.blurred Border#Card">
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+    <Style Selector="views|LauncherViewBase.opaque Border#Card">
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+
+    <Style Selector="Button.flat">
+      <Setter Property="Width" Value="34" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style Selector="Button.pill">
+      <Setter Property="Height" Value="30" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="CornerRadius" Value="99" />
+      <Setter Property="Background" Value="{DynamicResource GnomePillBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource GnomeIconBrush}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.pill.selected">
+      <Setter Property="Padding" Value="13,0" />
+      <Setter Property="Background" Value="{DynamicResource GnomeDeepAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource VfOnAccentBrush}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="Button.suggested">
+      <Setter Property="Height" Value="30" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="{DynamicResource GnomeDeepAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource VfOnAccentBrush}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
+    <Style Selector="Border.boxed">
+      <Setter Property="Background" Value="{DynamicResource GnomeCardBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="BoxShadow" Value="0 0 0 1 #12000000, 0 1 3 0 #14000000" />
+    </Style>
+    <Style Selector="Border.row:pointerover">
+      <Setter Property="Background" Value="{DynamicResource GnomeRowHoverBrush}" />
+    </Style>
+    <Style Selector="Border.row.selected">
+      <Setter Property="Background" Value="{DynamicResource GnomeRowSelectedBrush}" />
+    </Style>
+    <Style Selector="TextBlock.h2">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="Foreground" Value="{DynamicResource GnomeHeadingBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.tone">
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tone.busy, TextBlock.tone.paused">
+      <Setter Property="Foreground" Value="{DynamicResource GnomeBusyBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tone.good">
+      <Setter Property="Foreground" Value="{DynamicResource GnomeGoodBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tone.error">
+      <Setter Property="Foreground" Value="{DynamicResource GnomeErrorBrush}" />
+    </Style>
+    <Style Selector="c|MeterBar.pressure">
+      <Setter Property="Fill" Value="{DynamicResource VfAccentBrush}" />
+    </Style>
+    <Style Selector="c|MeterBar.pressure.high">
+      <Setter Property="Fill" Value="{DynamicResource GnomeBusyBarBrush}" />
+    </Style>
+    <Style Selector="StackPanel.phase1">
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource VfTextBrush}" />
+    </Style>
+    <Style Selector="StackPanel.phase1.done">
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource GnomeGoodBrush}" />
+    </Style>
+  </views:LauncherViewBase.Styles>
+
+  <Border x:Name="Card" Width="780" Height="706" ClipToBounds="True">
+    <DockPanel>
+      <!-- Header bar -->
+      <Border DockPanel.Dock="Top" Height="50" Padding="8,0" Background="{DynamicResource GnomeHeaderBrush}"
+              BorderThickness="0,0,0,1" BorderBrush="{DynamicResource GnomeHeaderBorderBrush}">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+          <Button Classes="vf flat" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Index status and preferences"
+                  AutomationProperties.Name="Index status and preferences">
+            <c:StrokeIcon Data="{StaticResource VfIconSliders}" Width="16" Height="16" StrokeThickness="2"
+                          Foreground="{DynamicResource GnomeIconBrush}" />
+          </Button>
+          <Border Grid.Column="1" Width="470" Height="34" CornerRadius="8" Background="{DynamicResource GnomeEntryBrush}"
+                  BoxShadow="0 0 0 2 #8C3584E4" Padding="10,0,6,0" HorizontalAlignment="Center">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+              <c:StrokeIcon Data="{StaticResource VfIconSearchRound}" Width="16" Height="16" StrokeThickness="2"
+                            Foreground="{DynamicResource GnomeEntryIconBrush}" VerticalAlignment="Center" />
+              <TextBox x:Name="SearchBox" Grid.Column="1" Classes="bare" FontSize="14" Text="{Binding Query}"
+                       PlaceholderText="Describe what you are looking for" AutomationProperties.Name="Search files by meaning" />
+              <Border Grid.Column="2" Padding="6,2" CornerRadius="5" Background="{DynamicResource GnomePillBrush}"
+                      VerticalAlignment="Center" IsVisible="{Binding !HasHotkeyError}">
+                <TextBlock Text="{Binding HotkeyLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource GnomeMetaBrush}" />
+              </Border>
+            </Grid>
+          </Border>
+          <Button Grid.Column="2" Classes="vf flat" ToolTip.Tip="Main menu" AutomationProperties.Name="Main menu">
+            <c:StrokeIcon Data="{StaticResource VfIconMenu}" Width="16" Height="16" StrokeThickness="2"
+                          Foreground="{DynamicResource GnomeIconBrush}" />
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                <MenuItem Header="Preferences" InputGesture="Ctrl+OemComma" Command="{Binding OpenSettingsCommand}" />
+                <MenuItem Header="{Binding Status.PauseMenuText}" Command="{Binding TogglePauseCommand}" />
+                <MenuItem Header="Index Now" Command="{Binding ResumeNowCommand}" />
+                <Separator />
+                <MenuItem Header="Quit Valafind" Command="{Binding QuitCommand}" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <Button Grid.Column="3" Classes="vf" Width="24" Height="24" CornerRadius="12" Margin="4,0"
+                  Background="{DynamicResource GnomeCloseBrush}" Command="{Binding HideCommand}" AutomationProperties.Name="Close">
+            <c:StrokeIcon Data="{StaticResource VfIconClose}" Width="12" Height="12" StrokeThickness="2.6"
+                          Foreground="{DynamicResource GnomeIconBrush}" />
+          </Button>
+        </Grid>
+      </Border>
+
+      <!-- Banner (paused) -->
+      <Border DockPanel.Dock="Top" Background="{DynamicResource GnomeBannerBrush}" BorderThickness="0,0,0,1"
+              BorderBrush="{DynamicResource GnomeBannerBorderBrush}" Padding="18,9,12,9" IsVisible="{Binding Status.ShowBanner}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <c:StrokeIcon Data="{StaticResource VfIconPauseBars}" Width="16" Height="16" StrokeThickness="2"
+                        Foreground="{DynamicResource GnomeBannerInkBrush}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" FontSize="13.5" Foreground="{DynamicResource GnomeBannerInkBrush}" VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis">
+            <Run Text="{Binding Status.BannerTitle}" FontWeight="Bold" /><Run Text=" — " /><Run Text="{Binding Status.BannerDetail}" />
+          </TextBlock>
+          <Button Grid.Column="2" Classes="vf suggested" Content="{Binding Status.ResumeActionText}" Command="{Binding ResumeNowCommand}" />
+        </Grid>
+      </Border>
+
+      <!-- Hotkey problem (Wayland) -->
+      <Border DockPanel.Dock="Top" Background="{DynamicResource GnomeBannerBrush}" Padding="18,7" IsVisible="{Binding HasHotkeyError}">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:StrokeIcon Data="{StaticResource VfIconKeyboard}" Width="16" Height="16" StrokeThickness="2"
+                        Foreground="{DynamicResource GnomeBannerInkBrush}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding HotkeyError}" FontSize="12.5" Foreground="{DynamicResource GnomeBannerInkBrush}"
+                     TextWrapping="Wrap" VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <!-- Status bar -->
+      <Border DockPanel.Dock="Bottom" Height="40" Margin="0,12,0,0" Padding="18,0" Background="{DynamicResource GnomeStatusBarBrush}"
+              BorderThickness="0,1,0,0" BorderBrush="{DynamicResource GnomeStatusBorderBrush}"
+              TextElement.FontSize="12" TextElement.Foreground="{DynamicResource GnomeMetaBrush}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <TextBlock><Run Text="↑↓" FontWeight="Bold" /><Run Text=" navigate" /></TextBlock>
+            <TextBlock><Run Text="↵" FontWeight="Bold" /><Run Text=" open" /></TextBlock>
+            <TextBlock><Run Text="Ctrl+↵" FontWeight="Bold" /><Run Text=" show in Files" /></TextBlock>
+            <TextBlock><Run Text="Tab" FontWeight="Bold" /><Run Text=" preview" /></TextBlock>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+            <c:StrokeIcon Data="{StaticResource VfIconLock}" Width="14" Height="14" StrokeThickness="2"
+                          Foreground="{DynamicResource GnomeMetaBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="On-device · EmbeddingGemma — nothing leaves this computer" FontWeight="SemiBold"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Content -->
+      <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="10" Margin="18,14,18,0">
+        <DockPanel Margin="4,0">
+          <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding ResultSummary}" FontSize="12"
+                     Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" />
+          <TextBlock Classes="h2" Text="Best matches by meaning" />
+        </DockPanel>
+
+        <Border Grid.Row="1" Classes="boxed" ClipToBounds="True">
+          <Panel>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" IsVisible="{Binding IsResultsVisible}">
+              <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ResultItemViewModel">
+                    <Border Classes="row" Classes.selected="{Binding IsSelected}" Padding="16,11"
+                            BorderThickness="0,0,0,1" BorderBrush="{DynamicResource VfDividerBrush}">
+                      <Grid ColumnDefinitions="38,*,96" ColumnSpacing="14">
+                        <c:FileKindIcon Kind="{Binding Kind}" Width="38" Height="38" GlyphSize="20" StrokeThickness="1.8"
+                                        CornerRadius="9" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                          <TextBlock FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding FileName}" />
+                            <InlineUIContainer BaselineAlignment="Center">
+                              <Border Margin="8,0,0,0" Padding="7,1" CornerRadius="99" Background="{DynamicResource GnomeBadgeBrush}"
+                                      IsVisible="{Binding HasTextInImage}">
+                                <TextBlock Text="OCR text" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource GnomeMetaBrush}" />
+                              </Border>
+                            </InlineUIContainer>
+                          </TextBlock>
+                          <TextBlock Text="{Binding Caption}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
+                                     TextTrimming="CharacterEllipsis" />
+                          <!-- Tab hides the snippet lines for a compact list. -->
+                          <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" FontSize="12.5"
+                                                  LineHeight="17.5" Foreground="{DynamicResource GnomeSnippetBrush}"
+                                                  TextTrimming="CharacterEllipsis"
+                                                  HighlightBackground="{DynamicResource GnomeHighlightBrush}"
+                                                  HighlightForeground="{DynamicResource VfTextBrush}" HighlightFontWeight="SemiBold"
+                                                  IsVisible="{Binding Launcher.IsPreviewVisible, FallbackValue=True}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                          <TextBlock Classes="num" Text="{Binding ScoreText}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Right" />
+                          <c:MeterBar Width="84" Height="6" Radius="3" Value="{Binding ScoreFraction}"
+                                      Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <ScrollViewer IsVisible="{Binding IsMessageVisible}">
+              <common:LauncherMessageView />
+            </ScrollViewer>
+          </Panel>
+        </Border>
+
+        <DockPanel Grid.Row="2" Margin="4,4,4,0">
+          <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
+                     Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" />
+          <TextBlock Classes="h2" Text="Index" />
+        </DockPanel>
+
+        <Border Grid.Row="3" Classes="boxed" ClipToBounds="True">
+          <Grid ColumnDefinitions="*,*,*">
+            <StackPanel Classes="phase1" Classes.done="{Binding Status.IsFrequentComplete}" Margin="16,11" Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="14" Height="14" StrokeThickness="2.6"
+                              Foreground="{DynamicResource GnomeGoodBrush}" VerticalAlignment="Center"
+                              IsVisible="{Binding Status.IsFrequentComplete}" />
+                <TextBlock Text="Phase 1 · Frequently used" FontSize="12.5" FontWeight="Bold" VerticalAlignment="Center" />
+              </StackPanel>
+              <c:MeterBar Height="6" Radius="3" Value="{Binding Status.FrequentFraction}" Track="{DynamicResource VfTrackBrush}"
+                          Fill="{DynamicResource GnomeGoodBarBrush}" />
+              <TextBlock Classes="num" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}">
+                <Run Text="{Binding Status.FrequentText}" /><Run Text=" files" />
+              </TextBlock>
+            </StackPanel>
+            <Border Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
+              <StackPanel Margin="16,11" Spacing="6">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding Status.AllPercentText}" FontSize="12.5" FontWeight="Bold" />
+                  <TextBlock Text="Phase 2 · All user files" FontSize="12.5" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <c:MeterBar Height="6" Radius="3" Value="{Binding Status.AllFraction}" Track="{DynamicResource VfTrackBrush}"
+                            Fill="{DynamicResource VfAccentBrush}" />
+                <TextBlock Classes="num" Text="{Binding Status.AllCaptionText}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
+              <StackPanel Margin="16,11" Spacing="6">
+                <TextBlock Classes="tone" Classes.busy="{Binding Status.IsToneBusy}" Classes.paused="{Binding Status.IsTonePaused}"
+                           Classes.good="{Binding Status.IsToneGood}" Classes.error="{Binding Status.IsToneError}"
+                           Text="{Binding Status.ShortStateText}" FontSize="12.5" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                <Grid ColumnDefinitions="30,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
+                      TextElement.FontSize="11.5" TextElement.Foreground="{DynamicResource GnomeMetaBrush}">
+                  <TextBlock Text="CPU" VerticalAlignment="Center" />
+                  <c:MeterBar Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Height="4" Radius="2"
+                              VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
+                  <TextBlock Grid.Column="2" Classes="num" Text="{Binding Status.CpuText}" HorizontalAlignment="Right" />
+                  <TextBlock Grid.Row="1" Text="Disk" VerticalAlignment="Center" />
+                  <c:MeterBar Grid.Row="1" Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Height="4"
+                              Radius="2" VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
+                  <TextBlock Grid.Row="1" Grid.Column="2" Classes="num" Text="{Binding Status.DiskText}" HorizontalAlignment="Right" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </Grid>
+        </Border>
+
+        <!-- Filter chips -->
+        <DockPanel Grid.Row="4" Margin="0,2,0,0">
+          <Button DockPanel.Dock="Right" Classes="vf pill" CornerRadius="8" Padding="12,0,10,0">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding SelectedTimeRange.Label}" VerticalAlignment="Center" />
+              <c:StrokeIcon Data="{StaticResource VfIconChevronDown}" Width="12" Height="12" StrokeThickness="2.4" VerticalAlignment="Center" />
+            </StackPanel>
+            <Button.Flyout>
+              <MenuFlyout Placement="TopEdgeAlignedRight" ItemsSource="{Binding TimeRanges}">
+                <MenuFlyout.ItemContainerTheme>
+                  <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:TimeRangeOption">
+                    <Setter Property="Header" Value="{Binding Label}" />
+                    <Setter Property="Command" Value="{Binding SelectCommand}" />
+                  </ControlTheme>
+                </MenuFlyout.ItemContainerTheme>
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <ItemsControl ItemsSource="{Binding Filters}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FilterChipViewModel">
+                <Button Classes="vf pill" Classes.selected="{Binding IsSelected}" Content="{Binding Label}" Command="{Binding SelectCommand}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </DockPanel>
+      </Grid>
+    </DockPanel>
+  </Border>
+</views:LauncherViewBase>

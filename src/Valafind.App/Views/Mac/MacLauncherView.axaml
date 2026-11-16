@@ -1,0 +1,357 @@
+<!-- macOS A · Floating Bar (Spotlight-like with preview pane). Mockup: Mac-Spotlight.dc.html -->
+<views:LauncherViewBase xmlns="https://github.com/avaloniaui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                        xmlns:vm="using:Valafind.App.ViewModels"
+                        xmlns:c="using:Valafind.App.Controls"
+                        xmlns:views="using:Valafind.App.Views"
+                        xmlns:common="using:Valafind.App.Views.Common"
+                        mc:Ignorable="d"
+                        x:Class="Valafind.App.Views.Mac.MacLauncherView"
+                        x:DataType="vm:LauncherViewModel"
+                        FontFamily="{StaticResource VfFontMac}"
+                        Foreground="{DynamicResource VfTextBrush}">
+  <Design.DataContext>
+    <x:Static Member="vm:DesignData.Mac" />
+  </Design.DataContext>
+
+  <views:LauncherViewBase.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="VfTextBrush" Color="#1D1D1F" />
+          <SolidColorBrush x:Key="VfSubtleBrush" Color="#4A4A50" />
+          <SolidColorBrush x:Key="VfAccentBrush" Color="#007AFF" />
+          <SolidColorBrush x:Key="VfOnAccentBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfSelectionBrush" Color="#4D007AFF" />
+          <SolidColorBrush x:Key="VfPlaceholderBrush" Color="#6E6E73" />
+          <SolidColorBrush x:Key="VfHoverOverlayBrush" Color="#0A000000" />
+          <SolidColorBrush x:Key="VfPressOverlayBrush" Color="#17000000" />
+          <SolidColorBrush x:Key="VfDividerBrush" Color="#14000000" />
+          <SolidColorBrush x:Key="VfTrackBrush" Color="#14000000" />
+          <SolidColorBrush x:Key="VfCodeBackgroundBrush" Color="#B3FFFFFF" />
+          <SolidColorBrush x:Key="VfWarningBrush" Color="#C46A00" />
+
+          <SolidColorBrush x:Key="MacCardBrush" Color="#F4F4F7" />
+          <SolidColorBrush x:Key="MacCardBlurBrush" Color="#C7F4F4F7" />
+          <SolidColorBrush x:Key="MacCardBorderBrush" Color="#B3FFFFFF" />
+          <SolidColorBrush x:Key="MacSearchIconBrush" Color="#6E6E73" />
+          <SolidColorBrush x:Key="MacPillBrush" Color="#0F000000" />
+          <SolidColorBrush x:Key="MacClearBrush" Color="#24000000" />
+          <SolidColorBrush x:Key="MacPreviewBrush" Color="#6BFFFFFF" />
+          <SolidColorBrush x:Key="MacPaperBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="MacButtonBrush" Color="#12000000" />
+          <SolidColorBrush x:Key="MacHighlightBrush" Color="#2E007AFF" />
+          <SolidColorBrush x:Key="MacRowHoverBrush" Color="#0A000000" />
+          <SolidColorBrush x:Key="MacOnSelectionSubtleBrush" Color="#E0FFFFFF" />
+          <SolidColorBrush x:Key="MacGoodBrush" Color="#2A9D47" />
+          <SolidColorBrush x:Key="MacBusyBrush" Color="#C46A00" />
+
+          <SolidColorBrush x:Key="VfKindPdfFg" Color="#C4271C" />
+          <SolidColorBrush x:Key="VfKindDocumentFg" Color="#2B63C6" />
+          <SolidColorBrush x:Key="VfKindTextFg" Color="#6B5BD6" />
+          <SolidColorBrush x:Key="VfKindCodeFg" Color="#6B5BD6" />
+          <SolidColorBrush x:Key="VfKindMailFg" Color="#007AFF" />
+          <SolidColorBrush x:Key="VfKindImageFg" Color="#B5651D" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetFg" Color="#1F7A3D" />
+          <SolidColorBrush x:Key="VfKindPresentationFg" Color="#D9531E" />
+          <SolidColorBrush x:Key="VfKindMediaFg" Color="#B03A8C" />
+          <SolidColorBrush x:Key="VfKindArchiveFg" Color="#8A6D1F" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="VfTextBrush" Color="#F5F5F7" />
+          <SolidColorBrush x:Key="VfSubtleBrush" Color="#A1A1A6" />
+          <SolidColorBrush x:Key="VfAccentBrush" Color="#0A84FF" />
+          <SolidColorBrush x:Key="VfOnAccentBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfSelectionBrush" Color="#660A84FF" />
+          <SolidColorBrush x:Key="VfPlaceholderBrush" Color="#8E8E93" />
+          <SolidColorBrush x:Key="VfHoverOverlayBrush" Color="#12FFFFFF" />
+          <SolidColorBrush x:Key="VfPressOverlayBrush" Color="#1FFFFFFF" />
+          <SolidColorBrush x:Key="VfDividerBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="VfTrackBrush" Color="#24FFFFFF" />
+          <SolidColorBrush x:Key="VfCodeBackgroundBrush" Color="#14FFFFFF" />
+          <SolidColorBrush x:Key="VfWarningBrush" Color="#FFB340" />
+
+          <SolidColorBrush x:Key="MacCardBrush" Color="#2A2A2D" />
+          <SolidColorBrush x:Key="MacCardBlurBrush" Color="#B8242427" />
+          <SolidColorBrush x:Key="MacCardBorderBrush" Color="#26FFFFFF" />
+          <SolidColorBrush x:Key="MacSearchIconBrush" Color="#98989D" />
+          <SolidColorBrush x:Key="MacPillBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="MacClearBrush" Color="#47FFFFFF" />
+          <SolidColorBrush x:Key="MacPreviewBrush" Color="#0DFFFFFF" />
+          <SolidColorBrush x:Key="MacPaperBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="MacButtonBrush" Color="#1FFFFFFF" />
+          <SolidColorBrush x:Key="MacHighlightBrush" Color="#4D0A84FF" />
+          <SolidColorBrush x:Key="MacRowHoverBrush" Color="#0FFFFFFF" />
+          <SolidColorBrush x:Key="MacOnSelectionSubtleBrush" Color="#E0FFFFFF" />
+          <SolidColorBrush x:Key="MacGoodBrush" Color="#32D74B" />
+          <SolidColorBrush x:Key="MacBusyBrush" Color="#FF9F0A" />
+
+          <SolidColorBrush x:Key="VfKindPdfFg" Color="#FF6961" />
+          <SolidColorBrush x:Key="VfKindDocumentFg" Color="#64A8FF" />
+          <SolidColorBrush x:Key="VfKindTextFg" Color="#A99CF5" />
+          <SolidColorBrush x:Key="VfKindCodeFg" Color="#A99CF5" />
+          <SolidColorBrush x:Key="VfKindMailFg" Color="#0A84FF" />
+          <SolidColorBrush x:Key="VfKindImageFg" Color="#E39A55" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetFg" Color="#4CC870" />
+          <SolidColorBrush x:Key="VfKindPresentationFg" Color="#FF8A55" />
+          <SolidColorBrush x:Key="VfKindMediaFg" Color="#F07CC8" />
+          <SolidColorBrush x:Key="VfKindArchiveFg" Color="#E0C060" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </views:LauncherViewBase.Resources>
+
+  <views:LauncherViewBase.Styles>
+    <Style Selector="Border#Card">
+      <Setter Property="Margin" Value="44,24,44,76" />
+      <Setter Property="Background" Value="{DynamicResource MacCardBrush}" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="BoxShadow" Value="0 0 0 0.5 #2E000000, 0 28 72 0 #521E2E32, 0 6 16 0 #1F141E32" />
+    </Style>
+    <Style Selector="views|LauncherViewBase.blurred Border#Card">
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="{DynamicResource MacCardBlurBrush}" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+    <Style Selector="views|LauncherViewBase.opaque Border#Card">
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+
+    <Style Selector="Button.pill">
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Background" Value="{DynamicResource MacPillBrush}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.pill.selected">
+      <Setter Property="Background" Value="{DynamicResource VfAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource VfOnAccentBrush}" />
+      <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+    <Style Selector="Button.action">
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Background" Value="{DynamicResource MacButtonBrush}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+    <Style Selector="Button.action.primary">
+      <Setter Property="Padding" Value="14,5" />
+      <Setter Property="Background" Value="{DynamicResource VfAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource VfOnAccentBrush}" />
+    </Style>
+
+    <Style Selector="Border.row:pointerover">
+      <Setter Property="Background" Value="{DynamicResource MacRowHoverBrush}" />
+    </Style>
+    <Style Selector="Border.row.selected">
+      <Setter Property="Background" Value="{DynamicResource VfAccentBrush}" />
+    </Style>
+    <Style Selector="Border.row.selected TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource VfOnAccentBrush}" />
+    </Style>
+    <Style Selector="Border.row.selected TextBlock.meta">
+      <Setter Property="Foreground" Value="{DynamicResource MacOnSelectionSubtleBrush}" />
+    </Style>
+    <Style Selector="Border.row.selected TextBlock.score">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Border.row.selected c|FileKindIcon">
+      <Setter Property="GlyphOverride" Value="{DynamicResource VfOnAccentBrush}" />
+    </Style>
+
+    <!-- Preview pane is hidden with Tab: the list then spans the full width. -->
+    <Style Selector="Grid#Body.nopreview > ScrollViewer">
+      <Setter Property="Grid.ColumnSpan" Value="2" />
+    </Style>
+
+    <Style Selector="StackPanel.tone">
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource VfSubtleBrush}" />
+    </Style>
+  </views:LauncherViewBase.Styles>
+
+  <Border x:Name="Card" Width="700" BorderThickness="1" BorderBrush="{DynamicResource MacCardBorderBrush}" ClipToBounds="True">
+    <StackPanel>
+      <!-- Search field -->
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="18,16,18,14">
+        <c:StrokeIcon Data="{StaticResource VfIconSearch}" Width="22" Height="22" StrokeThickness="2"
+                      Foreground="{DynamicResource MacSearchIconBrush}" VerticalAlignment="Center" />
+        <TextBox x:Name="SearchBox" Grid.Column="1" Classes="bare" FontSize="22" LetterSpacing="-0.2"
+                 Text="{Binding Query}" PlaceholderText="Describe what you are looking for"
+                 AutomationProperties.Name="Search files by meaning" />
+        <Button Grid.Column="2" Classes="vf" Width="20" Height="20" CornerRadius="10" Background="{DynamicResource MacClearBrush}"
+                Command="{Binding ClearQueryCommand}" IsVisible="{Binding HasQuery}" VerticalAlignment="Center"
+                AutomationProperties.Name="Clear search">
+          <c:StrokeIcon Data="{StaticResource VfIconClose}" Width="10" Height="10" StrokeThickness="3.6" Foreground="White" />
+        </Button>
+      </Grid>
+
+      <!-- Filter chips -->
+      <DockPanel Margin="18,0,18,12">
+        <Button DockPanel.Dock="Right" Classes="vf" Padding="6,4" CornerRadius="6" FontSize="12"
+                Foreground="{DynamicResource VfSubtleBrush}">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <TextBlock Text="{Binding SelectedTimeRange.Label}" VerticalAlignment="Center" />
+            <c:StrokeIcon Data="{StaticResource VfIconChevronDown}" Width="9" Height="9" StrokeThickness="2.6" VerticalAlignment="Center" />
+          </StackPanel>
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight" ItemsSource="{Binding TimeRanges}">
+              <MenuFlyout.ItemContainerTheme>
+                <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:TimeRangeOption">
+                  <Setter Property="Header" Value="{Binding Label}" />
+                  <Setter Property="Command" Value="{Binding SelectCommand}" />
+                </ControlTheme>
+              </MenuFlyout.ItemContainerTheme>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+        <ItemsControl ItemsSource="{Binding Filters}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="6" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:FilterChipViewModel">
+              <Button Classes="vf pill" Classes.selected="{Binding IsSelected}" Content="{Binding Label}"
+                      Command="{Binding SelectCommand}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </DockPanel>
+
+      <!-- Body: results + preview -->
+      <Border Height="344" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
+        <Panel>
+          <Grid x:Name="Body" ColumnDefinitions="312,*" Classes.nopreview="{Binding !IsPreviewVisible}"
+                IsVisible="{Binding IsResultsVisible}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}" Margin="8">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Spacing="2" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ResultItemViewModel">
+                    <StackPanel>
+                      <TextBlock Text="{Binding GroupHeader}" IsVisible="{Binding HasGroupHeader}" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource VfSubtleBrush}" Margin="10,6,10,2" />
+                      <Border Classes="row" Classes.selected="{Binding IsSelected}" Padding="10,6" CornerRadius="8">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                          <c:FileKindIcon Kind="{Binding Kind}" Width="26" Height="26" GlyphSize="26" StrokeThickness="1.5" ShowTile="False" />
+                          <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                            <TextBlock FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis">
+                              <Run Text="{Binding FileName}" />
+                              <Run Text="{Binding TextInImageSuffix}" FontSize="11" FontWeight="Normal" />
+                            </TextBlock>
+                            <TextBlock Classes="meta" Text="{Binding BreadcrumbCaption}" FontSize="11"
+                                       Foreground="{DynamicResource VfSubtleBrush}" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="2" Classes="num score" Text="{Binding ScoreText}" FontSize="11"
+                                     Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Preview -->
+            <Border Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}"
+                    Background="{DynamicResource MacPreviewBrush}" Padding="18,16" ClipToBounds="True"
+                    IsVisible="{Binding IsPreviewVisible}">
+              <DockPanel DataContext="{Binding SelectedResult}" x:DataType="vm:ResultItemViewModel"
+                         IsVisible="{Binding $parent[views:LauncherViewBase].((vm:LauncherViewModel)DataContext).HasSelection}">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
+                  <Button Classes="vf action primary" Content="Open" Command="{Binding Launcher.OpenSelectedCommand}" />
+                  <Button Classes="vf action" Content="Show in Finder" Command="{Binding Launcher.RevealSelectedCommand}" />
+                  <Button Classes="vf action" Content="Quick Look" Command="{Binding Launcher.QuickLookSelectedCommand}" />
+                </StackPanel>
+                <StackPanel Spacing="12">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Border Width="44" Height="52" CornerRadius="6" Background="{DynamicResource MacPaperBrush}"
+                            BoxShadow="0 0 0 0.5 #2E000000, 0 2 6 0 #1A000000" Padding="0,0,0,6">
+                      <Panel>
+                        <c:FileKindIcon Kind="{Binding Kind}" Width="20" Height="20" GlyphSize="20" ShowTile="False"
+                                        VerticalAlignment="Top" Margin="0,8,0,0" />
+                        <TextBlock Text="{Binding ExtensionLabel}" FontSize="9" FontWeight="Bold" LetterSpacing="0.4"
+                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" Foreground="{DynamicResource VfSubtleBrush}" />
+                      </Panel>
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding FileName}" FontSize="15" FontWeight="SemiBold" LetterSpacing="-0.1"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding DisplayDirectory}" FontSize="11" Foreground="{DynamicResource VfSubtleBrush}"
+                                 TextTrimming="PathSegmentEllipsis" />
+                      <TextBlock Text="{Binding MetaText}" FontSize="11" Foreground="{DynamicResource VfSubtleBrush}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </Grid>
+
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <TextBlock Text="Semantic match" FontSize="11" Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
+                    <c:MeterBar Grid.Column="1" Height="5" Value="{Binding ScoreFraction}" Radius="2.5" VerticalAlignment="Center"
+                                Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
+                    <TextBlock Grid.Column="2" Classes="num" Text="{Binding ScoreText}" FontSize="11" FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                  </Grid>
+
+                  <Border Background="{DynamicResource MacPaperBrush}" CornerRadius="10" BoxShadow="0 0 0 0.5 #1F000000"
+                          Padding="14,12" IsVisible="{Binding HasSnippet}">
+                    <StackPanel Spacing="6">
+                      <TextBlock Text="Why it matched" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VfSubtleBrush}" />
+                      <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="… " Suffix=" …"
+                                              FontSize="12.5" LineHeight="19.4" TextWrapping="Wrap" MaxLines="6"
+                                              TextTrimming="CharacterEllipsis"
+                                              HighlightBackground="{DynamicResource MacHighlightBrush}" HighlightFontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Launcher.MatchExplanation}" FontSize="11" TextWrapping="Wrap"
+                                 Foreground="{DynamicResource VfSubtleBrush}" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </DockPanel>
+            </Border>
+          </Grid>
+          <ScrollViewer IsVisible="{Binding IsMessageVisible}">
+            <common:LauncherMessageView />
+          </ScrollViewer>
+        </Panel>
+      </Border>
+
+      <!-- Footer -->
+      <Border Padding="18,9" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource VfDividerBrush}"
+              TextElement.FontSize="11" TextElement.Foreground="{DynamicResource VfSubtleBrush}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
+            <TextBlock VerticalAlignment="Center"><Run Text="↑↓" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" Navigate" /></TextBlock>
+            <TextBlock VerticalAlignment="Center"><Run Text="↵" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" Open" /></TextBlock>
+            <TextBlock VerticalAlignment="Center"><Run Text="⌘↵" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" Reveal" /></TextBlock>
+            <Border Padding="6,1" CornerRadius="4" Background="{DynamicResource MacButtonBrush}" VerticalAlignment="Center"
+                    IsVisible="{Binding !HasHotkeyError}">
+              <TextBlock Text="{Binding HotkeyLabel}" FontWeight="Medium" Foreground="{DynamicResource VfTextBrush}" />
+            </Border>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="7">
+            <c:StrokeIcon Data="{StaticResource VfIconLock}" Width="12" Height="12" StrokeThickness="2.2"
+                          Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
+            <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="330">
+              <Run Text="On-device · EmbeddingGemma · " /><Run Text="{Binding Status.CompactText}" />
+            </TextBlock>
+            <c:MeterBar Width="48" Height="3" Radius="1.5" VerticalAlignment="Center" Value="{Binding Status.SearchableFraction}"
+                        Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}"
+                        IsVisible="{Binding !Status.IsUpToDate}" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+      <Border Padding="18,6,18,9" IsVisible="{Binding HasHotkeyError}">
+        <TextBlock Text="{Binding HotkeyError}" FontSize="11" Foreground="{DynamicResource VfWarningBrush}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+  </Border>
+</views:LauncherViewBase>
