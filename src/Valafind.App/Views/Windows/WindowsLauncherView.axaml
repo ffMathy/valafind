@@ -1,0 +1,506 @@
+<!-- Windows A · Command Launcher (Fluent, acrylic). Mockup: Main.dc.html -->
+<views:LauncherViewBase xmlns="https://github.com/avaloniaui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                        xmlns:vm="using:Valafind.App.ViewModels"
+                        xmlns:c="using:Valafind.App.Controls"
+                        xmlns:views="using:Valafind.App.Views"
+                        xmlns:common="using:Valafind.App.Views.Common"
+                        mc:Ignorable="d"
+                        x:Class="Valafind.App.Views.Windows.WindowsLauncherView"
+                        x:DataType="vm:LauncherViewModel"
+                        FontFamily="{StaticResource VfFontWindows}"
+                        Foreground="{DynamicResource VfTextBrush}">
+  <Design.DataContext>
+    <x:Static Member="vm:DesignData.Windows" />
+  </Design.DataContext>
+
+  <views:LauncherViewBase.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="VfTextBrush" Color="#1B1B1B" />
+          <SolidColorBrush x:Key="VfSubtleBrush" Color="#555555" />
+          <SolidColorBrush x:Key="VfAccentBrush" Color="#0067C0" />
+          <SolidColorBrush x:Key="VfOnAccentBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfSelectionBrush" Color="#470067C0" />
+          <SolidColorBrush x:Key="VfPlaceholderBrush" Color="#6E6E6E" />
+          <SolidColorBrush x:Key="VfHoverOverlayBrush" Color="#0A000000" />
+          <SolidColorBrush x:Key="VfPressOverlayBrush" Color="#14000000" />
+          <SolidColorBrush x:Key="VfDividerBrush" Color="#0F000000" />
+          <SolidColorBrush x:Key="VfTrackBrush" Color="#1A000000" />
+          <SolidColorBrush x:Key="VfCodeBackgroundBrush" Color="#D9FFFFFF" />
+          <SolidColorBrush x:Key="VfWarningBrush" Color="#8A4B00" />
+
+          <SolidColorBrush x:Key="WinCardBrush" Color="#F9F9FA" />
+          <SolidColorBrush x:Key="WinCardBlurBrush" Color="#EDF9F9FA" />
+          <SolidColorBrush x:Key="WinCardBorderBrush" Color="#17000000" />
+          <SolidColorBrush x:Key="WinMetaBrush" Color="#5A5A5A" />
+          <SolidColorBrush x:Key="WinIconButtonBrush" Color="#424242" />
+          <SolidColorBrush x:Key="WinChipBrush" Color="#BFFFFFFF" />
+          <SolidColorBrush x:Key="WinChipBorderBrush" Color="#1A000000" />
+          <SolidColorBrush x:Key="WinStripBrush" Color="#F3F3F5" />
+          <SolidColorBrush x:Key="WinStripBlurBrush" Color="#E6F3F3F5" />
+          <SolidColorBrush x:Key="WinStripBorderBrush" Color="#12000000" />
+          <SolidColorBrush x:Key="WinStripTextBrush" Color="#424242" />
+          <SolidColorBrush x:Key="WinFooterTextBrush" Color="#4A4A4A" />
+          <SolidColorBrush x:Key="WinRowHoverBrush" Color="#08000000" />
+          <SolidColorBrush x:Key="WinAccentSoftBrush" Color="#170067C0" />
+          <SolidColorBrush x:Key="WinAccentBorderBrush" Color="#380067C0" />
+          <SolidColorBrush x:Key="WinMarkBrush" Color="#290067C0" />
+          <SolidColorBrush x:Key="WinInnerCardBrush" Color="#D9FFFFFF" />
+          <SolidColorBrush x:Key="WinInnerBorderBrush" Color="#0F000000" />
+          <SolidColorBrush x:Key="WinSnippetBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="WinButtonBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="WinButtonBorderBrush" Color="#1F000000" />
+          <SolidColorBrush x:Key="WinBusyBrush" Color="#8A4B00" />
+          <SolidColorBrush x:Key="WinBusyBarBrush" Color="#B35C00" />
+          <SolidColorBrush x:Key="WinGoodBrush" Color="#107C41" />
+          <SolidColorBrush x:Key="WinErrorBrush" Color="#C42B1C" />
+          <SolidColorBrush x:Key="WinTrustBrush" Color="#1F5130" />
+          <SolidColorBrush x:Key="WinScoreBrush" Color="#424242" />
+          <SolidColorBrush x:Key="WinBadgeBrush" Color="#0F000000" />
+          <SolidColorBrush x:Key="WinKbdBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="WinKbdBorderBrush" Color="#24000000" />
+          <SolidColorBrush x:Key="WinKbdTextBrush" Color="#3B3B3B" />
+          <SolidColorBrush x:Key="WinInfoBarBrush" Color="#FFF4CE" />
+
+          <SolidColorBrush x:Key="VfKindPdfBg" Color="#FDE7E9" />
+          <SolidColorBrush x:Key="VfKindPdfFg" Color="#B0261A" />
+          <SolidColorBrush x:Key="VfKindDocumentBg" Color="#E3EEFB" />
+          <SolidColorBrush x:Key="VfKindDocumentFg" Color="#185ABD" />
+          <SolidColorBrush x:Key="VfKindTextBg" Color="#ECECEC" />
+          <SolidColorBrush x:Key="VfKindTextFg" Color="#3B3B3B" />
+          <SolidColorBrush x:Key="VfKindCodeBg" Color="#EEE9F8" />
+          <SolidColorBrush x:Key="VfKindCodeFg" Color="#5B3FA8" />
+          <SolidColorBrush x:Key="VfKindMailBg" Color="#E3EEFB" />
+          <SolidColorBrush x:Key="VfKindMailFg" Color="#0F5EA8" />
+          <SolidColorBrush x:Key="VfKindImageBg" Color="#E4F3E8" />
+          <SolidColorBrush x:Key="VfKindImageFg" Color="#17703A" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetBg" Color="#E4F3E8" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetFg" Color="#107C41" />
+          <SolidColorBrush x:Key="VfKindPresentationBg" Color="#FCEBE3" />
+          <SolidColorBrush x:Key="VfKindPresentationFg" Color="#C43E1C" />
+          <SolidColorBrush x:Key="VfKindMediaBg" Color="#F6E8F7" />
+          <SolidColorBrush x:Key="VfKindMediaFg" Color="#8E3A93" />
+          <SolidColorBrush x:Key="VfKindArchiveBg" Color="#F4EEDF" />
+          <SolidColorBrush x:Key="VfKindArchiveFg" Color="#7A5A12" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="VfTextBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfSubtleBrush" Color="#C5C5C5" />
+          <SolidColorBrush x:Key="VfAccentBrush" Color="#4CC2FF" />
+          <SolidColorBrush x:Key="VfOnAccentBrush" Color="#002A40" />
+          <SolidColorBrush x:Key="VfSelectionBrush" Color="#664CC2FF" />
+          <SolidColorBrush x:Key="VfPlaceholderBrush" Color="#9E9E9E" />
+          <SolidColorBrush x:Key="VfHoverOverlayBrush" Color="#0FFFFFFF" />
+          <SolidColorBrush x:Key="VfPressOverlayBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="VfDividerBrush" Color="#14FFFFFF" />
+          <SolidColorBrush x:Key="VfTrackBrush" Color="#24FFFFFF" />
+          <SolidColorBrush x:Key="VfCodeBackgroundBrush" Color="#14FFFFFF" />
+          <SolidColorBrush x:Key="VfWarningBrush" Color="#FCE100" />
+
+          <SolidColorBrush x:Key="WinCardBrush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="WinCardBlurBrush" Color="#E62C2C2C" />
+          <SolidColorBrush x:Key="WinCardBorderBrush" Color="#33000000" />
+          <SolidColorBrush x:Key="WinMetaBrush" Color="#ABABAB" />
+          <SolidColorBrush x:Key="WinIconButtonBrush" Color="#D0D0D0" />
+          <SolidColorBrush x:Key="WinChipBrush" Color="#0FFFFFFF" />
+          <SolidColorBrush x:Key="WinChipBorderBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="WinStripBrush" Color="#232323" />
+          <SolidColorBrush x:Key="WinStripBlurBrush" Color="#CC1F1F1F" />
+          <SolidColorBrush x:Key="WinStripBorderBrush" Color="#14FFFFFF" />
+          <SolidColorBrush x:Key="WinStripTextBrush" Color="#C8C8C8" />
+          <SolidColorBrush x:Key="WinFooterTextBrush" Color="#BDBDBD" />
+          <SolidColorBrush x:Key="WinRowHoverBrush" Color="#0AFFFFFF" />
+          <SolidColorBrush x:Key="WinAccentSoftBrush" Color="#1F4CC2FF" />
+          <SolidColorBrush x:Key="WinAccentBorderBrush" Color="#4D4CC2FF" />
+          <SolidColorBrush x:Key="WinMarkBrush" Color="#404CC2FF" />
+          <SolidColorBrush x:Key="WinInnerCardBrush" Color="#0FFFFFFF" />
+          <SolidColorBrush x:Key="WinInnerBorderBrush" Color="#14FFFFFF" />
+          <SolidColorBrush x:Key="WinSnippetBrush" Color="#E6E6E6" />
+          <SolidColorBrush x:Key="WinButtonBrush" Color="#0FFFFFFF" />
+          <SolidColorBrush x:Key="WinButtonBorderBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="WinBusyBrush" Color="#FCB868" />
+          <SolidColorBrush x:Key="WinBusyBarBrush" Color="#F7A140" />
+          <SolidColorBrush x:Key="WinGoodBrush" Color="#6CCB5F" />
+          <SolidColorBrush x:Key="WinErrorBrush" Color="#FF99A4" />
+          <SolidColorBrush x:Key="WinTrustBrush" Color="#8FD19E" />
+          <SolidColorBrush x:Key="WinScoreBrush" Color="#C8C8C8" />
+          <SolidColorBrush x:Key="WinBadgeBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="WinKbdBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="WinKbdBorderBrush" Color="#33FFFFFF" />
+          <SolidColorBrush x:Key="WinKbdTextBrush" Color="#E0E0E0" />
+          <SolidColorBrush x:Key="WinInfoBarBrush" Color="#433519" />
+
+          <SolidColorBrush x:Key="VfKindPdfBg" Color="#3D2224" />
+          <SolidColorBrush x:Key="VfKindPdfFg" Color="#FF8F84" />
+          <SolidColorBrush x:Key="VfKindDocumentBg" Color="#1F2F45" />
+          <SolidColorBrush x:Key="VfKindDocumentFg" Color="#8DB8F2" />
+          <SolidColorBrush x:Key="VfKindTextBg" Color="#363636" />
+          <SolidColorBrush x:Key="VfKindTextFg" Color="#D6D6D6" />
+          <SolidColorBrush x:Key="VfKindCodeBg" Color="#2E2843" />
+          <SolidColorBrush x:Key="VfKindCodeFg" Color="#B9A6F2" />
+          <SolidColorBrush x:Key="VfKindMailBg" Color="#1F2F45" />
+          <SolidColorBrush x:Key="VfKindMailFg" Color="#86BDF5" />
+          <SolidColorBrush x:Key="VfKindImageBg" Color="#1E3526" />
+          <SolidColorBrush x:Key="VfKindImageFg" Color="#7FD39A" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetBg" Color="#1E3526" />
+          <SolidColorBrush x:Key="VfKindSpreadsheetFg" Color="#6CCB8F" />
+          <SolidColorBrush x:Key="VfKindPresentationBg" Color="#3D2A22" />
+          <SolidColorBrush x:Key="VfKindPresentationFg" Color="#F5A07F" />
+          <SolidColorBrush x:Key="VfKindMediaBg" Color="#36243A" />
+          <SolidColorBrush x:Key="VfKindMediaFg" Color="#E2A3E6" />
+          <SolidColorBrush x:Key="VfKindArchiveBg" Color="#36301F" />
+          <SolidColorBrush x:Key="VfKindArchiveFg" Color="#E3C77C" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </views:LauncherViewBase.Resources>
+
+  <views:LauncherViewBase.Styles>
+    <!-- Surface -->
+    <Style Selector="Border#Card">
+      <Setter Property="Margin" Value="40,20,40,64" />
+      <Setter Property="Background" Value="{DynamicResource WinCardBrush}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BoxShadow" Value="0 32 64 0 #38001E46, 0 2 21 0 #1F001E46" />
+    </Style>
+    <Style Selector="views|LauncherViewBase.blurred Border#Card">
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="{DynamicResource WinCardBlurBrush}" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+    <Style Selector="views|LauncherViewBase.opaque Border#Card">
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+    <Style Selector="views|LauncherViewBase.blurred Border.strip">
+      <Setter Property="Background" Value="{DynamicResource WinStripBlurBrush}" />
+    </Style>
+
+    <!-- Keycaps -->
+    <Style Selector="Border.kbd">
+      <Setter Property="MinWidth" Value="18" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="Padding" Value="5,0" />
+      <Setter Property="BorderThickness" Value="1,1,1,2" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Background" Value="{DynamicResource WinKbdBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WinKbdBorderBrush}" />
+    </Style>
+    <Style Selector="Border.kbd > TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource WinKbdTextBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Chips -->
+    <Style Selector="Button.chip">
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="11,0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WinChipBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource WinChipBrush}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+    </Style>
+    <Style Selector="Button.chip.selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource VfAccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource VfAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource VfOnAccentBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Action buttons -->
+    <Style Selector="Button.action">
+      <Setter Property="Height" Value="26" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WinButtonBorderBrush}" />
+      <Setter Property="Background" Value="{DynamicResource WinButtonBrush}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.action.primary">
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="BorderBrush" Value="{DynamicResource VfAccentBrush}" />
+      <Setter Property="Background" Value="{DynamicResource VfAccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource VfOnAccentBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Rows -->
+    <Style Selector="Border.row:pointerover">
+      <Setter Property="Background" Value="{DynamicResource WinRowHoverBrush}" />
+    </Style>
+    <Style Selector="Border.row.selected">
+      <Setter Property="Background" Value="{DynamicResource WinAccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WinAccentBorderBrush}" />
+    </Style>
+
+    <!-- Status tones -->
+    <Style Selector="StackPanel.state">
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource WinStripTextBrush}" />
+    </Style>
+    <Style Selector="StackPanel.state.busy, StackPanel.state.paused">
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource WinBusyBrush}" />
+    </Style>
+    <Style Selector="StackPanel.state.good">
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource WinGoodBrush}" />
+    </Style>
+    <Style Selector="StackPanel.state.error">
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource WinErrorBrush}" />
+    </Style>
+    <Style Selector="c|MeterBar.pressure">
+      <Setter Property="Fill" Value="{DynamicResource VfAccentBrush}" />
+    </Style>
+    <Style Selector="c|MeterBar.pressure.high">
+      <Setter Property="Fill" Value="{DynamicResource WinBusyBarBrush}" />
+    </Style>
+  </views:LauncherViewBase.Styles>
+
+  <Border x:Name="Card" Width="720" BorderThickness="1" BorderBrush="{DynamicResource WinCardBorderBrush}" ClipToBounds="True">
+    <StackPanel>
+      <!-- Search row -->
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14" Margin="20,16,16,14">
+        <Border Width="32" Height="32" CornerRadius="8" Background="{DynamicResource VfAccentBrush}">
+          <c:StrokeIcon Data="{StaticResource VfIconLogo}" Width="18" Height="18" StrokeThickness="2"
+                        Foreground="{DynamicResource VfOnAccentBrush}" />
+        </Border>
+        <TextBox x:Name="SearchBox" Grid.Column="1" Classes="bare" FontSize="20" Padding="0,4"
+                 Text="{Binding Query}" PlaceholderText="Search files by meaning"
+                 AutomationProperties.Name="Search files by meaning" />
+        <TextBlock Grid.Column="2" Text="{Binding ResultSummary}" FontSize="12" Classes="num"
+                   Foreground="{DynamicResource WinMetaBrush}" VerticalAlignment="Center" />
+        <Button Grid.Column="3" Classes="vf" Width="32" Height="32" CornerRadius="4"
+                Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Settings"
+                AutomationProperties.Name="Valafind settings">
+          <c:StrokeIcon Data="{StaticResource VfIconGear}" Width="18" Height="18" StrokeThickness="1.5"
+                        Foreground="{DynamicResource WinIconButtonBrush}" />
+        </Button>
+      </Grid>
+      <Border Height="2" Margin="20,0" CornerRadius="1" Background="{DynamicResource VfAccentBrush}" />
+
+      <!-- Filter chips. (The mockup's "Summon" hint does not fit next to all eight chips; it moved to the empty state.) -->
+      <DockPanel Margin="20,12,20,8">
+        <Button DockPanel.Dock="Right" Classes="vf chip" Padding="12,0,10,0">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="{Binding SelectedTimeRange.Label}" VerticalAlignment="Center" />
+            <c:StrokeIcon Data="{StaticResource VfIconChevronDown}" Width="12" Height="12" StrokeThickness="2"
+                          VerticalAlignment="Center" />
+          </StackPanel>
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight" ItemsSource="{Binding TimeRanges}">
+              <MenuFlyout.ItemContainerTheme>
+                <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="vm:TimeRangeOption">
+                  <Setter Property="Header" Value="{Binding Label}" />
+                  <Setter Property="Command" Value="{Binding SelectCommand}" />
+                </ControlTheme>
+              </MenuFlyout.ItemContainerTheme>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+        <ItemsControl ItemsSource="{Binding Filters}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="6" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:FilterChipViewModel">
+              <Button Classes="vf chip" Classes.selected="{Binding IsSelected}" Content="{Binding Label}"
+                      Command="{Binding SelectCommand}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </DockPanel>
+
+      <!-- Results / messages -->
+      <ScrollViewer MaxHeight="476" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                    IsVisible="{Binding IsResultsVisible}">
+        <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}" Margin="8,4,8,8">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ResultItemViewModel">
+              <Panel>
+                <!-- Compact row -->
+                <Border Classes="row" Classes.selected="{Binding IsSelected}" IsVisible="{Binding IsCompact}"
+                        Padding="12,8" CornerRadius="6" BorderThickness="1" BorderBrush="Transparent">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                    <c:FileKindIcon Kind="{Binding Kind}" Width="32" Height="32" GlyphSize="18" CornerRadius="6" />
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock FontSize="14" TextTrimming="CharacterEllipsis">
+                        <Run Text="{Binding FileName}" />
+                        <InlineUIContainer BaselineAlignment="Center">
+                          <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="4" Background="{DynamicResource WinBadgeBrush}"
+                                  IsVisible="{Binding HasTextInImage}">
+                            <TextBlock Text="Text in image" FontSize="11" Foreground="{DynamicResource WinScoreBrush}" />
+                          </Border>
+                        </InlineUIContainer>
+                      </TextBlock>
+                      <TextBlock Text="{Binding CaptionWithSnippet}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Classes="num" Text="{Binding ScoreText}" FontSize="12"
+                               Foreground="{DynamicResource WinScoreBrush}" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+
+                <!-- Selected row with "why it matched" -->
+                <Border Classes="row" IsVisible="{Binding IsExpanded}" Padding="12,10,12,12" CornerRadius="6"
+                        Background="{DynamicResource WinAccentSoftBrush}" BorderBrush="{DynamicResource WinAccentBorderBrush}"
+                        BorderThickness="1">
+                  <StackPanel>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <c:FileKindIcon Kind="{Binding Kind}" Width="32" Height="32" GlyphSize="18" CornerRadius="6" />
+                      <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding FileName}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock FontSize="12" Foreground="{DynamicResource VfSubtleBrush}" TextTrimming="CharacterEllipsis">
+                          <Run Text="{Binding DisplayDirectory}" /><Run Text=" · " /><Run Text="{Binding ModifiedText}" />
+                        </TextBlock>
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <c:MeterBar Width="44" Height="4" Value="{Binding ScoreFraction}" Radius="2"
+                                    Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
+                        <TextBlock Classes="num" Text="{Binding ScoreText}" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource VfAccentBrush}" />
+                      </StackPanel>
+                    </Grid>
+                    <Border Margin="44,10,0,0" Padding="12,10" CornerRadius="6" BorderThickness="1"
+                            Background="{DynamicResource WinInnerCardBrush}" BorderBrush="{DynamicResource WinInnerBorderBrush}">
+                      <StackPanel Spacing="6">
+                        <TextBlock Text="WHY IT MATCHED · CLOSEST PASSAGE" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.2"
+                                   Foreground="{DynamicResource VfSubtleBrush}" IsVisible="{Binding HasSnippet}" />
+                        <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="“…" Suffix="…”"
+                                                FontSize="13" LineHeight="19.5" TextWrapping="Wrap" MaxLines="4"
+                                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource WinSnippetBrush}"
+                                                HighlightBackground="{DynamicResource WinMarkBrush}"
+                                                HighlightUnderline="{DynamicResource VfAccentBrush}"
+                                                HighlightForeground="{DynamicResource VfTextBrush}"
+                                                IsVisible="{Binding HasSnippet}" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                          <Button Classes="vf action primary" Content="Open" Command="{Binding Launcher.OpenSelectedCommand}" />
+                          <Button Classes="vf action" Content="{Binding Launcher.RevealLabel}"
+                                  Command="{Binding Launcher.RevealSelectedCommand}" />
+                          <Button Classes="vf action" Content="Copy path" Command="{Binding Launcher.CopyPathCommand}" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Border>
+              </Panel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+      <common:LauncherMessageView IsVisible="{Binding IsMessageVisible}" />
+
+      <!-- Hotkey problem (e.g. Wayland) -->
+      <Border Background="{DynamicResource WinInfoBarBrush}" Padding="20,8" IsVisible="{Binding HasHotkeyError}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <c:StrokeIcon Data="{StaticResource VfIconKeyboard}" Width="14" Height="14" StrokeThickness="1.8"
+                        Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding HotkeyError}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <!-- Index status strip -->
+      <Border Classes="strip" Padding="20,9" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource WinStripBorderBrush}"
+              Background="{DynamicResource WinStripBrush}" TextElement.FontSize="12"
+              TextElement.Foreground="{DynamicResource WinStripTextBrush}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="5" Background="Transparent">
+              <ToolTip.Tip>
+                <TextBlock><Run Text="Phase 1 — Frequently used files: " /><Run Text="{Binding Status.FrequentText}" /></TextBlock>
+              </ToolTip.Tip>
+              <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="13" Height="13" StrokeThickness="2.4"
+                            Foreground="{DynamicResource WinGoodBrush}" VerticalAlignment="Center"
+                            IsVisible="{Binding Status.IsFrequentComplete}" />
+              <c:MeterBar Width="32" Height="4" Radius="2" VerticalAlignment="Center" Value="{Binding Status.FrequentFraction}"
+                          Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}"
+                          IsVisible="{Binding !Status.IsFrequentComplete}" />
+              <TextBlock Classes="num" Text="{Binding Status.FrequentShortText}" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent">
+              <ToolTip.Tip>
+                <TextBlock><Run Text="Phase 2 — All user files: " /><Run Text="{Binding Status.AllCountText}" /></TextBlock>
+              </ToolTip.Tip>
+              <TextBlock Text="All files" VerticalAlignment="Center" />
+              <c:MeterBar Width="48" Height="4" Radius="2" VerticalAlignment="Center" Value="{Binding Status.AllFraction}"
+                          Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
+              <TextBlock Classes="num" Text="{Binding Status.AllPercentText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <StackPanel Classes="state" Classes.busy="{Binding Status.IsToneBusy}" Classes.paused="{Binding Status.IsTonePaused}"
+                        Classes.good="{Binding Status.IsToneGood}" Classes.error="{Binding Status.IsToneError}"
+                        Orientation="Horizontal" Spacing="6">
+              <Panel Width="14" Height="14" VerticalAlignment="Center">
+                <c:StrokeIcon Data="{StaticResource VfIconPauseCircle}" StrokeThickness="2" IsVisible="{Binding Status.IsPaused}" />
+                <c:StrokeIcon Data="{StaticResource VfIconPlayCircle}" StrokeThickness="2" IsVisible="{Binding Status.IsActive}" />
+                <c:StrokeIcon Data="{StaticResource VfIconWarning}" StrokeThickness="2" IsVisible="{Binding Status.IsToneError}" />
+              </Panel>
+              <TextBlock Text="{Binding Status.StateText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Status.HasPressure}">
+              <TextBlock Text="CPU" VerticalAlignment="Center" />
+              <c:MeterBar Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Width="36" Height="4" Radius="2"
+                          VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
+              <TextBlock Classes="num" Text="{Binding Status.CpuText}" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Status.HasPressure}">
+              <TextBlock Text="Disk" VerticalAlignment="Center" />
+              <c:MeterBar Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Width="36" Height="4" Radius="2"
+                          VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
+              <TextBlock Classes="num" Text="{Binding Status.DiskText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Footer -->
+      <Border Classes="strip" Padding="20,9" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource VfDividerBrush}"
+              Background="{DynamicResource WinStripBrush}" TextElement.FontSize="12"
+              TextElement.Foreground="{DynamicResource WinFooterTextBrush}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" ToolTip.Tip="Nothing leaves this computer">
+            <c:StrokeIcon Data="{StaticResource VfIconShield}" Width="14" Height="14" StrokeThickness="1.8"
+                          Foreground="{DynamicResource WinTrustBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="On-device · EmbeddingGemma" Foreground="{DynamicResource WinTrustBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Border Classes="kbd"><TextBlock Text="↑" /></Border>
+              <Border Classes="kbd"><TextBlock Text="↓" /></Border>
+              <TextBlock Text="Navigate" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Border Classes="kbd"><TextBlock Text="↵" /></Border>
+              <TextBlock Text="Open" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Border Classes="kbd"><TextBlock Text="Ctrl" /></Border>
+              <Border Classes="kbd"><TextBlock Text="↵" /></Border>
+              <TextBlock Text="Show in folder" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Border Classes="kbd"><TextBlock Text="Tab" /></Border>
+              <TextBlock Text="Preview" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+    </StackPanel>
+  </Border>
+</views:LauncherViewBase>

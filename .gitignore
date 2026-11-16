@@ -12,3 +12,6 @@ publish/
 models/
 *.onnx
 *.onnx_data
+
+# Temporary cross-module stubs used while modules are developed in isolation; never commit.
+**/_Pending*Stubs.cs
