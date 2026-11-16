@@ -74,6 +74,7 @@ public partial class LauncherWindow : Window
         _ignoreDeactivateUntil = DateTime.UtcNow + DeactivateGrace;
         if (!IsVisible)
         {
+            ApplySurface(); // A compositor may have started or stopped since the last show.
             PositionOnActiveScreen();
             Show();
         }
@@ -129,6 +130,9 @@ public partial class LauncherWindow : Window
     private void ApplySurface()
     {
         var level = ActualTransparencyLevel;
+        // X11 without a compositing manager: alpha is ignored, so a "transparent" margin would show as a solid box.
+        if (level != WindowTransparencyLevel.None && Platform.X11Compositor.IsCompositing() == false)
+            level = WindowTransparencyLevel.None;
         var surface = level == WindowTransparencyLevel.None ? LauncherSurface.Opaque
             : level == WindowTransparencyLevel.Transparent ? LauncherSurface.Floating
             : LauncherSurface.Blurred;

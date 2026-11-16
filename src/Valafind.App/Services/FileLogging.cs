@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Valafind.Core.Configuration;
 
 namespace Valafind.App.Services;
 
@@ -103,7 +104,7 @@ internal sealed class RollingFileLoggerProvider : ILoggerProvider
 
         _stream?.Dispose();
         _stream = null;
-        System.IO.Directory.CreateDirectory(Directory);
+        AppPaths.EnsurePrivateDirectory(Directory);
         if (_currentDay != day)
         {
             _currentDay = day;
@@ -117,7 +118,8 @@ internal sealed class RollingFileLoggerProvider : ILoggerProvider
             var info = new FileInfo(path);
             if (!info.Exists || info.Length + pendingBytes <= MaxFileBytes || info.Length == 0)
             {
-                _stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+                _stream = new FileStream(path, AppPaths.PrivateFileOptions(FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete));
+                AppPaths.TightenToOwner(path);
                 break;
             }
             _currentIndex++;

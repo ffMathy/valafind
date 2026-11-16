@@ -154,11 +154,11 @@
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="BoxShadow" Value="0 0 0 1 #2E000000, 0 18 48 0 #6B000000, 0 4 10 0 #33000000" />
     </Style>
-    <Style Selector="views|LauncherViewBase.blurred Border#Card">
+    <Style Selector=":is(views|LauncherViewBase).blurred Border#Card">
       <Setter Property="Margin" Value="0" />
       <Setter Property="BoxShadow" Value="none" />
     </Style>
-    <Style Selector="views|LauncherViewBase.opaque Border#Card">
+    <Style Selector=":is(views|LauncherViewBase).opaque Border#Card">
       <Setter Property="Margin" Value="0" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="BoxShadow" Value="none" />

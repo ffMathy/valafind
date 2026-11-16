@@ -139,6 +139,30 @@ public sealed class TextAnalysisTests
         Assert.Contains("Sentence 3 mentions budget.", chosenText);
         Assert.Equal(chosen.OrderBy(s => s.Start), chosen);
     }
+
+    [Fact]
+    public void Query_terms_skip_stopwords_including_the_word_being_typed()
+    {
+        var (stems, last) = TextAnalysis.QueryTerms("the lease where we negotiated the");
+        Assert.DoesNotContain("the", stems);
+        Assert.DoesNotContain("where", stems);
+        Assert.Contains(TextAnalysis.Stem("lease"), stems);
+        Assert.Null(last); // "the" is still being typed, but highlighting every "the…" word helps nobody.
+
+        Assert.Equal("negoti", TextAnalysis.QueryTerms("lease negoti").LastTermPrefix);
+    }
+
+    [Fact]
+    public void Text_without_sentence_punctuation_is_split_into_word_windows()
+    {
+        const string code = "def retry(fn, attempts=5): for i in range(attempts): try: return fn() except IOError: time.sleep(2 ** i)";
+        var windows = TextAnalysis.CandidateSentences(code, 4, [], null);
+        Assert.True(windows.Count >= 2, "code must yield several candidate spans");
+        Assert.All(windows, w => Assert.InRange(w.Start + w.Length, 1, code.Length));
+        for (var k = 1; k < windows.Count; k++)
+            Assert.True(windows[k].Start >= windows[k - 1].Start + windows[k - 1].Length, "windows must not overlap");
+        Assert.Equal("def", code.Substring(windows[0].Start, 3));
+    }
 }
 
 public sealed class SnippetTests

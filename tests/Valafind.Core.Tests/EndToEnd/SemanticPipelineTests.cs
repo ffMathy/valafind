@@ -105,13 +105,33 @@ public sealed class SemanticPipelineTests : IDisposable
 
         Assert.Equal(bread, (await Ask("how do I make sourdough bread"))[0].Path);
         Assert.Equal(churn, (await Ask("why are customers cancelling their subscriptions"))[0].Path);
-        Assert.Equal(code, (await Ask("function that retries with exponential backoff"))[0].Path);
+
+        // Lexical highlights never light up stopwords ("the", "where", "we" in the query above).
+        Assert.All(r, x => Assert.All(x.Highlights, h =>
+            Assert.DoesNotContain(x.Snippet.Substring(h.Start, h.Length).Trim().ToLowerInvariant(), QueryStopwords)));
+
+        // Second pass ("why it matched"): the deposit clause, found by meaning in Danish, is what gets highlighted.
+        var explained = await search.ExplainAsync("the lease agreement where we negotiated the deposit", r, TestContext.Current.CancellationToken);
+        Assert.Equal(r.Count, explained.Count);
+        var why = Assert.Single(explained[0].Highlights);
+        Assert.Contains("Depositum", explained[0].Snippet.Substring(why.Start, why.Length), StringComparison.Ordinal);
+
+        // Code has no sentence punctuation: word windows still give the matching file a highlight, while an unrelated
+        // runner-up (the bread recipe) gets no invented "reason".
+        var codeQuery = "function that retries with exponential backoff";
+        var c = await Ask(codeQuery);
+        Assert.Equal(code, c[0].Path);
+        var codeExplained = await search.ExplainAsync(codeQuery, c, TestContext.Current.CancellationToken);
+        Assert.NotEmpty(codeExplained[0].Highlights);
+        Assert.All(codeExplained.Skip(1), x => Assert.Equal(c.First(y => y.Path == x.Path).Highlights, x.Highlights));
 
         // Kind filters apply.
         var onlyCode = await search.SearchAsync("deposit", new SearchFilter(new HashSet<FileKind> { FileKind.Code }), 10,
             TestContext.Current.CancellationToken);
         Assert.All(onlyCode, x => Assert.Equal(FileKind.Code, x.Kind));
     }
+
+    private static readonly string[] QueryStopwords = ["the", "where", "we"];
 
     private static string WriteDocx(string path, params string[] paragraphs)
     {

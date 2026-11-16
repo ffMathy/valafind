@@ -182,12 +182,12 @@ public sealed class SingleInstance : IDisposable
         var path = Path.Combine(directory, "instance.lock");
         try
         {
-            Directory.CreateDirectory(directory);
+            AppPaths.EnsurePrivateDirectory(directory);
 
             // On Unix, FileShare.None makes .NET take an exclusive advisory flock(); it is released automatically if
             // the process dies, so a stale file never blocks a new launch. The file itself is never deleted, which
             // avoids unlink/recreate races between two starting processes.
-            var stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.None);
+            var stream = new FileStream(path, AppPaths.PrivateFileOptions(FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None));
             return stream;
         }
         catch (IOException)

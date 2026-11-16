@@ -160,13 +160,37 @@ public sealed class SearchServiceTests : IDisposable
         using var model = new InteractiveModel(_model);
         var service = new SearchService(model, new FixedStore(
             Hit(P("/d/a.txt"), 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard.")));
-        var results = await service.SearchAsync("invoice filing", SearchFilter.None, 5, Ct);
+        // The hashing test model only relates identical words, so the query reuses the sentence's words.
+        var results = await service.SearchAsync("invoices filed late", SearchFilter.None, 5, Ct);
 
-        var explained = await service.ExplainAsync("invoice filing", results, Ct);
+        var explained = await service.ExplainAsync("invoices filed late", results, Ct);
 
         Assert.Equal(1, model.InteractiveCalls);
         Assert.Equal(0, model.BackgroundCalls);
-        Assert.Single(explained[0].Highlights);
+        var why = Assert.Single(explained[0].Highlights);
+        Assert.Equal("The invoices were filed late.", explained[0].Snippet.Substring(why.Start, why.Length));
+    }
+
+    [Fact]
+    public async Task Explain_invents_no_reason_for_weak_results_or_unrelated_sentences()
+    {
+        var service = new SearchService(_model, new FixedStore(
+            Hit(P("/d/strong.txt"), 0.8f, "Unrelated opener here. Quarterly budget review notes. Another thing entirely."),
+            Hit(P("/d/weak.txt"), SearchService.MinExplainResultScore - 0.05f, "Some words. Quarterly budget review notes. More words.")));
+        var results = await service.SearchAsync("quarterly budget review", SearchFilter.None, 5, Ct);
+        var explained = await service.ExplainAsync("quarterly budget review", results, Ct);
+
+        var strong = explained.Single(r => r.Path.EndsWith("strong.txt", StringComparison.Ordinal));
+        var why = Assert.Single(strong.Highlights);
+        Assert.Equal("Quarterly budget review notes.", strong.Snippet.Substring(why.Start, why.Length));
+        // Below the relevance bar the result keeps its lexical highlights untouched.
+        var weakBefore = results.Single(r => r.Path.EndsWith("weak.txt", StringComparison.Ordinal));
+        Assert.Equal(weakBefore.Highlights, explained.Single(r => r.Path.EndsWith("weak.txt", StringComparison.Ordinal)).Highlights);
+
+        // No sentence reaches the similarity bar: lexical highlights are kept rather than picking a random sentence.
+        var none = new SearchService(_model, new FixedStore(Hit(P("/d/x.txt"), 0.8f, "Alpha beta gamma. Delta epsilon zeta. Eta theta iota.")));
+        var r2 = await none.SearchAsync("quarterly budget review", SearchFilter.None, 5, Ct);
+        Assert.Equal(r2[0].Highlights, (await none.ExplainAsync("quarterly budget review", r2, Ct))[0].Highlights);
     }
 
     [Fact]

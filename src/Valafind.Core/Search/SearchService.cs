@@ -25,6 +25,12 @@ public sealed class SearchService : ISearchService
     /// <summary>Snippet sentences per result embedded by <see cref="ExplainAsync"/>.</summary>
     internal const int ExplainSentencesPerResult = 4;
 
+    /// <summary>Results scoring below this are not explained: for a weak match the "closest sentence" is just noise.</summary>
+    internal const float MinExplainResultScore = 0.30f;
+
+    /// <summary>A sentence is highlighted only when its own similarity to the query reaches this.</summary>
+    internal const float MinExplainSentenceScore = 0.25f;
+
     /// <summary>Added to the score when a query term matches the file name (see <see cref="NameMatches"/>).</summary>
     internal const float FileNameBoost = 0.03f;
 
@@ -111,7 +117,7 @@ public sealed class SearchService : ISearchService
         for (var i = 0; i < Math.Min(ExplainCount, results.Count); i++)
         {
             var snippet = results[i]?.Snippet;
-            if (string.IsNullOrWhiteSpace(snippet))
+            if (string.IsNullOrWhiteSpace(snippet) || results[i].Score < MinExplainResultScore)
                 continue;
             var sentences = SnippetSentences(snippet, stems, lastPrefix);
             if (sentences.Count < 2)
@@ -161,7 +167,7 @@ public sealed class SearchService : ISearchService
                 return results; // Inconsistent model output: do not trust any of it.
             var (result, span) = owners[k];
             var score = VectorMath.Dot(queryVector, v);
-            if (score > bestScore[result])
+            if (score >= MinExplainSentenceScore && score > bestScore[result])
             {
                 bestScore[result] = score;
                 best[result] = span;

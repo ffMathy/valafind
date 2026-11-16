@@ -95,15 +95,20 @@ internal static class CoreServicesFactory
         ISystemPressureMonitor? monitor = null;
         try
         {
-            model = new EmbeddingGemmaModel(new EmbeddingOptions
+            var gemma = new EmbeddingGemmaModel(new EmbeddingOptions
             {
                 ModelDirectory = modelDirectory,
                 Dimensions = settings.EmbeddingDimensions,
             });
+            model = gemma;
+            // Load now (we are off the UI thread) rather than on the first keystroke: a corrupt model surfaces as
+            // "model failed" at startup, and the first search is as fast as the rest (~0.25 s instead of ~2.5 s).
+            gemma.EnsureLoaded();
+            _ = gemma.EmbedQuery("warm up");
             IDocumentReader reader = new DocumentReader();
             ITextChunker chunker = new TextChunker(new ChunkerOptions(), model.CountTokens);
 
-            Directory.CreateDirectory(AppPaths.DataDirectory);
+            AppPaths.EnsurePrivateDirectory(AppPaths.DataDirectory);
             store = new SqliteIndexStore(AppPaths.IndexDatabase);
             store.Open(model.ModelId, model.Dimensions);
 

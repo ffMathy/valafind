@@ -186,7 +186,8 @@ public interface IIndexingService : IAsyncDisposable
     /// <summary>"Resume now": ignore system-pressure throttling for the given duration.</summary>
     void OverrideThrottle(TimeSpan duration);
     /// <summary>True while the user is interacting with search (launcher visible). Indexing yields: no new model
-    /// batches start until it is set back to false, so query embedding never queues behind indexing.</summary>
+    /// batches start until it is set back to false, so query embedding never queues behind indexing. As a safety net
+    /// (e.g. the launcher left open), indexing resumes on its own after the coordinator's interactive timeout (2 minutes).</summary>
     void SetInteractive(bool active);
 }
 

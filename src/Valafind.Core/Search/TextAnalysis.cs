@@ -111,6 +111,8 @@ internal static class TextAnalysis
             var word = query.Substring(span.Start, span.Length);
             if (word.Length < MinTermLength && !(word.Length >= MinUnspacedTermLength && ContainsUnspacedScript(word)))
                 continue;
+            if (IsStopword(word))
+                continue; // "the", "where", "with" … would light up every sentence.
             stems.Add(Stem(word));
         }
         if (words.Count > 0)
@@ -118,7 +120,11 @@ internal static class TextAnalysis
             var lastSpan = words[^1];
             // Only when the query ends inside that word, i.e. the user is still typing it.
             if (lastSpan.Length >= MinTermLength && lastSpan.Start + lastSpan.Length == query.Length)
-                last = query.Substring(lastSpan.Start, lastSpan.Length).ToLowerInvariant();
+            {
+                var word = query.Substring(lastSpan.Start, lastSpan.Length);
+                if (!IsStopword(word))
+                    last = word.ToLowerInvariant();
+            }
         }
         return (stems, last);
     }
@@ -410,6 +416,8 @@ internal static class TextAnalysis
     public static List<TextSpan> CandidateSentences(string text, int max, HashSet<string> stems, string? lastTermPrefix)
     {
         var all = Sentences(text);
+        if (all.Count < 2)
+            all = WordWindows(text, WindowWords); // Code, tables, lists: no sentence punctuation to split on.
         if (all.Count <= max)
             return all;
         return all
@@ -420,6 +428,31 @@ internal static class TextAnalysis
             .OrderBy(x => x.position)
             .Select(x => x.span)
             .ToList();
+    }
+
+    /// <summary>Words per window when text has no sentence boundaries (see <see cref="WordWindows"/>).</summary>
+    internal const int WindowWords = 9;
+
+    /// <summary>
+    /// Splits <paramref name="text"/> into consecutive windows of about <paramref name="wordsPerWindow"/> words (span
+    /// boundaries on word edges), for text such as code or tables that has no sentence punctuation. Fewer than two
+    /// windows' worth of words gives a single span covering the text.
+    /// </summary>
+    internal static List<TextSpan> WordWindows(string text, int wordsPerWindow)
+    {
+        var words = Words(text);
+        var windows = new List<TextSpan>();
+        for (var i = 0; i < words.Count; i += wordsPerWindow)
+        {
+            var first = words[i];
+            var last = words[Math.Min(i + wordsPerWindow, words.Count) - 1];
+            var end = last.Start + last.Length;
+            // Keep trailing punctuation that belongs to the last word (e.g. "fn():"), up to the next whitespace.
+            while (end < text.Length && !char.IsWhiteSpace(text[end]) && (i + wordsPerWindow >= words.Count || end < words[i + wordsPerWindow].Start))
+                end++;
+            windows.Add(new TextSpan(first.Start, end - first.Start));
+        }
+        return windows;
     }
 
     /// <summary>Number of query-term matches inside <paramref name="span"/> of <paramref name="text"/>.</summary>

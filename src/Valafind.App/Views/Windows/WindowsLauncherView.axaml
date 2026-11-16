@@ -165,17 +165,17 @@
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="BoxShadow" Value="0 32 64 0 #38001E46, 0 2 21 0 #1F001E46" />
     </Style>
-    <Style Selector="views|LauncherViewBase.blurred Border#Card">
+    <Style Selector=":is(views|LauncherViewBase).blurred Border#Card">
       <Setter Property="Margin" Value="0" />
       <Setter Property="Background" Value="{DynamicResource WinCardBlurBrush}" />
       <Setter Property="BoxShadow" Value="none" />
     </Style>
-    <Style Selector="views|LauncherViewBase.opaque Border#Card">
+    <Style Selector=":is(views|LauncherViewBase).opaque Border#Card">
       <Setter Property="Margin" Value="0" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="BoxShadow" Value="none" />
     </Style>
-    <Style Selector="views|LauncherViewBase.blurred Border.strip">
+    <Style Selector=":is(views|LauncherViewBase).blurred Border.strip">
       <Setter Property="Background" Value="{DynamicResource WinStripBlurBrush}" />
     </Style>
 

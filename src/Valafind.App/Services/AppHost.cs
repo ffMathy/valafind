@@ -647,7 +647,7 @@ public sealed class AppHost : IAsyncDisposable
         {
             try
             {
-                Directory.CreateDirectory(AppPaths.LogDirectory);
+                AppPaths.EnsurePrivateDirectory(AppPaths.LogDirectory);
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {

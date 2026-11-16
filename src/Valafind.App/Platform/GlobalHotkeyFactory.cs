@@ -10,7 +10,7 @@ public static class GlobalHotkeyFactory
         "Global hotkeys are not available on Wayland. Bind a shortcut in your desktop settings to run: " + ToggleCommand;
 
     /// <summary>The command that toggles the running launcher, e.g. <c>/opt/Valafind/Valafind --toggle</c>.</summary>
-    internal static string ToggleCommand => BuildToggleCommand(Environment.ProcessPath, System.Reflection.Assembly.GetEntryAssembly()?.Location);
+    internal static string ToggleCommand => BuildToggleCommand(Environment.ProcessPath, AppExecutable.EntryAssemblyPath);
 
     /// <summary>Builds the toggle command for an executable path (quoted when it contains spaces). Under
     /// <c>dotnet Valafind.dll</c> the host is "dotnet", so the assembly is passed to it.</summary>

@@ -88,9 +88,8 @@ public static class Autostart
         var hostName = Path.GetFileNameWithoutExtension(processPath);
         if (string.Equals(hostName, "dotnet", StringComparison.OrdinalIgnoreCase))
         {
-            var entry = System.Reflection.Assembly.GetEntryAssembly()?.Location;
-            if (string.IsNullOrEmpty(entry))
-                throw new InvalidOperationException("Cannot determine the Valafind assembly path.");
+            var entry = AppExecutable.EntryAssemblyPath
+                ?? throw new InvalidOperationException("Cannot determine the Valafind assembly path.");
             return [processPath, entry, BackgroundArgument];
         }
 

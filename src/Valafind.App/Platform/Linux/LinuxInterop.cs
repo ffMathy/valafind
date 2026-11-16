@@ -104,6 +104,17 @@ internal static unsafe partial class Xlib
 
     [LibraryImport(Lib)]
     public static partial int XkbSetDetectableAutoRepeat(nint display, int detectable, int* supported);
+
+    [LibraryImport(Lib)]
+    public static partial int XDefaultScreen(nint display);
+
+    /// <summary>Atom XInternAtom(Display*, const char* name, Bool only_if_exists).</summary>
+    [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial nuint XInternAtom(nint display, string atomName, int onlyIfExists);
+
+    /// <summary>Window XGetSelectionOwner(Display*, Atom selection); None (0) when unowned.</summary>
+    [LibraryImport(Lib)]
+    public static partial nuint XGetSelectionOwner(nint display, nuint selection);
 }
 
 /// <summary>libc calls used to wait on the X connection and a wake-up pipe.</summary>

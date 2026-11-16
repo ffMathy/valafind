@@ -110,12 +110,12 @@
       <Setter Property="CornerRadius" Value="20" />
       <Setter Property="BoxShadow" Value="0 0 0 0.5 #2E000000, 0 28 72 0 #521E2E32, 0 6 16 0 #1F141E32" />
     </Style>
-    <Style Selector="views|LauncherViewBase.blurred Border#Card">
+    <Style Selector=":is(views|LauncherViewBase).blurred Border#Card">
       <Setter Property="Margin" Value="0" />
       <Setter Property="Background" Value="{DynamicResource MacCardBlurBrush}" />
       <Setter Property="BoxShadow" Value="none" />
     </Style>
-    <Style Selector="views|LauncherViewBase.opaque Border#Card">
+    <Style Selector=":is(views|LauncherViewBase).opaque Border#Card">
       <Setter Property="Margin" Value="0" />
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="BoxShadow" Value="none" />

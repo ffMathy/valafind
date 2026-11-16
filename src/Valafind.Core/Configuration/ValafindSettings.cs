@@ -63,9 +63,12 @@ public sealed class ValafindSettings
     public void Save(string? path = null)
     {
         path ??= AppPaths.SettingsFile;
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        AppPaths.EnsurePrivateDirectory(Path.GetDirectoryName(path)!);
         var tmp = path + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(this, JsonOptions));
+        using (var stream = new FileStream(tmp, AppPaths.PrivateFileOptions(FileMode.Create, FileAccess.Write, FileShare.None)))
+        using (var writer = new StreamWriter(stream))
+            writer.Write(JsonSerializer.Serialize(this, JsonOptions));
+        AppPaths.TightenToOwner(tmp); // FileMode.Create keeps the mode of a leftover .tmp file.
         File.Move(tmp, path, overwrite: true);
     }
 }

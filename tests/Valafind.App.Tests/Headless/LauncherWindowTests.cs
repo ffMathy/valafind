@@ -60,6 +60,40 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
             }
         }, TestContext.Current.CancellationToken);
 
+    [Theory]
+    [InlineData(UiFlavor.Windows)]
+    [InlineData(UiFlavor.Mac)]
+    [InlineData(UiFlavor.Linux)]
+    public Task SurfaceStylesReachThePlatformViews(UiFlavor flavor) =>
+        fixture.Session.Dispatch(() =>
+        {
+            // Each platform view is a subclass of LauncherViewBase; the surface styles must match it (a plain type
+            // selector only matches the exact type, which once left blur/opaque styles dead on every OS).
+            var view = LauncherWindow.CreateView(flavor);
+            view.DataContext = DesignData.Create(flavor);
+            var window = new Window { Content = view };
+            try
+            {
+                window.Show();
+                var card = view.FindControl<Border>("Card")!;
+                Assert.NotEqual(0, card.Margin.Left); // Floating: room for the drop shadow.
+
+                view.SetSurface(LauncherSurface.Opaque);
+                Assert.Equal(new Avalonia.Thickness(0), card.Margin);
+                Assert.Equal(new Avalonia.CornerRadius(0), card.CornerRadius);
+
+                view.SetSurface(LauncherSurface.Blurred);
+                Assert.Equal(new Avalonia.Thickness(0), card.Margin);
+
+                view.SetSurface(LauncherSurface.Floating);
+                Assert.NotEqual(0, card.Margin.Left);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, TestContext.Current.CancellationToken);
+
     private sealed class Actions : ILauncherActions
     {
         public string? Opened { get; private set; }
