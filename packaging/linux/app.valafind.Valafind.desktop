@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Valafind
+GenericName=Semantic file search
+Comment=Find files by meaning, entirely on this computer
+# Install to ~/.local/share/applications/ (or /usr/share/applications/) and point Exec at the installed binary.
+# The file name must stay app.valafind.Valafind.desktop: the Wayland GlobalShortcuts portal identifies the app by it.
+Exec=valafind --show
+Icon=valafind
+Terminal=false
+Categories=Utility;FileTools;
+Keywords=search;find;files;semantic;
+StartupNotify=false
+X-GNOME-UsesNotifications=false
