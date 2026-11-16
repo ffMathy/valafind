@@ -1,0 +1,14 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
+TestResults/
+artifacts/
+publish/
+# Model weights are large and fetched with tools/fetch-model.*; never commit them.
+models/
+*.onnx
+*.onnx_data
