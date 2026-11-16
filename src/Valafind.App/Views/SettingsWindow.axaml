@@ -65,10 +65,16 @@
         </Border>
 
         <!-- Folders -->
-        <TextBlock Classes="section" Text="Folders to index" />
+        <TextBlock Classes="section" Text="Indexed folders" />
         <Border Classes="card">
           <StackPanel Spacing="8">
-            <TextBlock Classes="hint" Text="{Binding RootsEmptyText}" />
+            <!-- Empty state: the home folder is what gets indexed. -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,2" IsVisible="{Binding HasNoRoots}">
+              <c:StrokeIcon Data="{StaticResource VfIconFolder}" Width="16" Height="16" StrokeThickness="1.8"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding RootsEmptyText}" VerticalAlignment="Center"
+                         TextTrimming="PathSegmentEllipsis" />
+            </Grid>
             <ItemsControl ItemsSource="{Binding Roots}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="x:String">
@@ -84,6 +90,7 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <Button Content="Add folder…" Command="{Binding AddRootCommand}" HorizontalAlignment="Left" />
+            <TextBlock Classes="hint" Text="{Binding RootsHint}" />
           </StackPanel>
         </Border>
 
@@ -135,7 +142,15 @@
         <!-- General -->
         <TextBlock Classes="section" Text="General" />
         <Border Classes="card">
-          <CheckBox Content="Start Valafind when I log in" IsChecked="{Binding StartAtLogin}" />
+          <StackPanel Spacing="10">
+            <CheckBox Content="Start Valafind when I log in" IsChecked="{Binding StartAtLogin}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <TextBlock Classes="hint" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" TextWrapping="NoWrap">
+                <Run Text="Logs: " /><Run Text="{Binding LogDirectory}" />
+              </TextBlock>
+              <Button Grid.Column="1" Content="Open log folder" Command="{Binding OpenLogFolderCommand}" />
+            </Grid>
+          </StackPanel>
         </Border>
       </StackPanel>
     </ScrollViewer>

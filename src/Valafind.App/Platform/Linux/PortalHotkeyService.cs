@@ -11,7 +11,7 @@ namespace Valafind.App.Platform;
 /// compositor owns the binding: we ask for a shortcut with id "toggle" and a <c>preferred_trigger</c>, the desktop
 /// may show a confirmation dialog or let the user pick a different key, and we react to <c>Activated</c> signals.
 /// When the portal (or the interface) is missing, registration fails with guidance to bind
-/// <c>valafind --toggle</c> manually.
+/// <c>&lt;path to Valafind&gt; --toggle</c> manually (see <see cref="GlobalHotkeyFactory.ToggleCommand"/>).
 /// </summary>
 [SupportedOSPlatform("linux")]
 [SupportedOSPlatform("freebsd")]

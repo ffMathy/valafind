@@ -29,4 +29,7 @@ public interface ILauncherActions
 
     /// <summary>"Index now": ignore system-pressure throttling for a while.</summary>
     void ResumeNow();
+
+    /// <summary>"Check again": look for the embedding model now and load it when it was installed or repaired.</summary>
+    void CheckModel();
 }

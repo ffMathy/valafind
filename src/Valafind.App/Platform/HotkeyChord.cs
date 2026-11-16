@@ -121,6 +121,21 @@ internal sealed record HotkeyChord(bool Ctrl, bool Alt, bool Shift, bool Super, 
         return true;
     }
 
+    /// <summary>
+    /// macOS 15 and later refuse global hotkeys whose only modifiers are Option (⌥) or Option+Shift (⌥⇧) (a guard
+    /// against key loggers). Returns the explanation for such a chord, otherwise null.
+    /// </summary>
+    internal static string? MacRestriction(HotkeyChord chord)
+    {
+        ArgumentNullException.ThrowIfNull(chord);
+        if (chord.Alt && !chord.Ctrl && !chord.Super)
+        {
+            return $"macOS does not allow shortcuts that use only Option{(chord.Shift ? " and Shift" : string.Empty)} "
+                   + $"({chord.DisplayString(ChordDisplayStyle.MacOS)}). Add Control or Command, for example ⌃⌥Space.";
+        }
+        return null;
+    }
+
     /// <summary>Canonical, OS-neutral form: "Ctrl+Alt+Shift+Super+Key" (absent modifiers omitted).</summary>
     public override string ToString()
     {

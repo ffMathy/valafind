@@ -46,6 +46,17 @@
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="VerticalAlignment" Value="Top" />
     </Style>
+    <Style Selector="Button.check">
+      <Setter Property="Background" Value="{DynamicResource VfCodeBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource VfDividerBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+      <Setter Property="Margin" Value="0,2,0,0" />
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
   </UserControl.Styles>
 
   <Panel Margin="20,18,20,22">
@@ -88,7 +99,7 @@
         <TextBlock Classes="title" Text="EmbeddingGemma model not installed" VerticalAlignment="Center" />
       </StackPanel>
       <TextBlock Classes="body"
-                 Text="Valafind never downloads anything by itself. Install the model once by running this from the Valafind folder:" />
+                 Text="Valafind never downloads anything by itself. Install the model once by running this command in a terminal:" />
       <Border Classes="code">
         <DockPanel>
           <Button Classes="vf copy" DockPanel.Dock="Right" ToolTip.Tip="Copy command"
@@ -108,18 +119,32 @@
           <SelectableTextBlock Text="{Binding ModelTargetDirectory}" />
         </DockPanel>
       </Border>
-      <TextBlock Classes="body" Text="Then reopen Valafind, or point to an existing copy in Settings." />
+      <TextBlock Classes="body"
+                 Text="Valafind notices the model by itself as soon as it is there — no restart needed. Already have a copy? Choose its folder in Settings." />
+      <Button Classes="vf check" Content="Check again" Command="{Binding CheckModelCommand}" />
     </StackPanel>
 
     <!-- Model failed -->
-    <StackPanel Spacing="6" IsVisible="{Binding IsModelFailedVisible}">
+    <StackPanel Spacing="8" IsVisible="{Binding IsModelFailedVisible}">
       <StackPanel Orientation="Horizontal" Spacing="8">
         <c:StrokeIcon Data="{StaticResource VfIconWarning}" Width="18" Height="18" StrokeThickness="2"
                       Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
         <TextBlock Classes="title" Text="EmbeddingGemma could not be loaded" VerticalAlignment="Center" />
       </StackPanel>
       <TextBlock Classes="body" Text="{Binding ModelErrorText}" />
-      <TextBlock Classes="body" Text="Re-run the model fetch script or choose another model folder in Settings." />
+      <TextBlock Classes="body" Text="The model files are probably incomplete. Download them again with:" />
+      <Border Classes="code">
+        <DockPanel>
+          <Button Classes="vf copy" DockPanel.Dock="Right" ToolTip.Tip="Copy command"
+                  Command="{Binding CopyTextCommand}" CommandParameter="{Binding RepairCommandText}">
+            <c:StrokeIcon Data="{StaticResource VfIconCopy}" Width="14" Height="14" Foreground="{DynamicResource VfSubtleBrush}" />
+          </Button>
+          <SelectableTextBlock Text="{Binding RepairCommandText}" />
+        </DockPanel>
+      </Border>
+      <TextBlock Classes="body"
+                 Text="Valafind reloads the model by itself once the files change, or choose another model folder in Settings." />
+      <Button Classes="vf check" Content="Check again" Command="{Binding CheckModelCommand}" />
     </StackPanel>
   </Panel>
 </UserControl>

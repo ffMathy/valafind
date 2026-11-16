@@ -60,7 +60,6 @@
           <SolidColorBrush x:Key="WinErrorBrush" Color="#C42B1C" />
           <SolidColorBrush x:Key="WinTrustBrush" Color="#1F5130" />
           <SolidColorBrush x:Key="WinScoreBrush" Color="#424242" />
-          <SolidColorBrush x:Key="WinBadgeBrush" Color="#0F000000" />
           <SolidColorBrush x:Key="WinKbdBrush" Color="#FFFFFF" />
           <SolidColorBrush x:Key="WinKbdBorderBrush" Color="#24000000" />
           <SolidColorBrush x:Key="WinKbdTextBrush" Color="#3B3B3B" />
@@ -128,7 +127,6 @@
           <SolidColorBrush x:Key="WinErrorBrush" Color="#FF99A4" />
           <SolidColorBrush x:Key="WinTrustBrush" Color="#8FD19E" />
           <SolidColorBrush x:Key="WinScoreBrush" Color="#C8C8C8" />
-          <SolidColorBrush x:Key="WinBadgeBrush" Color="#1AFFFFFF" />
           <SolidColorBrush x:Key="WinKbdBrush" Color="#1AFFFFFF" />
           <SolidColorBrush x:Key="WinKbdBorderBrush" Color="#33FFFFFF" />
           <SolidColorBrush x:Key="WinKbdTextBrush" Color="#E0E0E0" />
@@ -339,15 +337,7 @@
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                     <c:FileKindIcon Kind="{Binding Kind}" Width="32" Height="32" GlyphSize="18" CornerRadius="6" />
                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                      <TextBlock FontSize="14" TextTrimming="CharacterEllipsis">
-                        <Run Text="{Binding FileName}" />
-                        <InlineUIContainer BaselineAlignment="Center">
-                          <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="4" Background="{DynamicResource WinBadgeBrush}"
-                                  IsVisible="{Binding HasTextInImage}">
-                            <TextBlock Text="Text in image" FontSize="11" Foreground="{DynamicResource WinScoreBrush}" />
-                          </Border>
-                        </InlineUIContainer>
-                      </TextBlock>
+                      <TextBlock Text="{Binding FileName}" FontSize="14" TextTrimming="CharacterEllipsis" />
                       <TextBlock Text="{Binding CaptionWithSnippet}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
                                  TextTrimming="CharacterEllipsis" />
                     </StackPanel>
@@ -381,7 +371,7 @@
                       <StackPanel Spacing="6">
                         <TextBlock Text="WHY IT MATCHED · CLOSEST PASSAGE" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.2"
                                    Foreground="{DynamicResource VfSubtleBrush}" IsVisible="{Binding HasSnippet}" />
-                        <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="“…" Suffix="…”"
+                        <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="“" Suffix="”"
                                                 FontSize="13" LineHeight="19.5" TextWrapping="Wrap" MaxLines="4"
                                                 TextTrimming="CharacterEllipsis" Foreground="{DynamicResource WinSnippetBrush}"
                                                 HighlightBackground="{DynamicResource WinMarkBrush}"
@@ -407,11 +397,11 @@
 
       <!-- Hotkey problem (e.g. Wayland) -->
       <Border Background="{DynamicResource WinInfoBarBrush}" Padding="20,8" IsVisible="{Binding HasHotkeyError}">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <c:StrokeIcon Data="{StaticResource VfIconKeyboard}" Width="14" Height="14" StrokeThickness="1.8"
-                        Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding HotkeyError}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
-        </StackPanel>
+        <DockPanel>
+          <c:StrokeIcon DockPanel.Dock="Left" Margin="0,0,8,0" Data="{StaticResource VfIconKeyboard}" Width="14" Height="14"
+                        StrokeThickness="1.8" Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
+          <SelectableTextBlock Text="{Binding HotkeyError}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </DockPanel>
       </Border>
 
       <!-- Index status strip -->
@@ -434,9 +424,9 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent">
               <ToolTip.Tip>
-                <TextBlock><Run Text="Phase 2 — All user files: " /><Run Text="{Binding Status.AllCountText}" /></TextBlock>
+                <TextBlock><Run Text="Phase 2 — " /><Run Text="{Binding IndexScopeDetail}" /><Run Text=": " /><Run Text="{Binding Status.AllCountText}" /></TextBlock>
               </ToolTip.Tip>
-              <TextBlock Text="All files" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding IndexScopeShortText}" MaxWidth="90" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
               <c:MeterBar Width="48" Height="4" Radius="2" VerticalAlignment="Center" Value="{Binding Status.AllFraction}"
                           Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
               <TextBlock Classes="num" Text="{Binding Status.AllPercentText}" VerticalAlignment="Center" />

@@ -122,6 +122,8 @@ public partial class LauncherWindow : Window
         base.OnPropertyChanged(change);
         if (change.Property == ActualTransparencyLevelProperty)
             ApplySurface();
+        else if (change.Property == IsVisibleProperty)
+            _vm.IsLauncherVisible = change.GetNewValue<bool>();
     }
 
     private void ApplySurface()

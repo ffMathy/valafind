@@ -108,7 +108,21 @@ internal sealed unsafe class X11HotkeyService : IGlobalHotkeyService
         }
 
         if (thread is not null && thread.IsAlive && !thread.Join(OperationTimeout))
+        {
+            // Leave the write end open: the thread may still be running. One leaked fd beats a stray write.
             System.Diagnostics.Trace.TraceWarning("Valafind: X11 hotkey thread did not exit in time.");
+            return;
+        }
+
+        int w;
+        lock (_gate)
+        {
+            // _disposed is set, so no later Wake() reaches the fd once it is cleared here.
+            w = _wakeWrite;
+            _wakeWrite = -1;
+        }
+        if (w >= 0)
+            LibC.Close(w);
     }
 
     private bool EnsureThread(out string? error)
@@ -160,6 +174,7 @@ internal sealed unsafe class X11HotkeyService : IGlobalHotkeyService
         }
     }
 
+    // Always called under _gate. The write end is only closed by Dispose (under _gate), so fd is never stale here.
     private void Wake()
     {
         var fd = _wakeWrite;
@@ -263,10 +278,13 @@ internal sealed unsafe class X11HotkeyService : IGlobalHotkeyService
                 }
             }
 
-            var (r, w) = (_wakeRead, _wakeWrite);
-            _wakeWrite = -1;
+            // Only the read end is closed here. The write end stays open until Dispose has joined this thread:
+            // Wake() may be about to write to it (it copies the fd under _gate, which this thread does not hold),
+            // and a closed fd number can be reused at once by another thread's open() — the byte would then land in
+            // an unrelated file such as the index database. Writing to a pipe without a reader just fails (EPIPE;
+            // .NET ignores SIGPIPE).
+            var r = _wakeRead;
             _wakeRead = -1;
-            if (w >= 0) LibC.Close(w);
             if (r >= 0) LibC.Close(r);
 
             _startError ??= "The X11 hotkey thread has stopped.";

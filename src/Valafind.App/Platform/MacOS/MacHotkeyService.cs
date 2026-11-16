@@ -32,6 +32,12 @@ internal sealed unsafe class MacHotkeyService : IGlobalHotkeyService
         if (!HotkeyChord.TryParse(chord, out var parsed, out error))
             return false;
 
+        if (HotkeyChord.MacRestriction(parsed) is { } restriction)
+        {
+            error = restriction;
+            return false;
+        }
+
         if (HotkeyKeyMaps.MacVirtualKey(parsed.Key) is not { } keyCode)
         {
             error = $"The key '{parsed.Key}' cannot be used as a global shortcut on macOS.";
@@ -128,7 +134,7 @@ internal sealed unsafe class MacHotkeyService : IGlobalHotkeyService
         if (result != Carbon.noErr)
         {
             var spotlightHint = chord is { Super: true, Ctrl: false, Alt: false, Key: "Space" }
-                ? " ⌘Space is normally used by Spotlight; try ⌥Space instead."
+                ? " ⌘Space is normally used by Spotlight; try ⌃⌥Space instead."
                 : string.Empty;
             return result == Carbon.eventHotKeyExistsErr
                 ? HotkeyDispatch.InUseMessage(chord) + spotlightHint

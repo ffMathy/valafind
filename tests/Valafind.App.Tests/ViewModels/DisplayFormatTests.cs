@@ -76,8 +76,11 @@ public sealed class DisplayFormatTests
     [Fact]
     public void HotkeyLabel()
     {
-        Assert.Equal("⌥ Space", DisplayFormat.HotkeyLabel("Alt+Space", UiFlavor.Mac));
+        // Apple notation (no separators, canonical ⌃⌥⇧⌘ order), as in menus.
+        Assert.Equal("⌃⌥Space", DisplayFormat.HotkeyLabel("Ctrl+Alt+Space", UiFlavor.Mac));
+        Assert.Equal("⌥Space", DisplayFormat.HotkeyLabel("Alt+Space", UiFlavor.Mac));
         Assert.Equal("Super+Space", DisplayFormat.HotkeyLabel("Super+Space", UiFlavor.Linux));
+        Assert.Equal("Ctrl+Alt+Space", DisplayFormat.HotkeyLabel("control+alt+space", UiFlavor.Windows));
     }
 
     [Theory]
