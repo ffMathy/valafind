@@ -317,6 +317,53 @@ public sealed class EmbeddingGemmaModelTests(ModelFixture fixture) : IClassFixtu
     }
 
     [Fact]
+    public async Task Interactive_document_embedding_preempts_a_running_document_batch()
+    {
+        var dir = fixture.RequireModel();
+        var ct = TestContext.Current.CancellationToken;
+        ModelLocator.IsValid(dir, out var file);
+        using var model = new EmbeddingGemmaModel(new EmbeddingOptions
+        {
+            ModelDirectory = dir,
+            ModelFile = file,
+            Dimensions = 256,
+            BatchSize = 8,
+            IntraOpThreads = 2,
+        });
+        var docs = Enumerable.Range(0, 8)
+            .Select(i => new DocumentText($"report-{i}.txt", string.Join(' ', Enumerable.Range(0, 20)
+                .Select(j => $"Section {i}.{j} describes quarterly revenue, staffing and the lease of building {i * 20 + j}."))))
+            .ToArray();
+        DocumentText[] sentences =
+        [
+            new("none", "The finance team estimated the lost revenue at roughly twelve thousand euros."),
+            new("none", "The outage started at 14:02 when the database failed over."),
+        ];
+        model.EnsureLoaded();
+        var expected = model.EmbedDocuments(sentences, ct);
+        var expectedDocs = model.EmbedDocuments(docs, ct);
+
+        var preemptedBefore = model.PreemptedRuns;
+        var docTask = Task.Run(() => model.EmbedDocuments(docs, ct), ct);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!model.IsBackgroundRunActive && DateTime.UtcNow < deadline)
+            Thread.Sleep(5);
+        Assert.True(model.IsBackgroundRunActive, "document batch did not start");
+        Thread.Sleep(100);
+        Assert.False(docTask.IsCompleted, "document batch finished before the interactive call was issued");
+
+        var explained = model.EmbedDocumentsInteractive(sentences, ct);
+        Assert.False(docTask.IsCompleted, "the interactive call waited for the background batch");
+        var docsAfter = await docTask;
+
+        Assert.True(model.PreemptedRuns > preemptedBefore, "the document run was not preempted");
+        for (var i = 0; i < sentences.Length; i++)
+            Assert.True(ModelFixture.Cosine(expected[i], explained[i]) > 0.99999, $"sentence {i}");
+        for (var i = 0; i < docs.Length; i++)
+            Assert.True(ModelFixture.Cosine(expectedDocs[i], docsAfter[i]) > 0.99999, $"document {i}");
+    }
+
+    [Fact]
     public async Task Cancelling_a_document_batch_while_it_runs_aborts_it()
     {
         var dir = fixture.RequireModel();

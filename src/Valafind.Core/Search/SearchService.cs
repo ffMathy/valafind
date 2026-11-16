@@ -25,7 +25,7 @@ public sealed class SearchService : ISearchService
     /// <summary>Snippet sentences per result embedded by <see cref="ExplainAsync"/>.</summary>
     internal const int ExplainSentencesPerResult = 4;
 
-    /// <summary>Added to the score when a query term is a whole token of the file name.</summary>
+    /// <summary>Added to the score when a query term matches the file name (see <see cref="NameMatches"/>).</summary>
     internal const float FileNameBoost = 0.03f;
 
     /// <summary>Extra store hits (beyond topK, at most this many) fetched so a file-name match ranked just below the
@@ -131,7 +131,11 @@ public sealed class SearchService : ISearchService
         try
         {
             queryVector = await EmbedQueryAsync(text, cancellationToken).ConfigureAwait(false);
-            vectors = await Task.Run(() => _model.EmbedDocuments(documents, cancellationToken), cancellationToken).ConfigureAwait(false);
+            // The user is waiting on this batch: run it with query priority (preempting an indexing batch) when the
+            // model supports it, instead of queueing behind background work.
+            vectors = await Task.Run(() => _model is IInteractiveEmbedding interactive
+                ? interactive.EmbedDocumentsInteractive(documents, cancellationToken)
+                : _model.EmbedDocuments(documents, cancellationToken), cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -239,8 +243,11 @@ public sealed class SearchService : ISearchService
         return terms;
     }
 
-    /// <summary>True when a name term equals (by stem) a whole token of the file name without extension. Terms in
-    /// scripts written without spaces match anywhere in the name, since such names have no word boundaries.</summary>
+    /// <summary>True when a name term equals (by stem) a whole token of the file name without extension. Long terms
+    /// (≥ <see cref="TextAnalysis.MinCompoundPrefixLength"/> chars, like compound prefixes in content highlights) and
+    /// terms in scripts written without spaces also match anywhere in the extension-less name, which covers glued and
+    /// compound names ("budgetplan", "taxreturn2024", "Mietvertragsentwurf") without letting short terms match inside
+    /// unrelated words ("tax" in "Taxonomy", "port" in "report").</summary>
     internal static bool NameMatches(string path, HashSet<string> nameTerms)
     {
         if (nameTerms.Count == 0)
@@ -255,7 +262,8 @@ public sealed class SearchService : ISearchService
         }
         foreach (var term in nameTerms)
         {
-            if (TextAnalysis.ContainsUnspacedScript(term) && name.Contains(term, StringComparison.OrdinalIgnoreCase))
+            if ((term.Length >= TextAnalysis.MinCompoundPrefixLength || TextAnalysis.ContainsUnspacedScript(term))
+                && name.Contains(term, StringComparison.OrdinalIgnoreCase))
                 return true;
         }
         return false;

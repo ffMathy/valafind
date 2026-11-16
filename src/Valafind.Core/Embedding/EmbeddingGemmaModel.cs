@@ -15,7 +15,8 @@ namespace Valafind.Core.Embedding;
 /// priority. <see cref="EmbedQuery"/> never waits behind a document batch: when a query arrives while
 /// <see cref="EmbedDocuments"/> is running a batch, that ORT run is terminated (<see cref="RunOptions.Terminate"/>),
 /// the query runs, and the interrupted batch is re-run transparently (the document call just takes longer; its
-/// cancellation token is still honoured). Document batches also wait while any query is queued.</para>
+/// cancellation token is still honoured). Document batches also wait while any query is queued.
+/// <see cref="EmbedDocumentsInteractive"/> (the search "explain" pass) gets the same priority as a query.</para>
 /// <para>ORT's intra-op worker threads are created by native code when the session is built; they are not managed
 /// threads, so their OS priority cannot be changed from C# (BackgroundPriority on the calling thread does not reach
 /// them). To keep them cheap when idle, spin-waiting is disabled (<c>session.intra_op.allow_spinning = 0</c>,
@@ -24,7 +25,7 @@ namespace Valafind.Core.Embedding;
 /// <c>"title: {title|none} | text: {text}"</c>. The model's 768-d output is truncated to
 /// <see cref="Dimensions"/> (Matryoshka) and re-normalised.</para>
 /// </remarks>
-public sealed class EmbeddingGemmaModel : IEmbeddingModel
+public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
 {
     /// <summary>Model family part of <see cref="ModelId"/>.</summary>
     public const string ModelName = "embeddinggemma-300m";
@@ -138,7 +139,14 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<float[]> EmbedDocuments(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default)
+    public IReadOnlyList<float[]> EmbedDocuments(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default) =>
+        EmbedDocumentsCore(documents, interactive: false, cancellationToken);
+
+    /// <inheritdoc />
+    public IReadOnlyList<float[]> EmbedDocumentsInteractive(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default) =>
+        EmbedDocumentsCore(documents, interactive: true, cancellationToken);
+
+    private float[][] EmbedDocumentsCore(IReadOnlyList<DocumentText> documents, bool interactive, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -164,7 +172,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
             var end = Math.Min(order.Length, start + _batchSize);
             for (var k = start; k < end; k++)
                 batch.Add(inputs[order[k]]);
-            var vectors = RunBatch(batch, cancellationToken);
+            var vectors = RunBatch(batch, cancellationToken, interactive);
             for (var k = start; k < end; k++)
                 results[order[k]] = vectors[k - start];
         }
@@ -320,7 +328,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
     internal bool IsBackgroundRunActive => _scheduler.IsBackgroundRunActive;
 
     /// <summary>One ORT run and whether a query asked it to stop.</summary>
-    private sealed class ActiveRun(RunOptions options)
+    internal sealed class ActiveRun(RunOptions options)
     {
         public RunOptions Options { get; } = options;
 
@@ -331,7 +339,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
     /// Serialises inference on the single session with query priority: a query that arrives while a document
     /// batch runs terminates that run and goes next; document batches wait while any query is pending.
     /// </summary>
-    private sealed class RunScheduler
+    internal sealed class RunScheduler
     {
         // Monitor (not System.Threading.Lock) because waiting needs Monitor.Wait/PulseAll.
         private readonly object _gate = new();
@@ -407,13 +415,24 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel
         {
             if (condition())
                 return;
-            using var registration = cancellationToken.CanBeCanceled
+            // The callback takes _gate, and this method runs while holding it. Disposing the registration here would
+            // block until a callback already running on another thread (the canceller) finishes, while that callback
+            // blocks on _gate: a deadlock. Unregister() never waits; a callback that already started just pulses the
+            // monitor after we release it, which is harmless.
+            var registration = cancellationToken.CanBeCanceled
                 ? cancellationToken.Register(static state => ((RunScheduler)state!).Wake(), this)
                 : default;
-            while (!condition())
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                Monitor.Wait(_gate);
+                while (!condition())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Monitor.Wait(_gate);
+                }
+            }
+            finally
+            {
+                registration.Unregister();
             }
         }
 

@@ -1,5 +1,6 @@
 using static Valafind.Core.Tests.TestPaths;
 using Valafind.Core.Abstractions;
+using Valafind.Core.Embedding;
 using Valafind.Core.Search;
 using Valafind.Core.Storage;
 using Valafind.Core.Tests.Storage;
@@ -153,6 +154,22 @@ public sealed class SearchServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Explain_uses_interactive_priority_when_the_model_offers_it()
+    {
+        // ExplainAsync runs while the user looks at results: it must not queue behind an indexing batch.
+        using var model = new InteractiveModel(_model);
+        var service = new SearchService(model, new FixedStore(
+            Hit(P("/d/a.txt"), 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard.")));
+        var results = await service.SearchAsync("invoice filing", SearchFilter.None, 5, Ct);
+
+        var explained = await service.ExplainAsync("invoice filing", results, Ct);
+
+        Assert.Equal(1, model.InteractiveCalls);
+        Assert.Equal(0, model.BackgroundCalls);
+        Assert.Single(explained[0].Highlights);
+    }
+
+    [Fact]
     public async Task Explain_honours_cancellation()
     {
         var service = new SearchService(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, "One. Two budget lines. Three.")));
@@ -238,6 +255,10 @@ public sealed class SearchServiceTests : IDisposable
     [InlineData("parser", "/d/HTMLParser.cs")]
     [InlineData("invoices", "/d/invoice-march.pdf")]
     [InlineData("契約", "/d/賃貸契約書.pdf")]
+    [InlineData("budget", "/d/budgetplan.xlsx")]
+    [InlineData("tax return", "/d/taxreturn2024.pdf")]
+    [InlineData("mietvertrag", "/d/Mietvertragsentwurf.pdf")]
+    [InlineData("lejekontrakt", "/d/lejekontrakten.pdf")]
     public async Task File_name_boost_matches_whole_name_tokens(string query, string path)
     {
         var service = new SearchService(_model, new FixedStore(
@@ -252,6 +273,8 @@ public sealed class SearchServiceTests : IDisposable
     [InlineData("tax", "/d/Taxonomy.pdf")]
     [InlineData("port", "/d/report.pdf")]
     [InlineData("pdf", "/d/notes.pdf")]
+    [InlineData("plan", "/d/explanation.txt")]
+    [InlineData("report", "/d/notes.report")]
     public async Task File_name_boost_does_not_fire_inside_tokens_or_on_the_extension(string query, string path)
     {
         var service = new SearchService(_model, new FixedStore(Hit(P(path), 0.48f, "y")));
@@ -351,6 +374,38 @@ public sealed class SearchServiceTests : IDisposable
                     Assert.False(char.IsLowSurrogate(r.Snippet[h.Start]), "highlight splits a surrogate pair");
                 }
             }
+        }
+    }
+
+    /// <summary>Delegates to the hashing model and counts interactive vs. background document calls.</summary>
+    private sealed class InteractiveModel(HashingEmbeddingModel inner) : IEmbeddingModel, IInteractiveEmbedding
+    {
+        private int _interactiveCalls;
+        private int _backgroundCalls;
+
+        public int InteractiveCalls => _interactiveCalls;
+        public int BackgroundCalls => _backgroundCalls;
+        public string ModelId => inner.ModelId;
+        public int Dimensions => inner.Dimensions;
+        public int MaxInputTokens => inner.MaxInputTokens;
+        public int CountTokens(string text) => inner.CountTokens(text);
+
+        public float[] EmbedQuery(string query, CancellationToken cancellationToken = default) => inner.EmbedQuery(query, cancellationToken);
+
+        public IReadOnlyList<float[]> EmbedDocuments(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _backgroundCalls);
+            return inner.EmbedDocuments(documents, cancellationToken);
+        }
+
+        public IReadOnlyList<float[]> EmbedDocumentsInteractive(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _interactiveCalls);
+            return inner.EmbedDocuments(documents, cancellationToken);
+        }
+
+        public void Dispose()
+        {
         }
     }
 
