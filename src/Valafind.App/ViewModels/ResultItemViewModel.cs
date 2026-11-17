@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Valafind.Core.Abstractions;
+using Valafind.App.Localization;
 
 namespace Valafind.App.ViewModels;
 
@@ -64,7 +65,7 @@ public sealed partial class ResultItemViewModel : ObservableObject
     public string DateText { get; }
 
     /// <summary>"Modified 12 Sep 2025".</summary>
-    public string ModifiedText => "Modified " + DateText;
+    public string ModifiedText => Loc.Format(Strings.ModifiedOn, DateText);
 
     /// <summary>"C:\Users\…\Bolig · 12 Sep 2025".</summary>
     public string Caption => DisplayDirectory + " · " + DateText;

@@ -1,6 +1,7 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Valafind.Core.Abstractions;
+using Valafind.App.Localization;
 
 namespace Valafind.App.ViewModels;
 
@@ -70,8 +71,8 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     public void SetUserPaused(bool paused)
     {
         IsUserPaused = paused;
-        ResumeActionText = paused ? "Resume" : "Index Now";
-        PauseMenuText = paused ? "Resume indexing" : "Pause indexing";
+        ResumeActionText = paused ? Strings.Resume : Strings.IndexNow;
+        PauseMenuText = paused ? Strings.ResumeIndexing : Strings.PauseIndexing;
     }
 
     /// <summary>All phases done.</summary>
@@ -85,6 +86,9 @@ public sealed partial class IndexStatusViewModel : ObservableObject
 
     /// <summary>"6,214 / 6,214".</summary>
     [ObservableProperty] public partial string FrequentText { get; private set; } = string.Empty;
+
+    /// <summary>"6,214 / 6,214 files".</summary>
+    [ObservableProperty] public partial string FrequentFilesText { get; private set; } = string.Empty;
 
     /// <summary>"Frequent" when phase 1 is done, otherwise "Frequent 52%".</summary>
     [ObservableProperty] public partial string FrequentShortText { get; private set; } = string.Empty;
@@ -144,13 +148,13 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     [ObservableProperty] public partial string BannerDetail { get; private set; } = string.Empty;
 
     /// <summary>Banner/strip action caption: "Index Now" or "Resume".</summary>
-    [ObservableProperty] public partial string ResumeActionText { get; private set; } = "Index Now";
+    [ObservableProperty] public partial string ResumeActionText { get; private set; } = Strings.IndexNow;
 
     /// <summary>Explains the automatic throttling policy.</summary>
     [ObservableProperty] public partial string PolicyText { get; private set; } = string.Empty;
 
     /// <summary>Tray menu caption: "Pause indexing" / "Resume indexing".</summary>
-    [ObservableProperty] public partial string PauseMenuText { get; private set; } = "Pause indexing";
+    [ObservableProperty] public partial string PauseMenuText { get; private set; } = Strings.PauseIndexing;
 
     /// <summary>Recomputes every projected value from <paramref name="status"/>.</summary>
     /// <param name="status">Raw status from the indexing service.</param>
@@ -166,14 +170,15 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         IsFrequentComplete = status.FrequentTotal > 0 ? status.FrequentDone >= status.FrequentTotal : status.Phase > IndexPhase.Frequent;
         FrequentFraction = status.FrequentTotal > 0 ? Math.Clamp((double)status.FrequentDone / status.FrequentTotal, 0, 1) : (IsFrequentComplete ? 1 : 0);
         FrequentText = DisplayFormat.Count(status.FrequentDone) + " / " + DisplayFormat.Count(status.FrequentTotal);
+        FrequentFilesText = Loc.Format(Strings.IndexFilesCount, FrequentText);
 
-        FrequentShortText = IsFrequentComplete ? "Frequent" : "Frequent " + DisplayFormat.Percent(FrequentFraction);
+        FrequentShortText = IsFrequentComplete ? Strings.IndexFrequent : Loc.Format(Strings.IndexFrequentPercent, DisplayFormat.Percent(FrequentFraction));
 
         AllFraction = status.AllTotal > 0 ? Math.Clamp((double)status.AllDone / status.AllTotal, 0, 1) : 0;
         if (status.State == IndexingState.UpToDate)
             AllFraction = 1;
         AllPercentText = DisplayFormat.Percent(AllFraction);
-        AllCountText = DisplayFormat.Count(status.AllDone) + " of " + DisplayFormat.Count(status.AllTotal) + (status.DiscoveryComplete ? string.Empty : "+");
+        AllCountText = Loc.Format(Strings.IndexCountOf, DisplayFormat.Count(status.AllDone), DisplayFormat.Count(status.AllTotal) + (status.DiscoveryComplete ? string.Empty : "+"));
         AllSummaryText = AllPercentText + " · " + AllCountText;
 
         var done = status.FrequentDone + status.AllDone;
@@ -209,49 +214,49 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         // State.
         IsPaused = status.State is IndexingState.PausedByUser or IndexingState.PausedSystemBusy or IndexingState.PausedOnBattery;
         IsUpToDate = status.State == IndexingState.UpToDate;
-        UpToDateDetail = "Index up to date · " + DisplayFormat.Count(status.AllDone) + " files searchable";
+        UpToDateDetail = Loc.Format(Strings.IndexUpToDateDetail, DisplayFormat.Count(status.AllDone));
         (StateText, ShortStateText, Tone) = status.State switch
         {
-            IndexingState.Starting => ("Preparing index…", "Starting", StatusTone.Neutral),
-            IndexingState.Running => ("Indexing while idle", "Indexing while idle", StatusTone.Good),
-            IndexingState.PausedSystemBusy => ("Indexing paused — system busy", "Paused — system busy", StatusTone.Busy),
-            IndexingState.PausedOnBattery => ("Indexing paused — on battery", "Paused — on battery", StatusTone.Busy),
-            IndexingState.PausedByUser => ("Indexing paused", "Paused by you", StatusTone.Paused),
-            IndexingState.UpToDate => ("Up to date", "Up to date", StatusTone.Good),
-            IndexingState.ModelUnavailable => ("Model unavailable — search is off", "Model unavailable", StatusTone.Error),
+            IndexingState.Starting => (Strings.StatePreparing, Strings.StateStarting, StatusTone.Neutral),
+            IndexingState.Running => (Strings.StateIndexingWhileIdle, Strings.StateIndexingWhileIdle, StatusTone.Good),
+            IndexingState.PausedSystemBusy => (Strings.StatePausedSystemBusy, Strings.StatePausedSystemBusyShort, StatusTone.Busy),
+            IndexingState.PausedOnBattery => (Strings.StatePausedOnBattery, Strings.StatePausedOnBatteryShort, StatusTone.Busy),
+            IndexingState.PausedByUser => (Strings.StatePaused, Strings.StatePausedByYou, StatusTone.Paused),
+            IndexingState.UpToDate => (Strings.UpToDate, Strings.UpToDate, StatusTone.Good),
+            IndexingState.ModelUnavailable => (Strings.StateModelUnavailable, Strings.StateModelUnavailableShort, StatusTone.Error),
             _ => (status.State.ToString(), status.State.ToString(), StatusTone.Neutral),
         };
 
         var phaseWord = status.State switch
         {
-            IndexingState.UpToDate => "done",
-            IndexingState.Running => status.Phase == IndexPhase.All ? "indexing" : "queued",
-            IndexingState.Starting => "queued",
-            IndexingState.ModelUnavailable => "stopped",
-            _ => "paused",
+            IndexingState.UpToDate => Strings.PhaseDone,
+            IndexingState.Running => status.Phase == IndexPhase.All ? Strings.PhaseIndexing : Strings.PhaseQueued,
+            IndexingState.Starting => Strings.PhaseQueued,
+            IndexingState.ModelUnavailable => Strings.PhaseStopped,
+            _ => Strings.PhasePaused,
         };
         AllCaptionText = AllCountText + " · " + phaseWord;
 
         CompactText = status.State switch
         {
-            IndexingState.UpToDate => "Index up to date",
-            IndexingState.Running => "Indexing while idle " + DisplayFormat.Percent(SearchableFraction),
-            IndexingState.Starting => "Preparing index",
+            IndexingState.UpToDate => Strings.IndexUpToDate,
+            IndexingState.Running => Loc.Format(Strings.StateIndexingWhileIdlePercent, DisplayFormat.Percent(SearchableFraction)),
+            IndexingState.Starting => Strings.StatePreparingShort,
             _ => StateText + " · " + DisplayFormat.Percent(SearchableFraction),
         };
 
         ShowBanner = IsPaused;
         BannerTitle = status.State switch
         {
-            IndexingState.PausedSystemBusy => "Indexing paused while the system is busy",
-            IndexingState.PausedOnBattery => "Indexing paused while on battery",
-            IndexingState.PausedByUser => "Indexing paused",
+            IndexingState.PausedSystemBusy => Strings.BannerPausedSystemBusy,
+            IndexingState.PausedOnBattery => Strings.BannerPausedOnBattery,
+            IndexingState.PausedByUser => Strings.StatePaused,
             _ => string.Empty,
         };
-        BannerDetail = DisplayFormat.Percent(SearchableFraction) + " of your files are searchable";
+        BannerDetail = Loc.Format(Strings.BannerSearchable, DisplayFormat.Percent(SearchableFraction));
         SetUserPaused(IsUserPaused);
         PolicyText = status.State is IndexingState.PausedSystemBusy or IndexingState.PausedOnBattery
-            ? "Resumes automatically when CPU and disk are idle"
-            : string.Create(inv, $"Pauses automatically when CPU passes {maxCpuPercent:0}% or disk activity is high");
+            ? Strings.PolicyResumes
+            : Loc.Format(Strings.PolicyPauses, maxCpuPercent.ToString("0", CultureInfo.CurrentCulture) + "%");
     }
 }

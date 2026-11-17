@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Configuration;
+using Valafind.App.Localization;
 
 namespace Valafind.App.ViewModels;
 
@@ -122,7 +123,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     public partial string LastQuery { get; private set; } = string.Empty;
 
     /// <summary>"Close in meaning to “…” — no keyword overlap needed."</summary>
-    public string MatchExplanation => "Close in meaning to “" + LastQuery + "” — no keyword overlap needed.";
+    public string MatchExplanation => Loc.Format(Strings.MatchExplanation, LastQuery);
 
     /// <summary>Visible results, in display order.</summary>
     public ObservableCollection<ResultItemViewModel> Results { get; } = [];
@@ -222,6 +223,17 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string IndexScopeDetail { get; private set; } = string.Empty;
 
+    /// <summary>Phase 2 caption: "Phase 2 · Home folder".</summary>
+    [ObservableProperty]
+    public partial string Phase2Text { get; private set; } = string.Empty;
+
+    /// <summary>Text before the hotkey in the "Summon Valafind from anywhere with …" hint (word order differs per
+    /// language, so the translated sentence is split around its {0} placeholder).</summary>
+    public static string SummonTextBefore => Loc.Split(Strings.HintSummon).Before;
+
+    /// <summary>Text after the hotkey in the summon hint.</summary>
+    public static string SummonTextAfter => Loc.Split(Strings.HintSummon).After;
+
     /// <summary>Recomputes <see cref="IndexScopeText"/> from the configured folders (call after settings change).</summary>
     public void RefreshIndexScope()
     {
@@ -229,9 +241,10 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
         var comparison = Flavor == UiFlavor.Linux ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
         if (roots.Count == 0)
         {
-            IndexScopeText = "Home folder";
-            IndexScopeShortText = "Home";
-            IndexScopeDetail = "Everything in your home folder" + (_home is null ? string.Empty : " (" + DisplayHome() + ")");
+            IndexScopeText = Strings.ScopeHomeFolder;
+            IndexScopeShortText = Strings.ScopeHome;
+            IndexScopeDetail = _home is null ? Strings.ScopeEverythingInHome : Loc.Format(Strings.ScopeEverythingInHomeAt, DisplayHome());
+            Phase2Text = Loc.Format(Strings.IndexPhase2, IndexScopeText);
             return;
         }
         if (roots.Count == 1)
@@ -241,10 +254,11 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
         }
         else
         {
-            IndexScopeText = roots.Count.ToString(CultureInfo.InvariantCulture) + " folders";
+            IndexScopeText = Loc.Format(Strings.ScopeFolderCount, roots.Count);
         }
         IndexScopeShortText = IndexScopeText;
-        IndexScopeDetail = "Everything in " + string.Join(", ", roots.Select(r => DisplayFormat.ShortenHome(r, _home, comparison)));
+        IndexScopeDetail = Loc.Format(Strings.ScopeEverythingIn, string.Join(", ", roots.Select(r => DisplayFormat.ShortenHome(r, _home, comparison))));
+        Phase2Text = Loc.Format(Strings.IndexPhase2, IndexScopeText);
 
         string DisplayHome() => Flavor == UiFlavor.Windows ? _home! : "~";
     }
@@ -294,9 +308,9 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// <summary>Platform label of the reveal action ("Show in folder", "Show in Finder", "Show in Files").</summary>
     public string RevealLabel => Flavor switch
     {
-        UiFlavor.Mac => "Show in Finder",
-        UiFlavor.Linux => "Show in Files",
-        _ => "Show in folder",
+        UiFlavor.Mac => Strings.ShowInFinder,
+        UiFlavor.Linux => Strings.ShowInFiles,
+        _ => Strings.ShowInFolder,
     };
 
     // ------------------------------------------------------------------ host API
@@ -673,8 +687,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
         ErrorText = null;
         IsSearching = false;
         var ms = Math.Max(1, (int)Math.Round(elapsed.TotalMilliseconds));
-        ResultSummary = string.Create(CultureInfo.InvariantCulture,
-            $"{Results.Count} {(Results.Count == 1 ? "result" : "results")} · {ms} ms");
+        ResultSummary = Loc.Format(Results.Count == 1 ? Strings.ResultSummaryOne : Strings.ResultSummaryMany, Results.Count, ms);
         SelectedIndex = Results.Count > 0 ? 0 : -1;
         UpdateContent();
     }
@@ -685,7 +698,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
         if (items.Count == 0)
             return items;
         var ordered = new List<ResultItemViewModel>(items.Count) { items[0] };
-        items[0].GroupHeader = "Top Match";
+        items[0].GroupHeader = Strings.TopMatch;
         foreach (var group in items.Skip(1).GroupBy(i => i.GroupName))
         {
             var first = true;

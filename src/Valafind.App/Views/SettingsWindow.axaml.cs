@@ -21,6 +21,7 @@ public partial class SettingsWindow : Window
     {
         ArgumentNullException.ThrowIfNull(vm);
         InitializeComponent();
+        FlowDirection = Localization.Loc.FlowDirection;
         DataContext = vm;
         vm.PickFolderAsync = PickFolderAsync;
         vm.CloseRequested += (_, _) => Close();

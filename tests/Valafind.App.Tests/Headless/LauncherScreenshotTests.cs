@@ -132,6 +132,42 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
             }
         }, TestContext.Current.CancellationToken);
 
+    [Theory]
+    [InlineData(UiFlavor.Windows, "de")]
+    [InlineData(UiFlavor.Mac, "ja")]
+    [InlineData(UiFlavor.Linux, "ar")]
+    public Task RendersTranslatedLauncher(UiFlavor flavor, string language) =>
+        fixture.Session.Dispatch(() =>
+        {
+            var previous = System.Globalization.CultureInfo.CurrentUICulture;
+            System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(language);
+            try
+            {
+                var vm = DesignData.Create(flavor);
+                var frame = Render(flavor, vm, ThemeVariant.Light, out var view, Valafind.App.Localization.Loc.FlowDirection);
+                Assert.True(frame.PixelSize.Width >= 700);
+                Assert.Equal(vm.Results.Count, CountRows(view));
+                Assert.Equal(language == "ar" ? FlowDirection.RightToLeft : FlowDirection.LeftToRight, view.FlowDirection);
+                Save(frame, $"{flavor.ToString().ToLowerInvariant()}-{language}.png");
+
+                var settings = new SettingsWindow(DesignData.Settings) { RequestedThemeVariant = ThemeVariant.Light };
+                settings.Show();
+                try
+                {
+                    var settingsFrame = settings.CaptureRenderedFrame() ?? throw new InvalidOperationException("No frame rendered");
+                    Save(settingsFrame, $"settings-{language}.png");
+                }
+                finally
+                {
+                    settings.Close();
+                }
+            }
+            finally
+            {
+                System.Globalization.CultureInfo.CurrentUICulture = previous;
+            }
+        }, TestContext.Current.CancellationToken);
+
     [Fact]
     public Task RendersSettingsWindow() =>
         fixture.Session.Dispatch(() =>
@@ -150,7 +186,8 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
             }
         }, TestContext.Current.CancellationToken);
 
-    private static WriteableBitmap Render(UiFlavor flavor, LauncherViewModel vm, ThemeVariant theme, out LauncherViewBase view)
+    private static WriteableBitmap Render(UiFlavor flavor, LauncherViewModel vm, ThemeVariant theme, out LauncherViewBase view,
+        FlowDirection flowDirection = FlowDirection.LeftToRight)
     {
         view = LauncherWindow.CreateView(flavor);
         view.DataContext = vm;
@@ -161,6 +198,7 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
             // Stand-in for the desktop behind the translucent launcher (headless has no real blur).
             Background = Backdrop(flavor, theme == ThemeVariant.Dark),
             Content = view,
+            FlowDirection = flowDirection,
         };
         window.Show();
         try

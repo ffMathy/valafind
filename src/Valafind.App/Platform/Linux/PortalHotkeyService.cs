@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using Tmds.DBus.Protocol;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Platform;
 
@@ -52,7 +53,7 @@ internal sealed class PortalHotkeyService : IGlobalHotkeyService
 
         if (PreferredTrigger(parsed) is null)
         {
-            error = $"The key '{parsed.Key}' cannot be used as a global shortcut.";
+            error = Loc.Format(Strings.HotkeyKeyNotUsable, parsed.Key);
             return false;
         }
 
@@ -228,7 +229,7 @@ internal sealed class PortalHotkeyService : IGlobalHotkeyService
                 w.WriteStructureStart();
                 w.WriteString(ShortcutId);
                 var props = w.WriteDictionaryStart();
-                WriteEntry(ref w, "description", "Show or hide Valafind");
+                WriteEntry(ref w, "description", Strings.PortalShortcutDescription);
                 WriteEntry(ref w, "preferred_trigger", trigger);
                 w.WriteDictionaryEnd(props);
                 w.WriteArrayEnd(shortcuts);
@@ -286,7 +287,7 @@ internal sealed class PortalHotkeyService : IGlobalHotkeyService
         return code switch
         {
             0 => null,
-            1 => "The shortcut request was cancelled in the desktop dialog. " + GlobalHotkeyFactory.WaylandUnavailableMessage,
+            1 => Strings.HotkeyPortalCancelled + " " + GlobalHotkeyFactory.WaylandUnavailableMessage,
             _ => $"The desktop could not bind {chord.DisplayString()} (response {code}).",
         };
     }

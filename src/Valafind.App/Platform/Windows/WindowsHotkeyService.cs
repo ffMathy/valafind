@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Platform;
 
@@ -44,7 +45,7 @@ internal sealed unsafe class WindowsHotkeyService : IGlobalHotkeyService
 
         if (HotkeyKeyMaps.WindowsVirtualKey(parsed.Key) is not { } vk)
         {
-            error = $"The key '{parsed.Key}' cannot be used as a global shortcut on Windows.";
+            error = Loc.Format(Strings.HotkeyKeyNotUsableWindows, parsed.Key);
             return false;
         }
 
@@ -71,7 +72,7 @@ internal sealed unsafe class WindowsHotkeyService : IGlobalHotkeyService
                     var code = Marshal.GetLastPInvokeError();
                     return code == Win32.ERROR_HOTKEY_ALREADY_REGISTERED
                         ? HotkeyDispatch.InUseMessage(parsed)
-                        : $"Could not register {parsed.DisplayString()}: {new Win32Exception(code).Message}";
+                        : Loc.Format(Strings.HotkeyCouldNotRegisterReason, parsed.DisplayString(), new Win32Exception(code).Message);
                 }
 
                 if (_activeId != 0)

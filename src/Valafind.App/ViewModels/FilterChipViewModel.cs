@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Valafind.Core.Abstractions;
+using Valafind.App.Localization;
 
 namespace Valafind.App.ViewModels;
 
@@ -28,14 +29,14 @@ public sealed partial class FilterChipViewModel : ObservableObject
     /// <summary>The standard chip set, in display order.</summary>
     internal static IReadOnlyList<FilterChipViewModel> CreateDefaults() =>
     [
-        new("All", null),
-        new("Documents", new HashSet<FileKind> { FileKind.Document, FileKind.Pdf, FileKind.Text, FileKind.Notebook }),
-        new("PDFs", new HashSet<FileKind> { FileKind.Pdf }),
-        new("Spreadsheets", new HashSet<FileKind> { FileKind.Spreadsheet }),
-        new("Slides", new HashSet<FileKind> { FileKind.Presentation }),
-        new("Mail", new HashSet<FileKind> { FileKind.Mail }),
-        new("Code", new HashSet<FileKind> { FileKind.Code, FileKind.Notebook }),
-        new("Images", new HashSet<FileKind> { FileKind.Image }),
+        new(Strings.FilterAll, null),
+        new(Strings.FilterDocuments, new HashSet<FileKind> { FileKind.Document, FileKind.Pdf, FileKind.Text, FileKind.Notebook }),
+        new(Strings.FilterPdfs, new HashSet<FileKind> { FileKind.Pdf }),
+        new(Strings.FilterSpreadsheets, new HashSet<FileKind> { FileKind.Spreadsheet }),
+        new(Strings.FilterSlides, new HashSet<FileKind> { FileKind.Presentation }),
+        new(Strings.FilterMail, new HashSet<FileKind> { FileKind.Mail }),
+        new(Strings.FilterCode, new HashSet<FileKind> { FileKind.Code, FileKind.Notebook }),
+        new(Strings.FilterImages, new HashSet<FileKind> { FileKind.Image }),
     ];
 }
 
@@ -59,11 +60,11 @@ public sealed class TimeRangeOption
 
     internal static IReadOnlyList<TimeRangeOption> CreateDefaults() =>
     [
-        new("Any time", null),
-        new("Today", TimeSpan.FromDays(1)),
-        new("Past week", TimeSpan.FromDays(7)),
-        new("Past month", TimeSpan.FromDays(31)),
-        new("Past year", TimeSpan.FromDays(366)),
+        new(Strings.TimeAny, null),
+        new(Strings.TimeToday, TimeSpan.FromDays(1)),
+        new(Strings.TimePastWeek, TimeSpan.FromDays(7)),
+        new(Strings.TimePastMonth, TimeSpan.FromDays(31)),
+        new(Strings.TimePastYear, TimeSpan.FromDays(366)),
     ];
 }
 
@@ -73,14 +74,14 @@ internal static class FileKindGroups
     /// <summary>Section header used by the macOS design ("Documents", "Mail", …).</summary>
     public static string GroupName(FileKind kind) => kind switch
     {
-        FileKind.Document or FileKind.Pdf or FileKind.Text or FileKind.Notebook => "Documents",
-        FileKind.Mail => "Mail",
-        FileKind.Spreadsheet => "Spreadsheets",
-        FileKind.Presentation => "Presentations",
-        FileKind.Code => "Code",
-        FileKind.Image => "Images",
-        FileKind.Audio or FileKind.Video => "Media",
-        _ => "Other",
+        FileKind.Document or FileKind.Pdf or FileKind.Text or FileKind.Notebook => Strings.FilterDocuments,
+        FileKind.Mail => Strings.FilterMail,
+        FileKind.Spreadsheet => Strings.FilterSpreadsheets,
+        FileKind.Presentation => Strings.GroupPresentations,
+        FileKind.Code => Strings.FilterCode,
+        FileKind.Image => Strings.FilterImages,
+        FileKind.Audio or FileKind.Video => Strings.GroupMedia,
+        _ => Strings.GroupOther,
     };
 
     /// <summary>Palette key suffix for the kind tile colours ("VfKindPdfBg" etc).</summary>

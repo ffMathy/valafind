@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Platform;
 
@@ -40,7 +41,7 @@ internal sealed unsafe class MacHotkeyService : IGlobalHotkeyService
 
         if (HotkeyKeyMaps.MacVirtualKey(parsed.Key) is not { } keyCode)
         {
-            error = $"The key '{parsed.Key}' cannot be used as a global shortcut on macOS.";
+            error = Loc.Format(Strings.HotkeyKeyNotUsableMac, parsed.Key);
             return false;
         }
 
@@ -134,7 +135,7 @@ internal sealed unsafe class MacHotkeyService : IGlobalHotkeyService
         if (result != Carbon.noErr)
         {
             var spotlightHint = chord is { Super: true, Ctrl: false, Alt: false, Key: "Space" }
-                ? " ⌘Space is normally used by Spotlight; try ⌃⌥Space instead."
+                ? " " + Strings.HotkeySpotlightHint
                 : string.Empty;
             return result == Carbon.eventHotKeyExistsErr
                 ? HotkeyDispatch.InUseMessage(chord) + spotlightHint

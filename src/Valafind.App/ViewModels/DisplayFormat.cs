@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Valafind.App.Platform;
 using Valafind.Core.Abstractions;
+using Valafind.App.Localization;
 
 namespace Valafind.App.ViewModels;
 
@@ -17,14 +18,14 @@ internal static class DisplayFormat
         var local = TimeZoneInfo.ConvertTime(value, zone);
         var today = TimeZoneInfo.ConvertTime(now, zone).Date;
         if (local.Date == today)
-            return "Today " + local.ToString("HH:mm", Inv);
+            return Loc.Format(Strings.DateToday, local.ToString("HH:mm", Inv));
         if (local.Date == today.AddDays(-1))
-            return "Yesterday";
-        return local.ToString("d MMM yyyy", Inv);
+            return Strings.DateYesterday;
+        return local.ToString("d MMM yyyy", CultureInfo.CurrentCulture);
     }
 
     /// <summary>Thousands-separated integer, e.g. "182,930".</summary>
-    public static string Count(long value) => value.ToString("N0", Inv);
+    public static string Count(long value) => value.ToString("N0", CultureInfo.CurrentCulture);
 
     /// <summary>Human file size: "412 KB", "3.4 MB".</summary>
     public static string FileSize(long bytes)

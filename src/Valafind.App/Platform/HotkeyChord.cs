@@ -1,4 +1,5 @@
 using System.Text;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Platform;
 
@@ -39,7 +40,7 @@ internal sealed record HotkeyChord(bool Ctrl, bool Alt, bool Shift, bool Super, 
         error = null;
         if (string.IsNullOrWhiteSpace(text))
         {
-            error = "The shortcut is empty.";
+            error = Strings.HotkeyEmpty;
             return false;
         }
 
@@ -52,7 +53,7 @@ internal sealed record HotkeyChord(bool Ctrl, bool Alt, bool Shift, bool Super, 
             var part = parts[i];
             if (part.Length == 0)
             {
-                error = $"'{text}' is not a valid shortcut (empty part).";
+                error = Loc.Format(Strings.HotkeyEmptyPart, text);
                 return false;
             }
 
@@ -71,7 +72,7 @@ internal sealed record HotkeyChord(bool Ctrl, bool Alt, bool Shift, bool Super, 
 
                 if (flag)
                 {
-                    error = $"The modifier '{modifier}' appears more than once in '{text}'.";
+                    error = Loc.Format(Strings.HotkeyDuplicateModifier, modifier, text);
                     return false;
                 }
 
@@ -81,39 +82,39 @@ internal sealed record HotkeyChord(bool Ctrl, bool Alt, bool Shift, bool Super, 
 
             if (!isLast)
             {
-                error = $"'{part}' is not a modifier. Use Ctrl, Alt, Shift or Super before the key.";
+                error = Loc.Format(Strings.HotkeyNotModifier, part);
                 return false;
             }
 
             if (modifier is not null)
             {
-                error = $"'{text}' has no key; add a key after the modifiers (e.g. '{text}+Space').";
+                error = Loc.Format(Strings.HotkeyNoKeyAfterModifiers, text);
                 return false;
             }
 
             if (IsEscape(part))
             {
-                error = "Escape cannot be used as a global shortcut key.";
+                error = Strings.HotkeyEscape;
                 return false;
             }
 
             key = NormalizeKey(part);
             if (key is null)
             {
-                error = $"'{part}' is not a supported key. Supported: Space, A-Z, 0-9, F1-F24, Enter, Tab, Backquote, Comma, Period, Slash, Semicolon.";
+                error = Loc.Format(Strings.HotkeyUnsupportedKey, part);
                 return false;
             }
         }
 
         if (key is null)
         {
-            error = $"'{text}' has no key.";
+            error = Loc.Format(Strings.HotkeyNoKey, text);
             return false;
         }
 
         if (!(ctrl || alt || super) && !IsFunctionKey(key))
         {
-            error = "A global shortcut needs Ctrl, Alt or Super (only function keys may be used alone or with just Shift).";
+            error = Strings.HotkeyNeedsModifier;
             return false;
         }
 
@@ -130,8 +131,8 @@ internal sealed record HotkeyChord(bool Ctrl, bool Alt, bool Shift, bool Super, 
         ArgumentNullException.ThrowIfNull(chord);
         if (chord.Alt && !chord.Ctrl && !chord.Super)
         {
-            return $"macOS does not allow shortcuts that use only Option{(chord.Shift ? " and Shift" : string.Empty)} "
-                   + $"({chord.DisplayString(ChordDisplayStyle.MacOS)}). Add Control or Command, for example ⌃⌥Space.";
+            return Loc.Format(chord.Shift ? Strings.HotkeyMacOptionShiftOnly : Strings.HotkeyMacOptionOnly,
+                chord.DisplayString(ChordDisplayStyle.MacOS));
         }
         return null;
     }

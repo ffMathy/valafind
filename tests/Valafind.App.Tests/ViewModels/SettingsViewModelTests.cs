@@ -78,6 +78,26 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task LanguageChoiceIsSavedAndSystemDefaultIsStoredAsNull()
+    {
+        var settings = new ValafindSettings();
+        var vm = new SettingsViewModel(settings, new FakeHost());
+        Assert.Equal(string.Empty, vm.SelectedLanguage.Code);
+        Assert.False(vm.ShowLanguageRestartHint);
+
+        vm.SelectedLanguage = vm.LanguageOptions.Single(l => l.Code == "de");
+        Assert.True(vm.ShowLanguageRestartHint);
+        await vm.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("de", settings.Language);
+
+        var again = new SettingsViewModel(settings, new FakeHost());
+        Assert.Equal("de", again.SelectedLanguage.Code);
+        again.SelectedLanguage = again.LanguageOptions[0];
+        await again.SaveCommand.ExecuteAsync(null);
+        Assert.Null(settings.Language);
+    }
+
+    [Fact]
     public async Task FailedNewHotkeyKeepsTheWindowOpen()
     {
         var vm = new SettingsViewModel(new ValafindSettings(), new FakeHost { HotkeyError = "taken" });
