@@ -58,6 +58,14 @@
           <SolidColorBrush x:Key="VfKindPresentationFg" Color="#D9531E" />
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#B03A8C" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#8A6D1F" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#14000000" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#2A9D47" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#2A9D47" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#C46A00" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#C46A00" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#D70015" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="VfTextBrush" Color="#F5F5F7" />
@@ -98,8 +106,17 @@
           <SolidColorBrush x:Key="VfKindPresentationFg" Color="#FF8A55" />
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#F07CC8" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#E0C060" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#1AFFFFFF" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#32D74B" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#32D74B" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#FF9F0A" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#FF9F0A" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#FF6961" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
+      <CornerRadius x:Key="VfIndexPanelRadius">10</CornerRadius>
     </ResourceDictionary>
   </views:LauncherViewBase.Resources>
 
@@ -321,6 +338,9 @@
         </Panel>
       </Border>
 
+      <!-- Index progress (shared with the GNOME and Windows launchers) -->
+      <common:IndexPanelView Margin="14,12,14,12" />
+
       <!-- Footer -->
       <Border Padding="18,9" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource VfDividerBrush}"
               TextElement.FontSize="11" TextElement.Foreground="{DynamicResource VfSubtleBrush}">
@@ -338,11 +358,9 @@
             <c:StrokeIcon Data="{StaticResource VfIconLock}" Width="12" Height="12" StrokeThickness="2.2"
                           Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
             <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="330">
-              <Run Text="On-device · EmbeddingGemma · " /><Run Text="{Binding Status.CompactText}" />
+              <Run Text="On-device · EmbeddingGemma — nothing leaves this Mac" />
             </TextBlock>
-            <c:MeterBar Width="48" Height="3" Radius="1.5" VerticalAlignment="Center" Value="{Binding Status.SearchableFraction}"
-                        Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}"
-                        IsVisible="{Binding !Status.IsUpToDate}" />
+            
           </StackPanel>
         </DockPanel>
       </Border>

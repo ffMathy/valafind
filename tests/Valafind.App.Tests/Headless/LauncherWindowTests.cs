@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
@@ -149,6 +150,38 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
 
                 vm.TogglePreviewCommand.Execute(null);
                 Assert.False(pane.IsVisible);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, TestContext.Current.CancellationToken);
+
+    [Theory]
+    [InlineData(UiFlavor.Windows, true)]
+    [InlineData(UiFlavor.Mac, true)]
+    [InlineData(UiFlavor.Linux, false)] // GNOME has the paused banner with the same button instead.
+    public Task EveryLauncherShowsIndexPhasesAndPressure(UiFlavor flavor, bool hasOwnResumeButton) =>
+        fixture.Session.Dispatch(() =>
+        {
+            var vm = DesignData.Create(flavor);
+            var view = LauncherWindow.CreateView(flavor);
+            view.DataContext = vm;
+            var window = new Window { Content = view };
+            try
+            {
+                window.Show();
+                var panel = Assert.Single(view.GetVisualDescendants().OfType<Valafind.App.Views.Common.IndexPanelView>());
+                Assert.True(panel.IsEffectivelyVisible);
+                var texts = panel.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Inlines?.Text ?? t.Text).ToList();
+                Assert.Contains(texts, t => t?.Contains("Phase 1", StringComparison.Ordinal) == true);
+                Assert.Contains(texts, t => t?.Contains("Phase 2", StringComparison.Ordinal) == true);
+                Assert.Contains(vm.Status.AllPercentText, texts);
+                Assert.Contains(vm.Status.CpuText, texts);
+
+                // The button appears only while indexing is paused, and only where the view has no banner for it.
+                var resume = panel.FindControl<Button>("ResumeButton")!;
+                Assert.Equal(hasOwnResumeButton && vm.Status.ShowBanner, resume.IsEffectivelyVisible);
             }
             finally
             {

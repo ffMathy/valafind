@@ -80,6 +80,14 @@
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#A32B6B" />
           <SolidColorBrush x:Key="VfKindArchiveBg" Color="#F5EFDD" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#7D5F0E" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#12000000" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#1F7A3D" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#2EC27E" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#8A4B00" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#C64600" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#C01C28" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="VfTextBrush" Color="#FFFFFF" />
@@ -142,8 +150,17 @@
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#F49AC2" />
           <SolidColorBrush x:Key="VfKindArchiveBg" Color="#403A24" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#F9E58F" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#2E2E32" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#17FFFFFF" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#8FF0A4" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#26A269" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#FFBE6F" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#E66100" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#FF7B63" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
+      <CornerRadius x:Key="VfIndexPanelRadius">12</CornerRadius>
     </ResourceDictionary>
   </views:LauncherViewBase.Resources>
 
@@ -327,7 +344,7 @@
       </Border>
 
       <!-- Content -->
-      <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="10" Margin="18,14,18,0">
+      <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10" Margin="18,14,18,0">
         <DockPanel Margin="4,0">
           <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding ResultSummary}" FontSize="12"
                      Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" />
@@ -428,64 +445,11 @@
           </Border>
         </Grid>
 
-        <DockPanel Grid.Row="2" Margin="4,4,4,0">
-          <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
-                     Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" />
-          <TextBlock Classes="h2" Text="Index" />
-        </DockPanel>
-
-        <Border Grid.Row="3" Classes="boxed" ClipToBounds="True">
-          <Grid ColumnDefinitions="*,*,*">
-            <StackPanel Classes="phase1" Classes.done="{Binding Status.IsFrequentComplete}" Margin="16,11" Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="14" Height="14" StrokeThickness="2.6"
-                              Foreground="{DynamicResource GnomeGoodBrush}" VerticalAlignment="Center"
-                              IsVisible="{Binding Status.IsFrequentComplete}" />
-                <TextBlock Text="Phase 1 · Frequently used" FontSize="12.5" FontWeight="Bold" VerticalAlignment="Center" />
-              </StackPanel>
-              <c:MeterBar Height="6" Radius="3" Value="{Binding Status.FrequentFraction}" Track="{DynamicResource VfTrackBrush}"
-                          Fill="{DynamicResource GnomeGoodBarBrush}" />
-              <TextBlock Classes="num" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}">
-                <Run Text="{Binding Status.FrequentText}" /><Run Text=" files" />
-              </TextBlock>
-            </StackPanel>
-            <Border Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
-              <StackPanel Margin="16,11" Spacing="6">
-                <DockPanel>
-                  <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding Status.AllPercentText}" FontSize="12.5" FontWeight="Bold" />
-                  <TextBlock FontSize="12.5" FontWeight="Bold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding IndexScopeDetail}">
-                    <Run Text="Phase 2 · " /><Run Text="{Binding IndexScopeText}" />
-                  </TextBlock>
-                </DockPanel>
-                <c:MeterBar Height="6" Radius="3" Value="{Binding Status.AllFraction}" Track="{DynamicResource VfTrackBrush}"
-                            Fill="{DynamicResource VfAccentBrush}" />
-                <TextBlock Classes="num" Text="{Binding Status.AllCaptionText}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
-                           TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </Border>
-            <Border Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
-              <StackPanel Margin="16,11" Spacing="6">
-                <TextBlock Classes="tone" Classes.busy="{Binding Status.IsToneBusy}" Classes.paused="{Binding Status.IsTonePaused}"
-                           Classes.good="{Binding Status.IsToneGood}" Classes.error="{Binding Status.IsToneError}"
-                           Text="{Binding Status.ShortStateText}" FontSize="12.5" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-                <Grid ColumnDefinitions="30,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
-                      TextElement.FontSize="11.5" TextElement.Foreground="{DynamicResource GnomeMetaBrush}">
-                  <TextBlock Text="CPU" VerticalAlignment="Center" />
-                  <c:MeterBar Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Height="4" Radius="2"
-                              VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
-                  <TextBlock Grid.Column="2" Classes="num" Text="{Binding Status.CpuText}" HorizontalAlignment="Right" />
-                  <TextBlock Grid.Row="1" Text="Disk" VerticalAlignment="Center" />
-                  <c:MeterBar Grid.Row="1" Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Height="4"
-                              Radius="2" VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
-                  <TextBlock Grid.Row="1" Grid.Column="2" Classes="num" Text="{Binding Status.DiskText}" HorizontalAlignment="Right" />
-                </Grid>
-              </StackPanel>
-            </Border>
-          </Grid>
-        </Border>
+        <!-- Index progress (shared with the Windows and macOS launchers; the paused banner above has the button) -->
+        <common:IndexPanelView Grid.Row="2" Margin="0,4,0,0" ShowResumeButton="False" />
 
         <!-- Filter chips -->
-        <DockPanel Grid.Row="4" Margin="0,2,0,0">
+        <DockPanel Grid.Row="3" Margin="0,2,0,0">
           <Button DockPanel.Dock="Right" Classes="vf pill" CornerRadius="8" Padding="12,0,10,0">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <TextBlock Text="{Binding SelectedTimeRange.Label}" VerticalAlignment="Center" />

@@ -87,6 +87,14 @@
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#8E3A93" />
           <SolidColorBrush x:Key="VfKindArchiveBg" Color="#F4EEDF" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#7A5A12" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#B3FFFFFF" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#0F000000" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#107C41" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#107C41" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#8A4B00" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#B35C00" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#C42B1C" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="VfTextBrush" Color="#FFFFFF" />
@@ -156,8 +164,17 @@
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#E2A3E6" />
           <SolidColorBrush x:Key="VfKindArchiveBg" Color="#36301F" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#E3C77C" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#0DFFFFFF" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#14FFFFFF" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#6CCB5F" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#6CCB5F" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#FCB868" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#F7A140" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#FF99A4" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
+      <CornerRadius x:Key="VfIndexPanelRadius">8</CornerRadius>
     </ResourceDictionary>
   </views:LauncherViewBase.Resources>
 
@@ -335,7 +352,7 @@
       </DockPanel>
 
       <!-- Results + details pane (Tab hides the pane) / messages -->
-      <Grid x:Name="Body" ColumnDefinitions="*,Auto" Height="476" IsVisible="{Binding IsResultsVisible}">
+      <Grid x:Name="Body" ColumnDefinitions="*,Auto" Height="420" IsVisible="{Binding IsResultsVisible}">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}" Margin="8,4,8,8">
             <ItemsControl.ItemsPanel>
@@ -411,13 +428,11 @@
                     <TextBlock Text="WHY IT MATCHED · CLOSEST PASSAGE" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.2"
                                Foreground="{DynamicResource VfSubtleBrush}" />
                     <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="“" Suffix="”"
-                                            FontSize="13" LineHeight="19.5" TextWrapping="Wrap" MaxLines="7"
+                                            FontSize="13" LineHeight="19.5" TextWrapping="Wrap" MaxLines="6"
                                             TextTrimming="CharacterEllipsis" Foreground="{DynamicResource WinSnippetBrush}"
                                             HighlightBackground="{DynamicResource WinMarkBrush}"
                                             HighlightUnderline="{DynamicResource VfAccentBrush}"
                                             HighlightForeground="{DynamicResource VfTextBrush}" />
-                    <TextBlock Text="{Binding Launcher.MatchExplanation}" FontSize="11" TextWrapping="Wrap"
-                               Foreground="{DynamicResource VfSubtleBrush}" />
                   </StackPanel>
                 </Border>
             </Border>
@@ -435,60 +450,8 @@
         </DockPanel>
       </Border>
 
-      <!-- Index status strip -->
-      <Border Classes="strip" Padding="20,9" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource WinStripBorderBrush}"
-              TextElement.FontSize="12"
-              TextElement.Foreground="{DynamicResource WinStripTextBrush}">
-        <DockPanel>
-          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="5" Background="Transparent">
-              <ToolTip.Tip>
-                <TextBlock><Run Text="Phase 1 — Frequently used files: " /><Run Text="{Binding Status.FrequentText}" /></TextBlock>
-              </ToolTip.Tip>
-              <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="13" Height="13" StrokeThickness="2.4"
-                            Foreground="{DynamicResource WinGoodBrush}" VerticalAlignment="Center"
-                            IsVisible="{Binding Status.IsFrequentComplete}" />
-              <c:MeterBar Width="32" Height="4" Radius="2" VerticalAlignment="Center" Value="{Binding Status.FrequentFraction}"
-                          Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}"
-                          IsVisible="{Binding !Status.IsFrequentComplete}" />
-              <TextBlock Classes="num" Text="{Binding Status.FrequentShortText}" VerticalAlignment="Center" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="6" Background="Transparent">
-              <ToolTip.Tip>
-                <TextBlock><Run Text="Phase 2 — " /><Run Text="{Binding IndexScopeDetail}" /><Run Text=": " /><Run Text="{Binding Status.AllCountText}" /></TextBlock>
-              </ToolTip.Tip>
-              <TextBlock Text="{Binding IndexScopeShortText}" MaxWidth="90" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-              <c:MeterBar Width="48" Height="4" Radius="2" VerticalAlignment="Center" Value="{Binding Status.AllFraction}"
-                          Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
-              <TextBlock Classes="num" Text="{Binding Status.AllPercentText}" VerticalAlignment="Center" />
-            </StackPanel>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="12">
-            <StackPanel Classes="state" Classes.busy="{Binding Status.IsToneBusy}" Classes.paused="{Binding Status.IsTonePaused}"
-                        Classes.good="{Binding Status.IsToneGood}" Classes.error="{Binding Status.IsToneError}"
-                        Orientation="Horizontal" Spacing="6">
-              <Panel Width="14" Height="14" VerticalAlignment="Center">
-                <c:StrokeIcon Data="{StaticResource VfIconPauseCircle}" StrokeThickness="2" IsVisible="{Binding Status.IsPaused}" />
-                <c:StrokeIcon Data="{StaticResource VfIconPlayCircle}" StrokeThickness="2" IsVisible="{Binding Status.IsActive}" />
-                <c:StrokeIcon Data="{StaticResource VfIconWarning}" StrokeThickness="2" IsVisible="{Binding Status.IsToneError}" />
-              </Panel>
-              <TextBlock Text="{Binding Status.StateText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Status.HasPressure}">
-              <TextBlock Text="CPU" VerticalAlignment="Center" />
-              <c:MeterBar Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Width="36" Height="4" Radius="2"
-                          VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
-              <TextBlock Classes="num" Text="{Binding Status.CpuText}" VerticalAlignment="Center" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding Status.HasPressure}">
-              <TextBlock Text="Disk" VerticalAlignment="Center" />
-              <c:MeterBar Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Width="36" Height="4" Radius="2"
-                          VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
-              <TextBlock Classes="num" Text="{Binding Status.DiskText}" VerticalAlignment="Center" />
-            </StackPanel>
-          </StackPanel>
-        </DockPanel>
-      </Border>
+      <!-- Index progress (shared with the GNOME and macOS launchers) -->
+      <common:IndexPanelView Margin="16,10,16,12" />
 
       <!-- Footer -->
       <Border Classes="strip" Padding="20,9" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource VfDividerBrush}"
