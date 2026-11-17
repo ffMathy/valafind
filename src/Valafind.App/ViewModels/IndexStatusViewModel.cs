@@ -77,6 +77,9 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>All phases done.</summary>
     [ObservableProperty] public partial bool IsUpToDate { get; private set; }
 
+    /// <summary>Tooltip of the discreet "up to date" indicator shown instead of the index panel.</summary>
+    [ObservableProperty] public partial string UpToDateDetail { get; private set; } = string.Empty;
+
     /// <summary>Phase 1 progress 0..1.</summary>
     [ObservableProperty] public partial double FrequentFraction { get; private set; }
 
@@ -206,6 +209,7 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         // State.
         IsPaused = status.State is IndexingState.PausedByUser or IndexingState.PausedSystemBusy or IndexingState.PausedOnBattery;
         IsUpToDate = status.State == IndexingState.UpToDate;
+        UpToDateDetail = "Index up to date · " + DisplayFormat.Count(status.AllDone) + " files searchable";
         (StateText, ShortStateText, Tone) = status.State switch
         {
             IndexingState.Starting => ("Preparing index…", "Starting", StatusTone.Neutral),

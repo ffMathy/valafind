@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Valafind — find files by what they mean</title>
+  <meta name="description" content="Press a shortcut, describe the file in your own words, and Valafind finds it — in any language, entirely on your computer.">
+  <meta property="og:title" content="Valafind — find files by what they mean">
+  <meta property="og:description" content="Semantic file search for Windows, macOS and Linux. Runs entirely on your computer.">
+  <meta property="og:image" content="screenshots/macos-launcher.png">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="favicon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#"><img src="favicon.png" alt="" width="28" height="28"> Valafind</a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a href="https://github.com/ffMathy/valafind">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Find files by what they <em>mean</em>.</h1>
+      <p class="lede">Press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd>, describe what you're looking for in your own words,
+        and get the file, even when it's written in another language and named <code>scan_0042.pdf</code>.</p>
+      <div class="cta">
+        <a class="button primary" id="download" href="https://github.com/ffMathy/valafind/releases/latest">Download Valafind</a>
+        <a class="button" href="https://github.com/ffMathy/valafind">Source on GitHub</a>
+      </div>
+      <p class="fineprint" id="download-note">Free and open source · Windows, macOS and Linux · runs entirely on your computer</p>
+    </section>
+
+    <section class="platforms" aria-label="Valafind on each desktop">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="false" aria-controls="shot-windows" id="tab-windows" data-os="windows">Windows</button>
+        <button role="tab" aria-selected="true" aria-controls="shot-mac" id="tab-mac" data-os="mac">macOS</button>
+        <button role="tab" aria-selected="false" aria-controls="shot-linux" id="tab-linux" data-os="linux">Linux</button>
+      </div>
+      <figure class="shot" id="shot-windows" role="tabpanel" aria-labelledby="tab-windows" hidden>
+        <img src="screenshots/windows-launcher.png" width="1400" height="900" loading="lazy"
+             alt="Windows: results on the left, the selected file's details and why it matched on the right">
+      </figure>
+      <figure class="shot" id="shot-mac" role="tabpanel" aria-labelledby="tab-mac">
+        <img src="screenshots/macos-launcher.png" width="1400" height="1105"
+             alt="macOS floating bar: results grouped by kind, the top match previewed with the sentence that answers the question">
+      </figure>
+      <figure class="shot" id="shot-linux" role="tabpanel" aria-labelledby="tab-linux" hidden>
+        <img src="screenshots/linux-launcher.png" width="1400" height="904" loading="lazy"
+             alt="Linux GNOME-style dialog: results with highlighted passages and the selected file's details">
+      </figure>
+      <p class="caption">An English question finds a Danish lease and the landlord's e-mail. The highlighted sentence shows <em>why</em> it matched.</p>
+    </section>
+
+    <section class="features" id="how">
+      <article>
+        <h2>Meaning, not file names</h2>
+        <p>Valafind reads your documents, PDFs, slides, spreadsheets, e-mail and code, and understands them with
+          <a href="https://ai.google.dev/gemma/docs/embeddinggemma">EmbeddingGemma</a>, in 100+ languages. Ask the way you'd ask a colleague.</p>
+      </article>
+      <article>
+        <h2>Your everyday files first</h2>
+        <p>It starts with the files you actually use (your recent and frequent documents) and then works through the rest
+          of your home folder. New and changed files are picked up as they happen.</p>
+      </article>
+      <article>
+        <h2>Stays out of your way</h2>
+        <p>Indexing only runs while your CPU and disk are idle, at background priority, and steps aside the moment you
+          search. When everything is indexed, Valafind just shows a quiet ✓.</p>
+      </article>
+    </section>
+
+    <section class="split">
+      <figure>
+        <img src="screenshots/indexing-paused.png" width="1400" height="904" loading="lazy"
+             alt="Indexing paused while the system is busy: CPU at 100%, Phase 1 done, Phase 2 paused, Index Now button">
+      </figure>
+      <div>
+        <h2>Busy? It waits.</h2>
+        <p>Compiling, gaming, on a call: Valafind notices the load and pauses. It picks up again when the machine is quiet,
+          or right away if you press <em>Index Now</em>.</p>
+        <p>You choose the limits: maximum CPU and disk use, which folders to index, and whether to pause on battery.</p>
+      </div>
+    </section>
+
+    <section class="privacy" id="privacy">
+      <h2>Nothing leaves your computer.</h2>
+      <p>The AI model runs locally and ships with the app. Valafind makes no network requests: no cloud, no account, no
+        telemetry, no update checks. Your index is stored in your user folder, readable only by you.</p>
+    </section>
+
+    <section class="get" id="get">
+      <h2>Get Valafind</h2>
+      <div class="downloads">
+        <a class="dl" data-os="windows" href="https://github.com/ffMathy/valafind/releases/latest/download/valafind-win-x64.exe">
+          <strong>Windows</strong><span>x64 · <code>.exe</code></span></a>
+        <a class="dl" data-os="mac" href="https://github.com/ffMathy/valafind/releases/latest/download/valafind-osx-arm64.app.zip">
+          <strong>macOS</strong><span>Apple silicon · <code>.app</code></span></a>
+        <a class="dl" data-os="linux" href="https://github.com/ffMathy/valafind/releases/latest/download/valafind-linux-x64">
+          <strong>Linux</strong><span>x64 · executable</span></a>
+      </div>
+      <p class="fineprint">Arm64 for Windows and Linux, and Intel Macs: <a href="https://github.com/ffMathy/valafind/releases/latest">all downloads</a>.
+        Then press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Space</kbd> (<kbd>⌃</kbd> <kbd>⌥</kbd> <kbd>Space</kbd> on a Mac).</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Valafind is open source. EmbeddingGemma is provided by Google under the
+      <a href="https://ai.google.dev/gemma/terms">Gemma Terms of Use</a>.</p>
+  </footer>
+
+  <script>
+    // Progressive enhancement only: the page works fully without it.
+    (function () {
+      var ua = navigator.userAgent || "";
+      var os = /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Win/i.test(ua) ? "windows" : /Linux|X11/i.test(ua) ? "linux" : null;
+      var names = { windows: "Windows", mac: "macOS", linux: "Linux" };
+
+      function show(target) {
+        document.querySelectorAll(".tabs [role=tab]").forEach(function (tab) {
+          var on = tab.dataset.os === target;
+          tab.setAttribute("aria-selected", on ? "true" : "false");
+          document.getElementById("shot-" + tab.dataset.os).hidden = !on;
+        });
+      }
+      document.querySelectorAll(".tabs [role=tab]").forEach(function (tab) {
+        tab.addEventListener("click", function () { show(tab.dataset.os); });
+      });
+
+      if (os) {
+        show(os);
+        var direct = document.querySelector('.dl[data-os="' + os + '"]');
+        var button = document.getElementById("download");
+        button.href = direct.href;
+        button.textContent = "Download for " + names[os];
+        direct.classList.add("yours");
+      }
+    })();
+  </script>
+</body>
+</html>

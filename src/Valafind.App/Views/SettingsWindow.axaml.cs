@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Valafind.App.Platform;
 using Valafind.App.Services;
 using Valafind.App.ViewModels;
 
@@ -25,16 +26,7 @@ public partial class SettingsWindow : Window
         vm.CloseRequested += (_, _) => Close();
 
         if (OperatingSystem.IsWindows())
-        {
-            // Mica backdrop like the Windows Settings app; the Fluent cards on it are translucent by design.
-            TransparencyLevelHint = [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur];
-            PropertyChanged += (_, e) =>
-            {
-                if (e.Property == ActualTransparencyLevelProperty)
-                    ApplyBackdrop();
-            };
-            ApplyBackdrop();
-        }
+            AttachBackdrop();
         try
         {
             Icon = TrayIconController.LoadIcon("valafind.png");
@@ -45,11 +37,15 @@ public partial class SettingsWindow : Window
         }
     }
 
-    /// <summary>Lets the Mica/acrylic material show through; keeps the theme's solid background without it.</summary>
-    private void ApplyBackdrop() =>
-        Background = ActualTransparencyLevel is { } level && level != WindowTransparencyLevel.None && level != WindowTransparencyLevel.Transparent
-            ? Brushes.Transparent
-            : null;
+    /// <summary>Windows' own Mica like the Settings app, else Avalonia's Mica / acrylic; the Fluent cards on it are
+    /// translucent by design. Without any backdrop the theme's solid background stays.</summary>
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private void AttachBackdrop()
+    {
+        var backdrop = new WindowsBackdropController(this, Environment.OSVersion.Version.Build);
+        backdrop.KindChanged += (_, _) => Background =
+            backdrop.Kind is BackdropKind.SystemMica or BackdropKind.AvaloniaMica or BackdropKind.Blur ? Brushes.Transparent : null;
+    }
 
     private async Task<string?> PickFolderAsync(string title)
     {

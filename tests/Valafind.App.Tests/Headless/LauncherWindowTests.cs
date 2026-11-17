@@ -150,6 +150,12 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
 
                 vm.TogglePreviewCommand.Execute(null);
                 Assert.False(pane.IsVisible);
+
+                // No results (hint / no-results / model messages): no empty pane beside the message.
+                vm.TogglePreviewCommand.Execute(null);
+                vm.ClearQueryCommand.Execute(null);
+                Assert.False(vm.IsResultsVisible);
+                Assert.False(pane.IsEffectivelyVisible);
             }
             finally
             {
@@ -182,6 +188,42 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
                 // The button appears only while indexing is paused, and only where the view has no banner for it.
                 var resume = panel.FindControl<Button>("ResumeButton")!;
                 Assert.Equal(hasOwnResumeButton && vm.Status.ShowBanner, resume.IsEffectivelyVisible);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, TestContext.Current.CancellationToken);
+
+    [Theory]
+    [InlineData(UiFlavor.Windows)]
+    [InlineData(UiFlavor.Mac)]
+    [InlineData(UiFlavor.Linux)]
+    public Task UpToDateIndexIsAQuietCheckInsteadOfThePanel(UiFlavor flavor) =>
+        fixture.Session.Dispatch(() =>
+        {
+            var vm = DesignData.Create(flavor);
+            vm.UpdateStatus(new Valafind.Core.Abstractions.IndexStatus(Valafind.Core.Abstractions.IndexingState.UpToDate,
+                Valafind.Core.Abstractions.IndexPhase.Incremental, 6214, 6214, 446120, 446120, true, null, null));
+            var view = LauncherWindow.CreateView(flavor);
+            view.DataContext = vm;
+            var window = new Window { Content = view };
+            try
+            {
+                window.Show();
+                var panel = Assert.Single(view.GetVisualDescendants().OfType<Valafind.App.Views.Common.IndexPanelView>());
+                Assert.False(((Control)panel.Content!).IsVisible, "panel hidden when up to date");
+
+                var texts = view.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible)
+                    .Select(t => t.Inlines?.Text ?? t.Text ?? string.Empty).ToList();
+                Assert.Contains("Up to date", texts);
+                Assert.DoesNotContain(texts, t => t.Contains("On-device", StringComparison.Ordinal));
+                Assert.Equal("Index up to date · 446,120 files searchable", vm.Status.UpToDateDetail);
+
+                // Back to indexing: the panel returns and the quiet check goes away.
+                vm.UpdateStatus(new Valafind.Core.Abstractions.IndexStatus(Valafind.Core.Abstractions.IndexingState.Running,
+                    Valafind.Core.Abstractions.IndexPhase.All, 6214, 6214, 1000, 446120, true, null, null));
+                Assert.True(((Control)panel.Content!).IsVisible);
             }
             finally
             {

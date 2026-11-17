@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Valafind.App.Platform;
 using Valafind.App.Services;
 using Valafind.App.ViewModels;
 using Valafind.App.Views.Linux;
@@ -22,6 +23,7 @@ public partial class LauncherWindow : Window
 
     private readonly LauncherViewModel _vm;
     private readonly LauncherViewBase _view;
+    private readonly WindowsBackdropController? _backdrop;
     private DateTime _ignoreDeactivateUntil;
     private bool _allowClose;
 
@@ -40,11 +42,16 @@ public partial class LauncherWindow : Window
         _view = CreateView(flavor);
         Content = _view;
 
-        // Windows: Mica first, the material of Settings and other native Windows 11 windows (light/dark follows the
-        // app theme); acrylic where Mica is unavailable (Windows 10).
-        TransparencyLevelHint = OperatingSystem.IsWindows()
-            ? [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent]
-            : [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent];
+        // Windows: Windows' own Mica (as in Settings), else Avalonia's Mica, else acrylic / blur / transparency.
+        if (OperatingSystem.IsWindows())
+        {
+            _backdrop = new WindowsBackdropController(this, Environment.OSVersion.Version.Build);
+            _backdrop.KindChanged += (_, _) => ApplySurface();
+        }
+        else
+        {
+            TransparencyLevelHint = [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent];
+        }
         try
         {
             Icon = TrayIconController.LoadIcon("valafind.png");
@@ -129,8 +136,26 @@ public partial class LauncherWindow : Window
             _vm.IsLauncherVisible = change.GetNewValue<bool>();
     }
 
+    /// <summary>Surface for a Windows backdrop (see <see cref="WindowsBackdropController"/>).</summary>
+    internal static LauncherSurface SurfaceFor(BackdropKind kind) => kind switch
+    {
+        BackdropKind.SystemMica or BackdropKind.AvaloniaMica => LauncherSurface.Mica,
+        BackdropKind.Blur => LauncherSurface.Blurred,
+        BackdropKind.Transparent => LauncherSurface.Floating,
+        _ => LauncherSurface.Opaque,
+    };
+
     private void ApplySurface()
     {
+        if (OperatingSystem.IsWindows() && _backdrop is { } backdrop)
+        {
+            var windowsSurface = SurfaceFor(backdrop.Kind);
+            _view.SetSurface(windowsSurface);
+            if (windowsSurface is LauncherSurface.Blurred or LauncherSurface.Mica && TryGetPlatformHandle() is { } h)
+                WindowsChrome.TryRoundCorners(h.Handle);
+            return;
+        }
+
         var level = ActualTransparencyLevel;
         // X11 without a compositing manager: alpha is ignored, so a "transparent" margin would show as a solid box.
         if (level != WindowTransparencyLevel.None && Platform.X11Compositor.IsCompositing() == false)
