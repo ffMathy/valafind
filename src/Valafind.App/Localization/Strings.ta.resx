@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BannerPausedOnBattery" xml:space="preserve">
+    <value>பேட்டரியில் இயங்கும்போது அட்டவணையிடுதல் இடைநிறுத்தப்பட்டுள்ளது</value>
+  </data>
+  <data name="BannerPausedSystemBusy" xml:space="preserve">
+    <value>கணினி பணியில் இருக்கும்போது அட்டவணையிடுதல் இடைநிறுத்தப்பட்டுள்ளது</value>
+  </data>
+  <data name="BannerSearchable" xml:space="preserve">
+    <value>உங்கள் கோப்புகளில் {0} தேடக்கூடியவை</value>
+  </data>
+  <data name="BestMatchesByMeaning" xml:space="preserve">
+    <value>பொருளின் அடிப்படையில் சிறந்த பொருத்தங்கள்</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>ரத்துசெய்</value>
+  </data>
+  <data name="CheckAgain" xml:space="preserve">
+    <value>மீண்டும் சரிபார்</value>
+  </data>
+  <data name="CheckForUpdatesMenu" xml:space="preserve">
+    <value>புதுப்பிப்புகளைச் சரிபார்…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>தேடலை அழி</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>மூடு</value>
+  </data>
+  <data name="CopyCommand" xml:space="preserve">
+    <value>கட்டளையை நகலெடு</value>
+  </data>
+  <data name="CopyFolder" xml:space="preserve">
+    <value>கோப்புறையை நகலெடு</value>
+  </data>
+  <data name="CopyPath" xml:space="preserve">
+    <value>பாதையை நகலெடு</value>
+  </data>
+  <data name="CopyPathTitleCase" xml:space="preserve">
+    <value>பாதையை நகலெடு</value>
+  </data>
+  <data name="DateToday" xml:space="preserve">
+    <value>இன்று {0}</value>
+  </data>
+  <data name="DateYesterday" xml:space="preserve">
+    <value>நேற்று</value>
+  </data>
+  <data name="DetailLocation" xml:space="preserve">
+    <value>இருப்பிடம்</value>
+  </data>
+  <data name="DetailModified" xml:space="preserve">
+    <value>மாற்றியது</value>
+  </data>
+  <data name="DetailSize" xml:space="preserve">
+    <value>அளவு</value>
+  </data>
+  <data name="DetailType" xml:space="preserve">
+    <value>வகை</value>
+  </data>
+  <data name="ErrorAutostart" xml:space="preserve">
+    <value>அமைப்புகள் சேமிக்கப்பட்டன, ஆனால் உள்நுழைவில் தொடங்குவதை மாற்ற முடியவில்லை: {0}</value>
+  </data>
+  <data name="ErrorOpenReleasesPage" xml:space="preserve">
+    <value>வெளியீடுகள் பக்கத்தைத் திறக்க முடியவில்லை: {0}</value>
+  </data>
+  <data name="ErrorSaveSettings" xml:space="preserve">
+    <value>அமைப்புகளைச் சேமிக்க முடியவில்லை: {0}</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>அனைத்தும்</value>
+  </data>
+  <data name="FilterCode" xml:space="preserve">
+    <value>நிரல்</value>
+  </data>
+  <data name="FilterDocuments" xml:space="preserve">
+    <value>ஆவணங்கள்</value>
+  </data>
+  <data name="FilterImages" xml:space="preserve">
+    <value>படங்கள்</value>
+  </data>
+  <data name="FilterMail" xml:space="preserve">
+    <value>அஞ்சல்</value>
+  </data>
+  <data name="FilterPdfs" xml:space="preserve">
+    <value>PDFகள்</value>
+  </data>
+  <data name="FilterSlides" xml:space="preserve">
+    <value>ஸ்லைடுகள்</value>
+  </data>
+  <data name="FilterSpreadsheets" xml:space="preserve">
+    <value>விரிதாள்கள்</value>
+  </data>
+  <data name="GroupMedia" xml:space="preserve">
+    <value>மீடியா</value>
+  </data>
+  <data name="GroupOther" xml:space="preserve">
+    <value>பிற</value>
+  </data>
+  <data name="GroupPresentations" xml:space="preserve">
+    <value>விளக்கக்காட்சிகள்</value>
+  </data>
+  <data name="HintBody" xml:space="preserve">
+    <value>நீங்கள் தேடுவதை உங்கள் சொந்த வார்த்தைகளில் விவரியுங்கள் — “வைப்புத்தொகை குறித்துப் பேச்சுவார்த்தை நடத்திய குத்தகை ஒப்பந்தம்”. அனைத்தும் இந்தக் கணினியிலேயே இயங்கும்.</value>
+  </data>
+  <data name="HintSummon" xml:space="preserve">
+    <value>{0} மூலம் எங்கிருந்தும் Valafind-ஐ அழைக்கலாம்.</value>
+  </data>
+  <data name="HintTitle" xml:space="preserve">
+    <value>உங்கள் கோப்புகளைப் பொருளின் அடிப்படையில் தேடுங்கள்</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterBind" xml:space="preserve">
+    <value>{0} ஐப் பதிவுசெய்ய முடியவில்லை — இதற்கு ஒரு கணினிக் குறுக்குவழியை அமைக்கவும்: {1}</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterReason" xml:space="preserve">
+    <value>{0} ஐப் பதிவுசெய்ய முடியவில்லை: {1}</value>
+  </data>
+  <data name="HotkeyDuplicateModifier" xml:space="preserve">
+    <value>மாற்றி விசை '{0}' '{1}' இல் ஒருமுறைக்கு மேல் வருகிறது.</value>
+  </data>
+  <data name="HotkeyEmpty" xml:space="preserve">
+    <value>குறுக்குவழி காலியாக உள்ளது.</value>
+  </data>
+  <data name="HotkeyEmptyPart" xml:space="preserve">
+    <value>'{0}' சரியான குறுக்குவழி அல்ல (காலியான பகுதி).</value>
+  </data>
+  <data name="HotkeyEscape" xml:space="preserve">
+    <value>Escape ஐப் பொதுக் குறுக்குவழி விசையாகப் பயன்படுத்த முடியாது.</value>
+  </data>
+  <data name="HotkeyInUse" xml:space="preserve">
+    <value>{0} ஏற்கெனவே வேறொரு பயன்பாட்டால் பயன்படுத்தப்படுகிறது. வேறு குறுக்குவழியைத் தேர்ந்தெடுக்கவும்.</value>
+  </data>
+  <data name="HotkeyKeyNotOnLayout" xml:space="preserve">
+    <value>'{0}' விசை தற்போதைய விசைப்பலகை அமைப்பில் இல்லை.</value>
+  </data>
+  <data name="HotkeyKeyNotUsable" xml:space="preserve">
+    <value>'{0}' விசையைப் பொதுக் குறுக்குவழியாகப் பயன்படுத்த முடியாது.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableMac" xml:space="preserve">
+    <value>'{0}' விசையை macOS இல் பொதுக் குறுக்குவழியாகப் பயன்படுத்த முடியாது.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableWindows" xml:space="preserve">
+    <value>'{0}' விசையை Windows இல் பொதுக் குறுக்குவழியாகப் பயன்படுத்த முடியாது.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableX11" xml:space="preserve">
+    <value>'{0}' விசையை X11 இல் பொதுக் குறுக்குவழியாகப் பயன்படுத்த முடியாது.</value>
+  </data>
+  <data name="HotkeyMacOptionOnly" xml:space="preserve">
+    <value>Option மட்டும் கொண்ட குறுக்குவழிகளை macOS அனுமதிப்பதில்லை ({0}). Control அல்லது Command ஐச் சேர்க்கவும், எடுத்துக்காட்டாக ⌃⌥Space.</value>
+  </data>
+  <data name="HotkeyMacOptionShiftOnly" xml:space="preserve">
+    <value>Option மற்றும் Shift மட்டும் கொண்ட குறுக்குவழிகளை macOS அனுமதிப்பதில்லை ({0}). Control அல்லது Command ஐச் சேர்க்கவும், எடுத்துக்காட்டாக ⌃⌥Space.</value>
+  </data>
+  <data name="HotkeyNeedsModifier" xml:space="preserve">
+    <value>பொதுக் குறுக்குவழிக்கு Ctrl, Alt அல்லது Super தேவை (செயல்பாட்டு விசைகளை மட்டுமே தனியாகவோ Shift உடன் மட்டுமோ பயன்படுத்தலாம்).</value>
+  </data>
+  <data name="HotkeyNoGraphicalSession" xml:space="preserve">
+    <value>பொதுக் குறுக்குவிசைகளுக்கு வரைகலை அமர்வு தேவை (DISPLAY, WAYLAND_DISPLAY இரண்டுமே அமைக்கப்படவில்லை).</value>
+  </data>
+  <data name="HotkeyNoKey" xml:space="preserve">
+    <value>'{0}' இல் விசை இல்லை.</value>
+  </data>
+  <data name="HotkeyNoKeyAfterModifiers" xml:space="preserve">
+    <value>'{0}' இல் விசை இல்லை; மாற்றி விசைகளுக்குப் பின் ஒரு விசையைச் சேர்க்கவும் (எ.கா. '{0}+Space').</value>
+  </data>
+  <data name="HotkeyNotModifier" xml:space="preserve">
+    <value>'{0}' ஒரு மாற்றி விசை அல்ல. விசைக்கு முன் Ctrl, Alt, Shift அல்லது Super ஐப் பயன்படுத்தவும்.</value>
+  </data>
+  <data name="HotkeyPortalCancelled" xml:space="preserve">
+    <value>டெஸ்க்டாப் உரையாடலில் குறுக்குவழிக் கோரிக்கை ரத்துசெய்யப்பட்டது.</value>
+  </data>
+  <data name="HotkeySpotlightHint" xml:space="preserve">
+    <value>⌘Space பொதுவாக Spotlight ஆல் பயன்படுத்தப்படுகிறது; அதற்குப் பதிலாக ⌃⌥Space ஐ முயலவும்.</value>
+  </data>
+  <data name="HotkeyUnavailableBind" xml:space="preserve">
+    <value>பொதுக் குறுக்குவிசை கிடைக்கவில்லை — இதற்கு ஒரு கணினிக் குறுக்குவழியை அமைக்கவும்: {0}</value>
+  </data>
+  <data name="HotkeyUnsupportedKey" xml:space="preserve">
+    <value>'{0}' ஆதரிக்கப்படும் விசை அல்ல. ஆதரிக்கப்படுபவை: Space, A-Z, 0-9, F1-F24, Enter, Tab, Backquote, Comma, Period, Slash, Semicolon.</value>
+  </data>
+  <data name="HotkeyUnsupportedOs" xml:space="preserve">
+    <value>இந்த இயக்க முறைமையில் பொதுக் குறுக்குவிசைகள் ஆதரிக்கப்படவில்லை.</value>
+  </data>
+  <data name="HotkeyWaylandUnavailable" xml:space="preserve">
+    <value>Wayland இல் பொதுக் குறுக்குவிசைகள் கிடைக்காது. இதை இயக்க உங்கள் டெஸ்க்டாப் அமைப்புகளில் ஒரு குறுக்குவழியை அமைக்கவும்: {0}</value>
+  </data>
+  <data name="IndexCountOf" xml:space="preserve">
+    <value>{1} இல் {0}</value>
+  </data>
+  <data name="IndexCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="IndexDisk" xml:space="preserve">
+    <value>வட்டு</value>
+  </data>
+  <data name="IndexFilesCount" xml:space="preserve">
+    <value>{0} கோப்புகள்</value>
+  </data>
+  <data name="IndexFrequent" xml:space="preserve">
+    <value>அடிக்கடி</value>
+  </data>
+  <data name="IndexFrequentPercent" xml:space="preserve">
+    <value>அடிக்கடி {0}</value>
+  </data>
+  <data name="IndexNow" xml:space="preserve">
+    <value>இப்போது அட்டவணையிடு</value>
+  </data>
+  <data name="IndexPhase1" xml:space="preserve">
+    <value>கட்டம் 1 · அடிக்கடி பயன்படுத்தியவை</value>
+  </data>
+  <data name="IndexPhase2" xml:space="preserve">
+    <value>கட்டம் 2 · {0}</value>
+  </data>
+  <data name="IndexStatusAndPreferences" xml:space="preserve">
+    <value>அட்டவணை நிலை மற்றும் விருப்பங்கள்</value>
+  </data>
+  <data name="IndexTitle" xml:space="preserve">
+    <value>அட்டவணை</value>
+  </data>
+  <data name="IndexUpToDate" xml:space="preserve">
+    <value>அட்டவணை புதுப்பித்த நிலையில்</value>
+  </data>
+  <data name="IndexUpToDateDetail" xml:space="preserve">
+    <value>அட்டவணை புதுப்பித்த நிலையில் · {0} கோப்புகளைத் தேடலாம்</value>
+  </data>
+  <data name="KeyHintNavigate" xml:space="preserve">
+    <value>வழிசெலுத்து</value>
+  </data>
+  <data name="KeyHintNavigateLower" xml:space="preserve">
+    <value>வழிசெலுத்து</value>
+  </data>
+  <data name="KeyHintOpenLower" xml:space="preserve">
+    <value>திற</value>
+  </data>
+  <data name="KeyHintPreview" xml:space="preserve">
+    <value>முன்னோட்டம்</value>
+  </data>
+  <data name="KeyHintPreviewLower" xml:space="preserve">
+    <value>முன்னோட்டம்</value>
+  </data>
+  <data name="KeyHintReveal" xml:space="preserve">
+    <value>காட்டு</value>
+  </data>
+  <data name="KeyHintShowInFilesLower" xml:space="preserve">
+    <value>கோப்புகளில் காட்டு</value>
+  </data>
+  <data name="MainMenu" xml:space="preserve">
+    <value>முதன்மை மெனு</value>
+  </data>
+  <data name="Match" xml:space="preserve">
+    <value>பொருத்தம்</value>
+  </data>
+  <data name="MatchExplanation" xml:space="preserve">
+    <value>“{0}” என்பதற்குப் பொருளில் நெருக்கமானது — முக்கியச்சொல் ஒற்றுமை தேவையில்லை.</value>
+  </data>
+  <data name="ModelFailedBundledBody" xml:space="preserve">
+    <value>உள்ளமைந்த மாதிரியைப் பிரித்தெடுக்கவோ ஏற்றவோ முடியவில்லை. தேவைப்பட்டால் வட்டு இடத்தைக் காலிசெய்து, மீண்டும் பிரித்தெடுக்க மீண்டும் சரிபார் என்பதைக் கிளிக் செய்யவும்.</value>
+  </data>
+  <data name="ModelFailedDownloadBody" xml:space="preserve">
+    <value>மாதிரிக் கோப்புகள் முழுமையற்றவையாக இருக்கலாம். இதன் மூலம் மீண்டும் பதிவிறக்கவும்:</value>
+  </data>
+  <data name="ModelFailedFooter" xml:space="preserve">
+    <value>கோப்புகள் மாறியதும் Valafind மாதிரியைத் தானாக மீண்டும் ஏற்றும், அல்லது அமைப்புகளில் வேறு மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்.</value>
+  </data>
+  <data name="ModelFailedTitle" xml:space="preserve">
+    <value>EmbeddingGemma-ஐ ஏற்ற முடியவில்லை</value>
+  </data>
+  <data name="ModelInstallsInto" xml:space="preserve">
+    <value>இதில் நிறுவப்படும்:</value>
+  </data>
+  <data name="ModelLoadingBody" xml:space="preserve">
+    <value>சாதனத்திலுள்ள மாதிரி தொடங்க சில வினாடிகள் ஆகும். அது தயாரானதும் உங்கள் தேடல் இயங்கும்.</value>
+  </data>
+  <data name="ModelLoadingTitle" xml:space="preserve">
+    <value>EmbeddingGemma ஏற்றப்படுகிறது…</value>
+  </data>
+  <data name="ModelMissingBody" xml:space="preserve">
+    <value>Valafind-இன் இந்தப் பதிப்பில் மாதிரி சேர்க்கப்படவில்லை, அதைத் தானாகப் பதிவிறக்கவும் செய்யாது. இந்தக் கட்டளையை டெர்மினலில் இயக்கி ஒருமுறை நிறுவவும்:</value>
+  </data>
+  <data name="ModelMissingFooter" xml:space="preserve">
+    <value>மாதிரி வந்தவுடன் Valafind அதைத் தானாகக் கண்டறியும் — மறுதொடக்கம் தேவையில்லை. ஏற்கெனவே ஒரு நகல் உள்ளதா? அமைப்புகளில் அதன் கோப்புறையைத் தேர்ந்தெடுக்கவும்.</value>
+  </data>
+  <data name="ModelMissingTitle" xml:space="preserve">
+    <value>EmbeddingGemma மாதிரி நிறுவப்படவில்லை</value>
+  </data>
+  <data name="ModelUnpackFailed" xml:space="preserve">
+    <value>உள்ளமைந்த மாதிரியை {0} இல் பிரித்தெடுக்க முடியவில்லை: {1}</value>
+  </data>
+  <data name="ModifiedOn" xml:space="preserve">
+    <value>மாற்றியது {0}</value>
+  </data>
+  <data name="NoResultsBody" xml:space="preserve">
+    <value>வேறு விதமாக விவரித்துப் பாருங்கள், வேறு வடிகட்டியைத் தேர்ந்தெடுங்கள், அல்லது அட்டவணையிடுதல் உங்கள் கோப்புகளில் மேலும் பலவற்றை உள்ளடக்கும் வரை காத்திருங்கள்.</value>
+  </data>
+  <data name="NoResultsTitle" xml:space="preserve">
+    <value>பொருந்தும் கோப்புகள் இல்லை</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>திற</value>
+  </data>
+  <data name="OpenValafind" xml:space="preserve">
+    <value>Valafind-ஐத் திற</value>
+  </data>
+  <data name="OpenValafindWithHotkey" xml:space="preserve">
+    <value>Valafind-ஐத் திற ({0})</value>
+  </data>
+  <data name="PauseIndexing" xml:space="preserve">
+    <value>அட்டவணையிடுதலை இடைநிறுத்து</value>
+  </data>
+  <data name="PhaseDone" xml:space="preserve">
+    <value>முடிந்தது</value>
+  </data>
+  <data name="PhaseIndexing" xml:space="preserve">
+    <value>அட்டவணையிடுகிறது</value>
+  </data>
+  <data name="PhasePaused" xml:space="preserve">
+    <value>இடைநிறுத்தப்பட்டது</value>
+  </data>
+  <data name="PhaseQueued" xml:space="preserve">
+    <value>வரிசையில்</value>
+  </data>
+  <data name="PhaseStopped" xml:space="preserve">
+    <value>நிறுத்தப்பட்டது</value>
+  </data>
+  <data name="PickFolderToIndex" xml:space="preserve">
+    <value>அட்டவணையிட ஒரு கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
+  </data>
+  <data name="PickModelFolder" xml:space="preserve">
+    <value>EmbeddingGemma மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
+  </data>
+  <data name="PolicyPauses" xml:space="preserve">
+    <value>CPU {0} ஐத் தாண்டினால் அல்லது வட்டுச் செயல்பாடு அதிகமாக இருந்தால் தானாக இடைநிறுத்தும்</value>
+  </data>
+  <data name="PolicyResumes" xml:space="preserve">
+    <value>CPU மற்றும் வட்டு செயலற்று இருக்கும்போது தானாகத் தொடரும்</value>
+  </data>
+  <data name="PortalShortcutDescription" xml:space="preserve">
+    <value>Valafind-ஐக் காட்டு அல்லது மறை</value>
+  </data>
+  <data name="Preferences" xml:space="preserve">
+    <value>விருப்பங்கள்</value>
+  </data>
+  <data name="QuickLook" xml:space="preserve">
+    <value>Quick Look</value>
+  </data>
+  <data name="QuitValafind" xml:space="preserve">
+    <value>Valafind-இலிருந்து வெளியேறு</value>
+  </data>
+  <data name="ResultSummaryMany" xml:space="preserve">
+    <value>{0} முடிவுகள் · {1} மி.வி.</value>
+  </data>
+  <data name="ResultSummaryOne" xml:space="preserve">
+    <value>{0} முடிவு · {1} மி.வி.</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>தொடர்</value>
+  </data>
+  <data name="ResumeIndexing" xml:space="preserve">
+    <value>அட்டவணையிடுதலைத் தொடர்</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>சேமி</value>
+  </data>
+  <data name="ScopeEverythingIn" xml:space="preserve">
+    <value>{0} இல் உள்ள அனைத்தும்</value>
+  </data>
+  <data name="ScopeEverythingInHome" xml:space="preserve">
+    <value>உங்கள் முகப்புக் கோப்புறையில் உள்ள அனைத்தும்</value>
+  </data>
+  <data name="ScopeEverythingInHomeAt" xml:space="preserve">
+    <value>உங்கள் முகப்புக் கோப்புறையில் உள்ள அனைத்தும் ({0})</value>
+  </data>
+  <data name="ScopeFolderCount" xml:space="preserve">
+    <value>{0} கோப்புறைகள்</value>
+  </data>
+  <data name="ScopeHome" xml:space="preserve">
+    <value>முகப்பு</value>
+  </data>
+  <data name="ScopeHomeFolder" xml:space="preserve">
+    <value>முகப்புக் கோப்புறை</value>
+  </data>
+  <data name="SearchByMeaning" xml:space="preserve">
+    <value>கோப்புகளைப் பொருளின் அடிப்படையில் தேடு</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>தேடல் தோல்வியடைந்தது</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>நீங்கள் தேடுவதை விவரியுங்கள்</value>
+  </data>
+  <data name="Searching" xml:space="preserve">
+    <value>தேடுகிறது…</value>
+  </data>
+  <data name="SemanticMatch" xml:space="preserve">
+    <value>பொருள்சார் பொருத்தம்</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>அமைப்புகள்</value>
+  </data>
+  <data name="SettingsA11y" xml:space="preserve">
+    <value>Valafind அமைப்புகள்</value>
+  </data>
+  <data name="SettingsAddFolder" xml:space="preserve">
+    <value>கோப்புறையைச் சேர்…</value>
+  </data>
+  <data name="SettingsAutoUpdate" xml:space="preserve">
+    <value>புதிய பதிப்புகளைத் தானாக நிறுவு</value>
+  </data>
+  <data name="SettingsBrowse" xml:space="preserve">
+    <value>உலாவு…</value>
+  </data>
+  <data name="SettingsCheckForUpdates" xml:space="preserve">
+    <value>புதுப்பிப்புகளைச் சரிபார்</value>
+  </data>
+  <data name="SettingsDefaultHotkey" xml:space="preserve">
+    <value>இயல்புநிலை: {0}</value>
+  </data>
+  <data name="SettingsDimensions" xml:space="preserve">
+    <value>பரிமாணங்கள்</value>
+  </data>
+  <data name="SettingsDimensionsA11y" xml:space="preserve">
+    <value>எம்பெடிங் பரிமாணங்கள்</value>
+  </data>
+  <data name="SettingsDimensionsHint" xml:space="preserve">
+    <value>சிறிய வெக்டர்கள் குறைந்த நினைவகத்தைப் பயன்படுத்தி வேகமாகத் தேடுகின்றன; 768 மிகத் துல்லியமானது.</value>
+  </data>
+  <data name="SettingsGeneral" xml:space="preserve">
+    <value>பொது</value>
+  </data>
+  <data name="SettingsGlobalShortcut" xml:space="preserve">
+    <value>பொது குறுக்குவழி</value>
+  </data>
+  <data name="SettingsHomeFolderRow" xml:space="preserve">
+    <value>உங்கள் முகப்புக் கோப்புறை ({0})</value>
+  </data>
+  <data name="SettingsHotkeyPlaceholder" xml:space="preserve">
+    <value>விசைச் சேர்க்கையை அழுத்தவும்</value>
+  </data>
+  <data name="SettingsIdleSection" xml:space="preserve">
+    <value>கணினி செயலற்று இருக்கும்போது மட்டும் அட்டவணையிடுதல்</value>
+  </data>
+  <data name="SettingsIndexedFolders" xml:space="preserve">
+    <value>அட்டவணையிடப்பட்ட கோப்புறைகள்</value>
+  </data>
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>மொழி</value>
+  </data>
+  <data name="SettingsLanguageHint" xml:space="preserve">
+    <value>அடுத்த முறை Valafind தொடங்கும்போது நடைமுறைக்கு வரும்.</value>
+  </data>
+  <data name="SettingsLanguageSystem" xml:space="preserve">
+    <value>கணினி இயல்புநிலை</value>
+  </data>
+  <data name="SettingsLogs" xml:space="preserve">
+    <value>பதிவுகள்:</value>
+  </data>
+  <data name="SettingsMaxCpu" xml:space="preserve">
+    <value>அதிகபட்ச CPU</value>
+  </data>
+  <data name="SettingsMaxCpuA11y" xml:space="preserve">
+    <value>அதிகபட்ச CPU சதவீதம்</value>
+  </data>
+  <data name="SettingsMaxDisk" xml:space="preserve">
+    <value>அதிகபட்ச வட்டுப் பயன்பாடு</value>
+  </data>
+  <data name="SettingsMaxDiskA11y" xml:space="preserve">
+    <value>அதிகபட்ச வட்டுப் பயன்பாட்டுச் சதவீதம்</value>
+  </data>
+  <data name="SettingsMenu" xml:space="preserve">
+    <value>அமைப்புகள்…</value>
+  </data>
+  <data name="SettingsModelDetected" xml:space="preserve">
+    <value>கண்டறியப்பட்டது: {0}</value>
+  </data>
+  <data name="SettingsModelFolder" xml:space="preserve">
+    <value>மாதிரிக் கோப்புறை</value>
+  </data>
+  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
+    <value>தானியங்கு</value>
+  </data>
+  <data name="SettingsModelNotFound" xml:space="preserve">
+    <value>கிடைக்கவில்லை — {0} ஐ இயக்கி நிறுவவும் ({1} இல் நிறுவப்படும்). Valafind அதைத் தானாகக் கண்டறியும்.</value>
+  </data>
+  <data name="SettingsModelSection" xml:space="preserve">
+    <value>எம்பெடிங் மாதிரி</value>
+  </data>
+  <data name="SettingsOpenLogFolder" xml:space="preserve">
+    <value>பதிவுக் கோப்புறையைத் திற</value>
+  </data>
+  <data name="SettingsPauseOnBattery" xml:space="preserve">
+    <value>பேட்டரியில் இயங்கும்போது அட்டவணையிடுதலை இடைநிறுத்து</value>
+  </data>
+  <data name="SettingsPrivacy" xml:space="preserve">
+    <value>முழுவதும் இந்தக் கணினியிலேயே இயங்குகிறது — உங்கள் கோப்புகளும் தேடல்களும் இதை விட்டு வெளியேறுவதில்லை.</value>
+  </data>
+  <data name="SettingsReindexWarning" xml:space="preserve">
+    <value>பரிமாணங்களை மாற்றினால் எல்லாக் கோப்புகளும் மீண்டும் அட்டவணையிடப்படும்.</value>
+  </data>
+  <data name="SettingsRemove" xml:space="preserve">
+    <value>அகற்று</value>
+  </data>
+  <data name="SettingsReset" xml:space="preserve">
+    <value>மீட்டமை</value>
+  </data>
+  <data name="SettingsRootsHint" xml:space="preserve">
+    <value>இங்கு பட்டியலிடப்பட்ட கோப்புறைகள் மட்டுமே அட்டவணையிடப்படும் — இயல்பாக உங்கள் முகப்புக் கோப்புறை. பிற இயக்ககங்கள், வெளிப்புற வட்டுகள் அல்லது பிணையக் கோப்புறைகளை “கோப்புறையைச் சேர்…” மூலம் சேர்க்கவும். ஒரு கோப்புறையைச் சேர்த்தால் இயல்புநிலை மாற்றப்படும், எனவே உங்கள் முகப்புக் கோப்புறையும் வேண்டுமெனில் அதையும் சேர்க்கவும்.</value>
+  </data>
+  <data name="SettingsStartAtLogin" xml:space="preserve">
+    <value>நான் உள்நுழையும்போது Valafind-ஐத் தொடங்கு</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Valafind அமைப்புகள்</value>
+  </data>
+  <data name="ShowInFiles" xml:space="preserve">
+    <value>கோப்புகளில் காட்டு</value>
+  </data>
+  <data name="ShowInFinder" xml:space="preserve">
+    <value>Finder-இல் காட்டு</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>கோப்புறையில் காட்டு</value>
+  </data>
+  <data name="StateIndexingWhileIdle" xml:space="preserve">
+    <value>செயலற்ற நேரத்தில் அட்டவணையிடுகிறது</value>
+  </data>
+  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
+    <value>செயலற்ற நேரத்தில் அட்டவணையிடுகிறது {0}</value>
+  </data>
+  <data name="StateModelUnavailable" xml:space="preserve">
+    <value>மாதிரி கிடைக்கவில்லை — தேடல் முடக்கப்பட்டுள்ளது</value>
+  </data>
+  <data name="StateModelUnavailableShort" xml:space="preserve">
+    <value>மாதிரி கிடைக்கவில்லை</value>
+  </data>
+  <data name="StatePaused" xml:space="preserve">
+    <value>அட்டவணையிடுதல் இடைநிறுத்தப்பட்டது</value>
+  </data>
+  <data name="StatePausedByYou" xml:space="preserve">
+    <value>நீங்கள் இடைநிறுத்தினீர்கள்</value>
+  </data>
+  <data name="StatePausedOnBattery" xml:space="preserve">
+    <value>அட்டவணையிடுதல் இடைநிறுத்தப்பட்டது — பேட்டரியில் உள்ளது</value>
+  </data>
+  <data name="StatePausedOnBatteryShort" xml:space="preserve">
+    <value>இடைநிறுத்தப்பட்டது — பேட்டரியில் உள்ளது</value>
+  </data>
+  <data name="StatePausedSystemBusy" xml:space="preserve">
+    <value>அட்டவணையிடுதல் இடைநிறுத்தப்பட்டது — கணினி பணியில் உள்ளது</value>
+  </data>
+  <data name="StatePausedSystemBusyShort" xml:space="preserve">
+    <value>இடைநிறுத்தப்பட்டது — கணினி பணியில் உள்ளது</value>
+  </data>
+  <data name="StatePreparing" xml:space="preserve">
+    <value>அட்டவணை தயாராகிறது…</value>
+  </data>
+  <data name="StatePreparingShort" xml:space="preserve">
+    <value>அட்டவணை தயாராகிறது</value>
+  </data>
+  <data name="StateStarting" xml:space="preserve">
+    <value>தொடங்குகிறது</value>
+  </data>
+  <data name="TimeAny" xml:space="preserve">
+    <value>எந்த நேரமும்</value>
+  </data>
+  <data name="TimePastMonth" xml:space="preserve">
+    <value>கடந்த மாதம்</value>
+  </data>
+  <data name="TimePastWeek" xml:space="preserve">
+    <value>கடந்த வாரம்</value>
+  </data>
+  <data name="TimePastYear" xml:space="preserve">
+    <value>கடந்த ஆண்டு</value>
+  </data>
+  <data name="TimeToday" xml:space="preserve">
+    <value>இன்று</value>
+  </data>
+  <data name="TopMatch" xml:space="preserve">
+    <value>சிறந்த பொருத்தம்</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>புதுப்பித்த நிலையில்</value>
+  </data>
+  <data name="UpdateChecksGitHub" xml:space="preserve">
+    <value>புதிய பதிப்புகளுக்காக Valafind GitHub-ஐச் சரிபார்க்கிறது</value>
+  </data>
+  <data name="UpdatesAutomatic" xml:space="preserve">
+    <value>புதுப்பிப்புகள் தானாகச் சரிபார்க்கப்படுகின்றன</value>
+  </data>
+  <data name="UpdatesCannotWrite" xml:space="preserve">
+    <value>{0} ஆல் {1} இல் எழுத முடியாது; அது நிறுவப்பட்ட முறையிலேயே புதுப்பிக்கவும்</value>
+  </data>
+  <data name="UpdatesChecking" xml:space="preserve">
+    <value>புதுப்பிப்புகளைச் சரிபார்க்கிறது…</value>
+  </data>
+  <data name="UpdatesDownloading" xml:space="preserve">
+    <value>பதிப்பு {0} பதிவிறக்கப்படுகிறது…</value>
+  </data>
+  <data name="UpdatesFailed" xml:space="preserve">
+    <value>புதுப்பிக்க முடியவில்லை: {0}</value>
+  </data>
+  <data name="UpdatesOff" xml:space="preserve">
+    <value>தானியங்கு புதுப்பிப்புகள் முடக்கப்பட்டுள்ளன</value>
+  </data>
+  <data name="UpdatesOnlyReleaseBuilds" xml:space="preserve">
+    <value>வெளியீட்டுப் பதிப்புகள் மட்டுமே தம்மைத் தாமே புதுப்பிக்கும்</value>
+  </data>
+  <data name="UpdatesReady" xml:space="preserve">
+    <value>பதிப்பு {0} நிறுவப்பட்டது, அடுத்த முறை {1} தொடங்கும்போது இயங்கும்</value>
+  </data>
+  <data name="UpdatesTimeout" xml:space="preserve">
+    <value>GitHub குறித்த நேரத்தில் பதிலளிக்கவில்லை</value>
+  </data>
+  <data name="UpdatesTurnedOffByVariable" xml:space="preserve">
+    <value>புதுப்பிப்புகள் முடக்கப்பட்டுள்ளன ({0})</value>
+  </data>
+  <data name="UpdatesUnsupported" xml:space="preserve">
+    <value>இந்த நகல் தன்னைத் தானே புதுப்பிக்க முடியாது</value>
+  </data>
+  <data name="UpdatesUpToDate" xml:space="preserve">
+    <value>புதுப்பித்த நிலையில் ({0} அன்று சரிபார்க்கப்பட்டது)</value>
+  </data>
+  <data name="WhyItMatched" xml:space="preserve">
+    <value>ஏன் பொருந்தியது</value>
+  </data>
+  <data name="WhyItMatchedClosestPassage" xml:space="preserve">
+    <value>ஏன் பொருந்தியது · மிக நெருக்கமான பகுதி</value>
+  </data>
+</root>

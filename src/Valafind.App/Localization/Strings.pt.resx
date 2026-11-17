@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BannerPausedOnBattery" xml:space="preserve">
+    <value>Indexação pausada enquanto estiver na bateria</value>
+  </data>
+  <data name="BannerPausedSystemBusy" xml:space="preserve">
+    <value>Indexação pausada enquanto o sistema está ocupado</value>
+  </data>
+  <data name="BannerSearchable" xml:space="preserve">
+    <value>{0} dos seus arquivos podem ser pesquisados</value>
+  </data>
+  <data name="BestMatchesByMeaning" xml:space="preserve">
+    <value>Melhores correspondências por significado</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="CheckAgain" xml:space="preserve">
+    <value>Verificar novamente</value>
+  </data>
+  <data name="CheckForUpdatesMenu" xml:space="preserve">
+    <value>Verificar atualizações…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Limpar busca</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="CopyCommand" xml:space="preserve">
+    <value>Copiar comando</value>
+  </data>
+  <data name="CopyFolder" xml:space="preserve">
+    <value>Copiar pasta</value>
+  </data>
+  <data name="CopyPath" xml:space="preserve">
+    <value>Copiar caminho</value>
+  </data>
+  <data name="CopyPathTitleCase" xml:space="preserve">
+    <value>Copiar Caminho</value>
+  </data>
+  <data name="DateToday" xml:space="preserve">
+    <value>Hoje {0}</value>
+  </data>
+  <data name="DateYesterday" xml:space="preserve">
+    <value>Ontem</value>
+  </data>
+  <data name="DetailLocation" xml:space="preserve">
+    <value>Local</value>
+  </data>
+  <data name="DetailModified" xml:space="preserve">
+    <value>Modificado</value>
+  </data>
+  <data name="DetailSize" xml:space="preserve">
+    <value>Tamanho</value>
+  </data>
+  <data name="DetailType" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="ErrorAutostart" xml:space="preserve">
+    <value>Configurações salvas, mas não foi possível alterar a inicialização ao fazer login: {0}</value>
+  </data>
+  <data name="ErrorOpenReleasesPage" xml:space="preserve">
+    <value>Não foi possível abrir a página de versões: {0}</value>
+  </data>
+  <data name="ErrorSaveSettings" xml:space="preserve">
+    <value>Não foi possível salvar as configurações: {0}</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>Tudo</value>
+  </data>
+  <data name="FilterCode" xml:space="preserve">
+    <value>Código</value>
+  </data>
+  <data name="FilterDocuments" xml:space="preserve">
+    <value>Documentos</value>
+  </data>
+  <data name="FilterImages" xml:space="preserve">
+    <value>Imagens</value>
+  </data>
+  <data name="FilterMail" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="FilterPdfs" xml:space="preserve">
+    <value>PDFs</value>
+  </data>
+  <data name="FilterSlides" xml:space="preserve">
+    <value>Slides</value>
+  </data>
+  <data name="FilterSpreadsheets" xml:space="preserve">
+    <value>Planilhas</value>
+  </data>
+  <data name="GroupMedia" xml:space="preserve">
+    <value>Mídia</value>
+  </data>
+  <data name="GroupOther" xml:space="preserve">
+    <value>Outros</value>
+  </data>
+  <data name="GroupPresentations" xml:space="preserve">
+    <value>Apresentações</value>
+  </data>
+  <data name="HintBody" xml:space="preserve">
+    <value>Descreva o que você procura com suas próprias palavras — “o contrato de aluguel em que negociamos o depósito”. Tudo é executado neste computador.</value>
+  </data>
+  <data name="HintSummon" xml:space="preserve">
+    <value>Abra o Valafind de qualquer lugar com {0}.</value>
+  </data>
+  <data name="HintTitle" xml:space="preserve">
+    <value>Busque seus arquivos pelo significado</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterBind" xml:space="preserve">
+    <value>Não foi possível registrar {0} — defina um atalho do sistema para: {1}</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterReason" xml:space="preserve">
+    <value>Não foi possível registrar {0}: {1}</value>
+  </data>
+  <data name="HotkeyDuplicateModifier" xml:space="preserve">
+    <value>O modificador '{0}' aparece mais de uma vez em '{1}'.</value>
+  </data>
+  <data name="HotkeyEmpty" xml:space="preserve">
+    <value>O atalho está vazio.</value>
+  </data>
+  <data name="HotkeyEmptyPart" xml:space="preserve">
+    <value>'{0}' não é um atalho válido (parte vazia).</value>
+  </data>
+  <data name="HotkeyEscape" xml:space="preserve">
+    <value>Escape não pode ser usada como tecla de atalho global.</value>
+  </data>
+  <data name="HotkeyInUse" xml:space="preserve">
+    <value>{0} já está sendo usado por outro app. Escolha outro atalho.</value>
+  </data>
+  <data name="HotkeyKeyNotOnLayout" xml:space="preserve">
+    <value>A tecla '{0}' não existe no layout de teclado atual.</value>
+  </data>
+  <data name="HotkeyKeyNotUsable" xml:space="preserve">
+    <value>A tecla '{0}' não pode ser usada como atalho global.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableMac" xml:space="preserve">
+    <value>A tecla '{0}' não pode ser usada como atalho global no macOS.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableWindows" xml:space="preserve">
+    <value>A tecla '{0}' não pode ser usada como atalho global no Windows.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableX11" xml:space="preserve">
+    <value>A tecla '{0}' não pode ser usada como atalho global no X11.</value>
+  </data>
+  <data name="HotkeyMacOptionOnly" xml:space="preserve">
+    <value>O macOS não permite atalhos que usam apenas Option ({0}). Adicione Control ou Command, por exemplo ⌃⌥Space.</value>
+  </data>
+  <data name="HotkeyMacOptionShiftOnly" xml:space="preserve">
+    <value>O macOS não permite atalhos que usam apenas Option e Shift ({0}). Adicione Control ou Command, por exemplo ⌃⌥Space.</value>
+  </data>
+  <data name="HotkeyNeedsModifier" xml:space="preserve">
+    <value>Um atalho global precisa de Ctrl, Alt ou Super (somente teclas de função podem ser usadas sozinhas ou apenas com Shift).</value>
+  </data>
+  <data name="HotkeyNoGraphicalSession" xml:space="preserve">
+    <value>Atalhos globais precisam de uma sessão gráfica (nem DISPLAY nem WAYLAND_DISPLAY está definida).</value>
+  </data>
+  <data name="HotkeyNoKey" xml:space="preserve">
+    <value>'{0}' não tem tecla.</value>
+  </data>
+  <data name="HotkeyNoKeyAfterModifiers" xml:space="preserve">
+    <value>'{0}' não tem tecla; adicione uma tecla depois dos modificadores (por exemplo, '{0}+Space').</value>
+  </data>
+  <data name="HotkeyNotModifier" xml:space="preserve">
+    <value>'{0}' não é um modificador. Use Ctrl, Alt, Shift ou Super antes da tecla.</value>
+  </data>
+  <data name="HotkeyPortalCancelled" xml:space="preserve">
+    <value>A solicitação de atalho foi cancelada na caixa de diálogo da área de trabalho.</value>
+  </data>
+  <data name="HotkeySpotlightHint" xml:space="preserve">
+    <value>⌘Space normalmente é usado pelo Spotlight; experimente ⌃⌥Space.</value>
+  </data>
+  <data name="HotkeyUnavailableBind" xml:space="preserve">
+    <value>Atalho global indisponível — defina um atalho do sistema para: {0}</value>
+  </data>
+  <data name="HotkeyUnsupportedKey" xml:space="preserve">
+    <value>'{0}' não é uma tecla compatível. Compatíveis: Space, A-Z, 0-9, F1-F24, Enter, Tab, Backquote, Comma, Period, Slash, Semicolon.</value>
+  </data>
+  <data name="HotkeyUnsupportedOs" xml:space="preserve">
+    <value>Atalhos globais não são compatíveis com este sistema operacional.</value>
+  </data>
+  <data name="HotkeyWaylandUnavailable" xml:space="preserve">
+    <value>Atalhos globais não estão disponíveis no Wayland. Defina um atalho nas configurações da sua área de trabalho para executar: {0}</value>
+  </data>
+  <data name="IndexCountOf" xml:space="preserve">
+    <value>{0} de {1}</value>
+  </data>
+  <data name="IndexCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="IndexDisk" xml:space="preserve">
+    <value>Disco</value>
+  </data>
+  <data name="IndexFilesCount" xml:space="preserve">
+    <value>{0} arquivos</value>
+  </data>
+  <data name="IndexFrequent" xml:space="preserve">
+    <value>Frequentes</value>
+  </data>
+  <data name="IndexFrequentPercent" xml:space="preserve">
+    <value>Frequentes {0}</value>
+  </data>
+  <data name="IndexNow" xml:space="preserve">
+    <value>Indexar agora</value>
+  </data>
+  <data name="IndexPhase1" xml:space="preserve">
+    <value>Fase 1 · Usados com frequência</value>
+  </data>
+  <data name="IndexPhase2" xml:space="preserve">
+    <value>Fase 2 · {0}</value>
+  </data>
+  <data name="IndexStatusAndPreferences" xml:space="preserve">
+    <value>Status do índice e preferências</value>
+  </data>
+  <data name="IndexTitle" xml:space="preserve">
+    <value>Índice</value>
+  </data>
+  <data name="IndexUpToDate" xml:space="preserve">
+    <value>Índice atualizado</value>
+  </data>
+  <data name="IndexUpToDateDetail" xml:space="preserve">
+    <value>Índice atualizado · {0} arquivos pesquisáveis</value>
+  </data>
+  <data name="KeyHintNavigate" xml:space="preserve">
+    <value>Navegar</value>
+  </data>
+  <data name="KeyHintNavigateLower" xml:space="preserve">
+    <value>navegar</value>
+  </data>
+  <data name="KeyHintOpenLower" xml:space="preserve">
+    <value>abrir</value>
+  </data>
+  <data name="KeyHintPreview" xml:space="preserve">
+    <value>Pré-visualizar</value>
+  </data>
+  <data name="KeyHintPreviewLower" xml:space="preserve">
+    <value>pré-visualizar</value>
+  </data>
+  <data name="KeyHintReveal" xml:space="preserve">
+    <value>Mostrar</value>
+  </data>
+  <data name="KeyHintShowInFilesLower" xml:space="preserve">
+    <value>mostrar em Arquivos</value>
+  </data>
+  <data name="MainMenu" xml:space="preserve">
+    <value>Menu principal</value>
+  </data>
+  <data name="Match" xml:space="preserve">
+    <value>Correspondência</value>
+  </data>
+  <data name="MatchExplanation" xml:space="preserve">
+    <value>Próximo em significado a “{0}” — sem precisar de palavras-chave em comum.</value>
+  </data>
+  <data name="ModelFailedBundledBody" xml:space="preserve">
+    <value>Não foi possível descompactar ou carregar o modelo integrado. Libere espaço em disco se necessário e clique em Verificar novamente para descompactá-lo de novo.</value>
+  </data>
+  <data name="ModelFailedDownloadBody" xml:space="preserve">
+    <value>Os arquivos do modelo provavelmente estão incompletos. Baixe-os novamente com:</value>
+  </data>
+  <data name="ModelFailedFooter" xml:space="preserve">
+    <value>O Valafind recarrega o modelo automaticamente quando os arquivos mudam; ou escolha outra pasta do modelo em Configurações.</value>
+  </data>
+  <data name="ModelFailedTitle" xml:space="preserve">
+    <value>Não foi possível carregar o EmbeddingGemma</value>
+  </data>
+  <data name="ModelInstallsInto" xml:space="preserve">
+    <value>Ele é instalado em:</value>
+  </data>
+  <data name="ModelLoadingBody" xml:space="preserve">
+    <value>O modelo local leva alguns segundos para iniciar. Sua busca será executada assim que ele estiver pronto.</value>
+  </data>
+  <data name="ModelLoadingTitle" xml:space="preserve">
+    <value>Carregando o EmbeddingGemma…</value>
+  </data>
+  <data name="ModelMissingBody" xml:space="preserve">
+    <value>Esta versão do Valafind vem sem o modelo e não o baixa automaticamente. Instale-o uma vez executando este comando em um terminal:</value>
+  </data>
+  <data name="ModelMissingFooter" xml:space="preserve">
+    <value>O Valafind detecta o modelo automaticamente assim que ele estiver lá — sem precisar reiniciar. Já tem uma cópia? Escolha a pasta dela em Configurações.</value>
+  </data>
+  <data name="ModelMissingTitle" xml:space="preserve">
+    <value>Modelo EmbeddingGemma não instalado</value>
+  </data>
+  <data name="ModelUnpackFailed" xml:space="preserve">
+    <value>Não foi possível descompactar o modelo integrado em {0}: {1}</value>
+  </data>
+  <data name="ModifiedOn" xml:space="preserve">
+    <value>Modificado em {0}</value>
+  </data>
+  <data name="NoResultsBody" xml:space="preserve">
+    <value>Tente descrever de outra forma, escolha outro filtro ou aguarde a indexação abranger mais arquivos.</value>
+  </data>
+  <data name="NoResultsTitle" xml:space="preserve">
+    <value>Nenhum arquivo correspondente</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Abrir</value>
+  </data>
+  <data name="OpenValafind" xml:space="preserve">
+    <value>Abrir o Valafind</value>
+  </data>
+  <data name="OpenValafindWithHotkey" xml:space="preserve">
+    <value>Abrir o Valafind ({0})</value>
+  </data>
+  <data name="PauseIndexing" xml:space="preserve">
+    <value>Pausar indexação</value>
+  </data>
+  <data name="PhaseDone" xml:space="preserve">
+    <value>concluído</value>
+  </data>
+  <data name="PhaseIndexing" xml:space="preserve">
+    <value>indexando</value>
+  </data>
+  <data name="PhasePaused" xml:space="preserve">
+    <value>pausado</value>
+  </data>
+  <data name="PhaseQueued" xml:space="preserve">
+    <value>na fila</value>
+  </data>
+  <data name="PhaseStopped" xml:space="preserve">
+    <value>parado</value>
+  </data>
+  <data name="PickFolderToIndex" xml:space="preserve">
+    <value>Escolha uma pasta para indexar</value>
+  </data>
+  <data name="PickModelFolder" xml:space="preserve">
+    <value>Escolha a pasta do modelo EmbeddingGemma</value>
+  </data>
+  <data name="PolicyPauses" xml:space="preserve">
+    <value>Pausa automaticamente quando a CPU passa de {0} ou a atividade do disco está alta</value>
+  </data>
+  <data name="PolicyResumes" xml:space="preserve">
+    <value>Retoma automaticamente quando a CPU e o disco estão ociosos</value>
+  </data>
+  <data name="PortalShortcutDescription" xml:space="preserve">
+    <value>Mostrar ou ocultar o Valafind</value>
+  </data>
+  <data name="Preferences" xml:space="preserve">
+    <value>Preferências</value>
+  </data>
+  <data name="QuickLook" xml:space="preserve">
+    <value>Visualização Rápida</value>
+  </data>
+  <data name="QuitValafind" xml:space="preserve">
+    <value>Sair do Valafind</value>
+  </data>
+  <data name="ResultSummaryMany" xml:space="preserve">
+    <value>{0} resultados · {1} ms</value>
+  </data>
+  <data name="ResultSummaryOne" xml:space="preserve">
+    <value>{0} resultado · {1} ms</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>Retomar</value>
+  </data>
+  <data name="ResumeIndexing" xml:space="preserve">
+    <value>Retomar indexação</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Salvar</value>
+  </data>
+  <data name="ScopeEverythingIn" xml:space="preserve">
+    <value>Tudo em {0}</value>
+  </data>
+  <data name="ScopeEverythingInHome" xml:space="preserve">
+    <value>Tudo na sua pasta pessoal</value>
+  </data>
+  <data name="ScopeEverythingInHomeAt" xml:space="preserve">
+    <value>Tudo na sua pasta pessoal ({0})</value>
+  </data>
+  <data name="ScopeFolderCount" xml:space="preserve">
+    <value>{0} pastas</value>
+  </data>
+  <data name="ScopeHome" xml:space="preserve">
+    <value>Início</value>
+  </data>
+  <data name="ScopeHomeFolder" xml:space="preserve">
+    <value>Pasta pessoal</value>
+  </data>
+  <data name="SearchByMeaning" xml:space="preserve">
+    <value>Buscar arquivos pelo significado</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>Falha na busca</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Descreva o que você procura</value>
+  </data>
+  <data name="Searching" xml:space="preserve">
+    <value>Buscando…</value>
+  </data>
+  <data name="SemanticMatch" xml:space="preserve">
+    <value>Correspondência semântica</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="SettingsA11y" xml:space="preserve">
+    <value>Configurações do Valafind</value>
+  </data>
+  <data name="SettingsAddFolder" xml:space="preserve">
+    <value>Adicionar pasta…</value>
+  </data>
+  <data name="SettingsAutoUpdate" xml:space="preserve">
+    <value>Instalar novas versões automaticamente</value>
+  </data>
+  <data name="SettingsBrowse" xml:space="preserve">
+    <value>Procurar…</value>
+  </data>
+  <data name="SettingsCheckForUpdates" xml:space="preserve">
+    <value>Verificar atualizações</value>
+  </data>
+  <data name="SettingsDefaultHotkey" xml:space="preserve">
+    <value>Padrão: {0}</value>
+  </data>
+  <data name="SettingsDimensions" xml:space="preserve">
+    <value>Dimensões</value>
+  </data>
+  <data name="SettingsDimensionsA11y" xml:space="preserve">
+    <value>Dimensões dos embeddings</value>
+  </data>
+  <data name="SettingsDimensionsHint" xml:space="preserve">
+    <value>Vetores menores usam menos memória e buscam mais rápido; 768 é o mais preciso.</value>
+  </data>
+  <data name="SettingsGeneral" xml:space="preserve">
+    <value>Geral</value>
+  </data>
+  <data name="SettingsGlobalShortcut" xml:space="preserve">
+    <value>Atalho global</value>
+  </data>
+  <data name="SettingsHomeFolderRow" xml:space="preserve">
+    <value>Sua pasta pessoal ({0})</value>
+  </data>
+  <data name="SettingsHotkeyPlaceholder" xml:space="preserve">
+    <value>Pressione uma combinação de teclas</value>
+  </data>
+  <data name="SettingsIdleSection" xml:space="preserve">
+    <value>Indexar somente enquanto o computador estiver ocioso</value>
+  </data>
+  <data name="SettingsIndexedFolders" xml:space="preserve">
+    <value>Pastas indexadas</value>
+  </data>
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="SettingsLanguageHint" xml:space="preserve">
+    <value>Entra em vigor na próxima vez que o Valafind iniciar.</value>
+  </data>
+  <data name="SettingsLanguageSystem" xml:space="preserve">
+    <value>Padrão do sistema</value>
+  </data>
+  <data name="SettingsLogs" xml:space="preserve">
+    <value>Logs:</value>
+  </data>
+  <data name="SettingsMaxCpu" xml:space="preserve">
+    <value>CPU máxima</value>
+  </data>
+  <data name="SettingsMaxCpuA11y" xml:space="preserve">
+    <value>Porcentagem máxima de CPU</value>
+  </data>
+  <data name="SettingsMaxDisk" xml:space="preserve">
+    <value>Uso máximo do disco</value>
+  </data>
+  <data name="SettingsMaxDiskA11y" xml:space="preserve">
+    <value>Porcentagem máxima de uso do disco</value>
+  </data>
+  <data name="SettingsMenu" xml:space="preserve">
+    <value>Configurações…</value>
+  </data>
+  <data name="SettingsModelDetected" xml:space="preserve">
+    <value>Detectado: {0}</value>
+  </data>
+  <data name="SettingsModelFolder" xml:space="preserve">
+    <value>Pasta do modelo</value>
+  </data>
+  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
+    <value>Automática</value>
+  </data>
+  <data name="SettingsModelNotFound" xml:space="preserve">
+    <value>Não encontrado — instale-o executando {0} (instala em {1}). O Valafind o detecta automaticamente.</value>
+  </data>
+  <data name="SettingsModelSection" xml:space="preserve">
+    <value>Modelo de embeddings</value>
+  </data>
+  <data name="SettingsOpenLogFolder" xml:space="preserve">
+    <value>Abrir pasta de logs</value>
+  </data>
+  <data name="SettingsPauseOnBattery" xml:space="preserve">
+    <value>Pausar a indexação na bateria</value>
+  </data>
+  <data name="SettingsPrivacy" xml:space="preserve">
+    <value>Funciona inteiramente neste computador — seus arquivos e buscas nunca saem dele.</value>
+  </data>
+  <data name="SettingsReindexWarning" xml:space="preserve">
+    <value>Alterar as dimensões reindexa todos os arquivos.</value>
+  </data>
+  <data name="SettingsRemove" xml:space="preserve">
+    <value>Remover</value>
+  </data>
+  <data name="SettingsReset" xml:space="preserve">
+    <value>Redefinir</value>
+  </data>
+  <data name="SettingsRootsHint" xml:space="preserve">
+    <value>Somente as pastas listadas aqui são indexadas — por padrão, sua pasta pessoal. Adicione outras unidades, discos externos ou pastas de rede com “Adicionar pasta…”. Adicionar uma pasta substitui o padrão; portanto, adicione também sua pasta pessoal se ainda quiser incluí-la.</value>
+  </data>
+  <data name="SettingsStartAtLogin" xml:space="preserve">
+    <value>Iniciar o Valafind ao fazer login</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Configurações do Valafind</value>
+  </data>
+  <data name="ShowInFiles" xml:space="preserve">
+    <value>Mostrar em Arquivos</value>
+  </data>
+  <data name="ShowInFinder" xml:space="preserve">
+    <value>Mostrar no Finder</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Mostrar na pasta</value>
+  </data>
+  <data name="StateIndexingWhileIdle" xml:space="preserve">
+    <value>Indexando enquanto ocioso</value>
+  </data>
+  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
+    <value>Indexando enquanto ocioso {0}</value>
+  </data>
+  <data name="StateModelUnavailable" xml:space="preserve">
+    <value>Modelo indisponível — busca desativada</value>
+  </data>
+  <data name="StateModelUnavailableShort" xml:space="preserve">
+    <value>Modelo indisponível</value>
+  </data>
+  <data name="StatePaused" xml:space="preserve">
+    <value>Indexação pausada</value>
+  </data>
+  <data name="StatePausedByYou" xml:space="preserve">
+    <value>Pausado por você</value>
+  </data>
+  <data name="StatePausedOnBattery" xml:space="preserve">
+    <value>Indexação pausada — na bateria</value>
+  </data>
+  <data name="StatePausedOnBatteryShort" xml:space="preserve">
+    <value>Pausado — na bateria</value>
+  </data>
+  <data name="StatePausedSystemBusy" xml:space="preserve">
+    <value>Indexação pausada — sistema ocupado</value>
+  </data>
+  <data name="StatePausedSystemBusyShort" xml:space="preserve">
+    <value>Pausado — sistema ocupado</value>
+  </data>
+  <data name="StatePreparing" xml:space="preserve">
+    <value>Preparando o índice…</value>
+  </data>
+  <data name="StatePreparingShort" xml:space="preserve">
+    <value>Preparando o índice</value>
+  </data>
+  <data name="StateStarting" xml:space="preserve">
+    <value>Iniciando</value>
+  </data>
+  <data name="TimeAny" xml:space="preserve">
+    <value>Qualquer data</value>
+  </data>
+  <data name="TimePastMonth" xml:space="preserve">
+    <value>Último mês</value>
+  </data>
+  <data name="TimePastWeek" xml:space="preserve">
+    <value>Última semana</value>
+  </data>
+  <data name="TimePastYear" xml:space="preserve">
+    <value>Último ano</value>
+  </data>
+  <data name="TimeToday" xml:space="preserve">
+    <value>Hoje</value>
+  </data>
+  <data name="TopMatch" xml:space="preserve">
+    <value>Melhor correspondência</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>Atualizado</value>
+  </data>
+  <data name="UpdateChecksGitHub" xml:space="preserve">
+    <value>O Valafind procura novas versões no GitHub</value>
+  </data>
+  <data name="UpdatesAutomatic" xml:space="preserve">
+    <value>As atualizações são verificadas automaticamente</value>
+  </data>
+  <data name="UpdatesCannotWrite" xml:space="preserve">
+    <value>{0} não pode gravar em {1}; atualize-o da mesma forma como foi instalado</value>
+  </data>
+  <data name="UpdatesChecking" xml:space="preserve">
+    <value>Verificando atualizações…</value>
+  </data>
+  <data name="UpdatesDownloading" xml:space="preserve">
+    <value>Baixando a versão {0}…</value>
+  </data>
+  <data name="UpdatesFailed" xml:space="preserve">
+    <value>Não foi possível atualizar: {0}</value>
+  </data>
+  <data name="UpdatesOff" xml:space="preserve">
+    <value>As atualizações automáticas estão desativadas</value>
+  </data>
+  <data name="UpdatesOnlyReleaseBuilds" xml:space="preserve">
+    <value>Somente versões de lançamento se atualizam sozinhas</value>
+  </data>
+  <data name="UpdatesReady" xml:space="preserve">
+    <value>A versão {0} está instalada e será usada na próxima vez que o {1} iniciar</value>
+  </data>
+  <data name="UpdatesTimeout" xml:space="preserve">
+    <value>O GitHub não respondeu a tempo</value>
+  </data>
+  <data name="UpdatesTurnedOffByVariable" xml:space="preserve">
+    <value>As atualizações estão desativadas ({0})</value>
+  </data>
+  <data name="UpdatesUnsupported" xml:space="preserve">
+    <value>Esta cópia não pode se atualizar sozinha</value>
+  </data>
+  <data name="UpdatesUpToDate" xml:space="preserve">
+    <value>Atualizado (verificado {0})</value>
+  </data>
+  <data name="WhyItMatched" xml:space="preserve">
+    <value>Por que corresponde</value>
+  </data>
+  <data name="WhyItMatchedClosestPassage" xml:space="preserve">
+    <value>POR QUE CORRESPONDE · TRECHO MAIS PRÓXIMO</value>
+  </data>
+</root>

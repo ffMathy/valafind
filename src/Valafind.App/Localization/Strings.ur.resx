@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BannerPausedOnBattery" xml:space="preserve">
+    <value>بیٹری پر ہونے کی وجہ سے انڈیکسنگ رکی ہوئی ہے</value>
+  </data>
+  <data name="BannerPausedSystemBusy" xml:space="preserve">
+    <value>سسٹم مصروف ہونے کی وجہ سے انڈیکسنگ رکی ہوئی ہے</value>
+  </data>
+  <data name="BannerSearchable" xml:space="preserve">
+    <value>آپ کی {0} فائلیں قابلِ تلاش ہیں</value>
+  </data>
+  <data name="BestMatchesByMeaning" xml:space="preserve">
+    <value>معنی کے لحاظ سے بہترین مماثلتیں</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>منسوخ کریں</value>
+  </data>
+  <data name="CheckAgain" xml:space="preserve">
+    <value>دوبارہ جانچیں</value>
+  </data>
+  <data name="CheckForUpdatesMenu" xml:space="preserve">
+    <value>اپ ڈیٹس کی جانچ کریں…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>تلاش صاف کریں</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>بند کریں</value>
+  </data>
+  <data name="CopyCommand" xml:space="preserve">
+    <value>کمانڈ کاپی کریں</value>
+  </data>
+  <data name="CopyFolder" xml:space="preserve">
+    <value>فولڈر کاپی کریں</value>
+  </data>
+  <data name="CopyPath" xml:space="preserve">
+    <value>پاتھ کاپی کریں</value>
+  </data>
+  <data name="CopyPathTitleCase" xml:space="preserve">
+    <value>پاتھ کاپی کریں</value>
+  </data>
+  <data name="DateToday" xml:space="preserve">
+    <value>آج {0}</value>
+  </data>
+  <data name="DateYesterday" xml:space="preserve">
+    <value>کل</value>
+  </data>
+  <data name="DetailLocation" xml:space="preserve">
+    <value>مقام</value>
+  </data>
+  <data name="DetailModified" xml:space="preserve">
+    <value>ترمیم شدہ</value>
+  </data>
+  <data name="DetailSize" xml:space="preserve">
+    <value>سائز</value>
+  </data>
+  <data name="DetailType" xml:space="preserve">
+    <value>قسم</value>
+  </data>
+  <data name="ErrorAutostart" xml:space="preserve">
+    <value>ترتیبات محفوظ ہو گئیں، لیکن لاگ ان پر شروع ہونے کی ترتیب تبدیل نہیں ہو سکی: {0}</value>
+  </data>
+  <data name="ErrorOpenReleasesPage" xml:space="preserve">
+    <value>ریلیزز کا صفحہ نہیں کھل سکا: {0}</value>
+  </data>
+  <data name="ErrorSaveSettings" xml:space="preserve">
+    <value>ترتیبات محفوظ نہیں ہو سکیں: {0}</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>تمام</value>
+  </data>
+  <data name="FilterCode" xml:space="preserve">
+    <value>کوڈ</value>
+  </data>
+  <data name="FilterDocuments" xml:space="preserve">
+    <value>دستاویزات</value>
+  </data>
+  <data name="FilterImages" xml:space="preserve">
+    <value>تصاویر</value>
+  </data>
+  <data name="FilterMail" xml:space="preserve">
+    <value>میل</value>
+  </data>
+  <data name="FilterPdfs" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="FilterSlides" xml:space="preserve">
+    <value>سلائیڈز</value>
+  </data>
+  <data name="FilterSpreadsheets" xml:space="preserve">
+    <value>اسپریڈشیٹس</value>
+  </data>
+  <data name="GroupMedia" xml:space="preserve">
+    <value>میڈیا</value>
+  </data>
+  <data name="GroupOther" xml:space="preserve">
+    <value>دیگر</value>
+  </data>
+  <data name="GroupPresentations" xml:space="preserve">
+    <value>پریزنٹیشنز</value>
+  </data>
+  <data name="HintBody" xml:space="preserve">
+    <value>جو آپ ڈھونڈ رہے ہیں اسے اپنے الفاظ میں بیان کریں — ”وہ کرایہ نامہ جس میں ہم نے زرِ ضمانت پر بات چیت کی تھی“۔ سب کچھ اسی کمپیوٹر پر چلتا ہے۔</value>
+  </data>
+  <data name="HintSummon" xml:space="preserve">
+    <value>کہیں سے بھی {0} کے ساتھ Valafind کو بلائیں۔</value>
+  </data>
+  <data name="HintTitle" xml:space="preserve">
+    <value>اپنی فائلیں معنی کے لحاظ سے تلاش کریں</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterBind" xml:space="preserve">
+    <value>{0} رجسٹر نہیں ہو سکا — اس کے لیے سسٹم شارٹ کٹ مقرر کریں: {1}</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterReason" xml:space="preserve">
+    <value>{0} رجسٹر نہیں ہو سکا: {1}</value>
+  </data>
+  <data name="HotkeyDuplicateModifier" xml:space="preserve">
+    <value>موڈیفائر '{0}' '{1}' میں ایک سے زیادہ بار آیا ہے۔</value>
+  </data>
+  <data name="HotkeyEmpty" xml:space="preserve">
+    <value>شارٹ کٹ خالی ہے۔</value>
+  </data>
+  <data name="HotkeyEmptyPart" xml:space="preserve">
+    <value>'{0}' درست شارٹ کٹ نہیں ہے (خالی حصہ)۔</value>
+  </data>
+  <data name="HotkeyEscape" xml:space="preserve">
+    <value>Escape کو عالمی شارٹ کٹ کلید کے طور پر استعمال نہیں کیا جا سکتا۔</value>
+  </data>
+  <data name="HotkeyInUse" xml:space="preserve">
+    <value>{0} پہلے ہی کسی دوسری ایپ کے استعمال میں ہے۔ کوئی مختلف شارٹ کٹ منتخب کریں۔</value>
+  </data>
+  <data name="HotkeyKeyNotOnLayout" xml:space="preserve">
+    <value>کلید '{0}' موجودہ کی بورڈ لے آؤٹ پر موجود نہیں ہے۔</value>
+  </data>
+  <data name="HotkeyKeyNotUsable" xml:space="preserve">
+    <value>کلید '{0}' کو عالمی شارٹ کٹ کے طور پر استعمال نہیں کیا جا سکتا۔</value>
+  </data>
+  <data name="HotkeyKeyNotUsableMac" xml:space="preserve">
+    <value>کلید '{0}' کو macOS پر عالمی شارٹ کٹ کے طور پر استعمال نہیں کیا جا سکتا۔</value>
+  </data>
+  <data name="HotkeyKeyNotUsableWindows" xml:space="preserve">
+    <value>کلید '{0}' کو Windows پر عالمی شارٹ کٹ کے طور پر استعمال نہیں کیا جا سکتا۔</value>
+  </data>
+  <data name="HotkeyKeyNotUsableX11" xml:space="preserve">
+    <value>کلید '{0}' کو X11 پر عالمی شارٹ کٹ کے طور پر استعمال نہیں کیا جا سکتا۔</value>
+  </data>
+  <data name="HotkeyMacOptionOnly" xml:space="preserve">
+    <value>macOS ایسے شارٹ کٹس کی اجازت نہیں دیتا جن میں صرف Option ہو ({0})۔ Control یا Command شامل کریں، مثلاً ⌃⌥Space۔</value>
+  </data>
+  <data name="HotkeyMacOptionShiftOnly" xml:space="preserve">
+    <value>macOS ایسے شارٹ کٹس کی اجازت نہیں دیتا جن میں صرف Option اور Shift ہوں ({0})۔ Control یا Command شامل کریں، مثلاً ⌃⌥Space۔</value>
+  </data>
+  <data name="HotkeyNeedsModifier" xml:space="preserve">
+    <value>عالمی شارٹ کٹ کے لیے Ctrl، Alt یا Super ضروری ہے (صرف فنکشن کلیدیں اکیلے یا صرف Shift کے ساتھ استعمال ہو سکتی ہیں)۔</value>
+  </data>
+  <data name="HotkeyNoGraphicalSession" xml:space="preserve">
+    <value>عالمی ہاٹ کیز کے لیے گرافیکل سیشن ضروری ہے (نہ DISPLAY سیٹ ہے نہ WAYLAND_DISPLAY)۔</value>
+  </data>
+  <data name="HotkeyNoKey" xml:space="preserve">
+    <value>'{0}' میں کوئی کلید نہیں۔</value>
+  </data>
+  <data name="HotkeyNoKeyAfterModifiers" xml:space="preserve">
+    <value>'{0}' میں کوئی کلید نہیں؛ موڈیفائرز کے بعد ایک کلید شامل کریں (مثلاً '{0}+Space')۔</value>
+  </data>
+  <data name="HotkeyNotModifier" xml:space="preserve">
+    <value>'{0}' موڈیفائر نہیں ہے۔ کلید سے پہلے Ctrl، Alt، Shift یا Super استعمال کریں۔</value>
+  </data>
+  <data name="HotkeyPortalCancelled" xml:space="preserve">
+    <value>ڈیسک ٹاپ ڈائیلاگ میں شارٹ کٹ کی درخواست منسوخ کر دی گئی۔</value>
+  </data>
+  <data name="HotkeySpotlightHint" xml:space="preserve">
+    <value>⌘Space عام طور پر Spotlight استعمال کرتا ہے؛ اس کے بجائے ⌃⌥Space آزمائیں۔</value>
+  </data>
+  <data name="HotkeyUnavailableBind" xml:space="preserve">
+    <value>عالمی ہاٹ کی دستیاب نہیں — اس کے لیے سسٹم شارٹ کٹ مقرر کریں: {0}</value>
+  </data>
+  <data name="HotkeyUnsupportedKey" xml:space="preserve">
+    <value>'{0}' معاون کلید نہیں ہے۔ معاون: Space, A-Z, 0-9, F1-F24, Enter, Tab, Backquote, Comma, Period, Slash, Semicolon۔</value>
+  </data>
+  <data name="HotkeyUnsupportedOs" xml:space="preserve">
+    <value>اس آپریٹنگ سسٹم پر عالمی ہاٹ کیز معاون نہیں ہیں۔</value>
+  </data>
+  <data name="HotkeyWaylandUnavailable" xml:space="preserve">
+    <value>Wayland پر عالمی ہاٹ کیز دستیاب نہیں ہیں۔ یہ چلانے کے لیے اپنی ڈیسک ٹاپ ترتیبات میں ایک شارٹ کٹ مقرر کریں: {0}</value>
+  </data>
+  <data name="IndexCountOf" xml:space="preserve">
+    <value>{1} میں سے {0}</value>
+  </data>
+  <data name="IndexCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="IndexDisk" xml:space="preserve">
+    <value>ڈسک</value>
+  </data>
+  <data name="IndexFilesCount" xml:space="preserve">
+    <value>{0} فائلیں</value>
+  </data>
+  <data name="IndexFrequent" xml:space="preserve">
+    <value>اکثر استعمال شدہ</value>
+  </data>
+  <data name="IndexFrequentPercent" xml:space="preserve">
+    <value>اکثر استعمال شدہ {0}</value>
+  </data>
+  <data name="IndexNow" xml:space="preserve">
+    <value>ابھی انڈیکس کریں</value>
+  </data>
+  <data name="IndexPhase1" xml:space="preserve">
+    <value>مرحلہ 1 · اکثر استعمال شدہ</value>
+  </data>
+  <data name="IndexPhase2" xml:space="preserve">
+    <value>مرحلہ 2 · {0}</value>
+  </data>
+  <data name="IndexStatusAndPreferences" xml:space="preserve">
+    <value>انڈیکس کی حالت اور ترجیحات</value>
+  </data>
+  <data name="IndexTitle" xml:space="preserve">
+    <value>انڈیکس</value>
+  </data>
+  <data name="IndexUpToDate" xml:space="preserve">
+    <value>انڈیکس تازہ ترین ہے</value>
+  </data>
+  <data name="IndexUpToDateDetail" xml:space="preserve">
+    <value>انڈیکس تازہ ترین · {0} فائلیں قابلِ تلاش</value>
+  </data>
+  <data name="KeyHintNavigate" xml:space="preserve">
+    <value>نیویگیٹ کریں</value>
+  </data>
+  <data name="KeyHintNavigateLower" xml:space="preserve">
+    <value>نیویگیٹ</value>
+  </data>
+  <data name="KeyHintOpenLower" xml:space="preserve">
+    <value>کھولیں</value>
+  </data>
+  <data name="KeyHintPreview" xml:space="preserve">
+    <value>پیش منظر</value>
+  </data>
+  <data name="KeyHintPreviewLower" xml:space="preserve">
+    <value>پیش منظر</value>
+  </data>
+  <data name="KeyHintReveal" xml:space="preserve">
+    <value>دکھائیں</value>
+  </data>
+  <data name="KeyHintShowInFilesLower" xml:space="preserve">
+    <value>فائلیں میں دکھائیں</value>
+  </data>
+  <data name="MainMenu" xml:space="preserve">
+    <value>مرکزی مینو</value>
+  </data>
+  <data name="Match" xml:space="preserve">
+    <value>مماثلت</value>
+  </data>
+  <data name="MatchExplanation" xml:space="preserve">
+    <value>معنی میں ”{0}“ کے قریب — یکساں کلیدی الفاظ ضروری نہیں۔</value>
+  </data>
+  <data name="ModelFailedBundledBody" xml:space="preserve">
+    <value>اندرونی ماڈل کو ان پیک یا لوڈ نہیں کیا جا سکا۔ ضرورت ہو تو ڈسک کی جگہ خالی کریں، پھر اسے دوبارہ ان پیک کرنے کے لیے دوبارہ جانچیں پر کلک کریں۔</value>
+  </data>
+  <data name="ModelFailedDownloadBody" xml:space="preserve">
+    <value>ماڈل فائلیں شاید نامکمل ہیں۔ انہیں اس کے ذریعے دوبارہ ڈاؤن لوڈ کریں:</value>
+  </data>
+  <data name="ModelFailedFooter" xml:space="preserve">
+    <value>فائلیں تبدیل ہوتے ہی Valafind ماڈل کو خود دوبارہ لوڈ کر لیتا ہے، یا ترتیبات میں کوئی اور ماڈل فولڈر منتخب کریں۔</value>
+  </data>
+  <data name="ModelFailedTitle" xml:space="preserve">
+    <value>EmbeddingGemma لوڈ نہیں ہو سکا</value>
+  </data>
+  <data name="ModelInstallsInto" xml:space="preserve">
+    <value>یہ یہاں انسٹال ہوتا ہے:</value>
+  </data>
+  <data name="ModelLoadingBody" xml:space="preserve">
+    <value>آلے پر چلنے والے ماڈل کو شروع ہونے میں چند سیکنڈ لگتے ہیں۔ تیار ہوتے ہی آپ کی تلاش چلے گی۔</value>
+  </data>
+  <data name="ModelLoadingTitle" xml:space="preserve">
+    <value>EmbeddingGemma لوڈ ہو رہا ہے…</value>
+  </data>
+  <data name="ModelMissingBody" xml:space="preserve">
+    <value>Valafind کے اس بلڈ میں ماڈل شامل نہیں ہے اور یہ اسے خود ڈاؤن لوڈ نہیں کرتا۔ ٹرمینل میں یہ کمانڈ چلا کر اسے ایک بار انسٹال کریں:</value>
+  </data>
+  <data name="ModelMissingFooter" xml:space="preserve">
+    <value>ماڈل موجود ہوتے ہی Valafind اسے خود پہچان لیتا ہے — دوبارہ شروع کرنے کی ضرورت نہیں۔ پہلے سے ایک کاپی موجود ہے؟ ترتیبات میں اس کا فولڈر منتخب کریں۔</value>
+  </data>
+  <data name="ModelMissingTitle" xml:space="preserve">
+    <value>EmbeddingGemma ماڈل انسٹال نہیں ہے</value>
+  </data>
+  <data name="ModelUnpackFailed" xml:space="preserve">
+    <value>اندرونی ماڈل کو {0} میں ان پیک نہیں کیا جا سکا: {1}</value>
+  </data>
+  <data name="ModifiedOn" xml:space="preserve">
+    <value>ترمیم شدہ {0}</value>
+  </data>
+  <data name="NoResultsBody" xml:space="preserve">
+    <value>اسے مختلف انداز میں بیان کر کے دیکھیں، کوئی اور فلٹر منتخب کریں، یا انتظار کریں کہ انڈیکسنگ مزید فائلوں تک پہنچ جائے۔</value>
+  </data>
+  <data name="NoResultsTitle" xml:space="preserve">
+    <value>کوئی مماثل فائل نہیں</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>کھولیں</value>
+  </data>
+  <data name="OpenValafind" xml:space="preserve">
+    <value>Valafind کھولیں</value>
+  </data>
+  <data name="OpenValafindWithHotkey" xml:space="preserve">
+    <value>Valafind کھولیں ({0})</value>
+  </data>
+  <data name="PauseIndexing" xml:space="preserve">
+    <value>انڈیکسنگ روکیں</value>
+  </data>
+  <data name="PhaseDone" xml:space="preserve">
+    <value>مکمل</value>
+  </data>
+  <data name="PhaseIndexing" xml:space="preserve">
+    <value>انڈیکس ہو رہا ہے</value>
+  </data>
+  <data name="PhasePaused" xml:space="preserve">
+    <value>موقوف</value>
+  </data>
+  <data name="PhaseQueued" xml:space="preserve">
+    <value>قطار میں</value>
+  </data>
+  <data name="PhaseStopped" xml:space="preserve">
+    <value>رکا ہوا</value>
+  </data>
+  <data name="PickFolderToIndex" xml:space="preserve">
+    <value>انڈیکس کرنے کے لیے فولڈر منتخب کریں</value>
+  </data>
+  <data name="PickModelFolder" xml:space="preserve">
+    <value>EmbeddingGemma ماڈل فولڈر منتخب کریں</value>
+  </data>
+  <data name="PolicyPauses" xml:space="preserve">
+    <value>CPU کے {0} سے بڑھنے یا ڈسک کی سرگرمی زیادہ ہونے پر خود بخود رک جاتی ہے</value>
+  </data>
+  <data name="PolicyResumes" xml:space="preserve">
+    <value>CPU اور ڈسک فارغ ہونے پر خود بخود دوبارہ شروع ہوتی ہے</value>
+  </data>
+  <data name="PortalShortcutDescription" xml:space="preserve">
+    <value>Valafind دکھائیں یا چھپائیں</value>
+  </data>
+  <data name="Preferences" xml:space="preserve">
+    <value>ترجیحات</value>
+  </data>
+  <data name="QuickLook" xml:space="preserve">
+    <value>Quick Look</value>
+  </data>
+  <data name="QuitValafind" xml:space="preserve">
+    <value>Valafind بند کریں</value>
+  </data>
+  <data name="ResultSummaryMany" xml:space="preserve">
+    <value>{0} نتائج · {1} ms</value>
+  </data>
+  <data name="ResultSummaryOne" xml:space="preserve">
+    <value>{0} نتیجہ · {1} ms</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>دوبارہ شروع کریں</value>
+  </data>
+  <data name="ResumeIndexing" xml:space="preserve">
+    <value>انڈیکسنگ دوبارہ شروع کریں</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>محفوظ کریں</value>
+  </data>
+  <data name="ScopeEverythingIn" xml:space="preserve">
+    <value>{0} میں سب کچھ</value>
+  </data>
+  <data name="ScopeEverythingInHome" xml:space="preserve">
+    <value>آپ کے ہوم فولڈر میں سب کچھ</value>
+  </data>
+  <data name="ScopeEverythingInHomeAt" xml:space="preserve">
+    <value>آپ کے ہوم فولڈر ({0}) میں سب کچھ</value>
+  </data>
+  <data name="ScopeFolderCount" xml:space="preserve">
+    <value>{0} فولڈرز</value>
+  </data>
+  <data name="ScopeHome" xml:space="preserve">
+    <value>ہوم</value>
+  </data>
+  <data name="ScopeHomeFolder" xml:space="preserve">
+    <value>ہوم فولڈر</value>
+  </data>
+  <data name="SearchByMeaning" xml:space="preserve">
+    <value>فائلیں معنی کے لحاظ سے تلاش کریں</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>تلاش ناکام ہو گئی</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>بیان کریں کہ آپ کیا ڈھونڈ رہے ہیں</value>
+  </data>
+  <data name="Searching" xml:space="preserve">
+    <value>تلاش جاری ہے…</value>
+  </data>
+  <data name="SemanticMatch" xml:space="preserve">
+    <value>معنوی مماثلت</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>ترتیبات</value>
+  </data>
+  <data name="SettingsA11y" xml:space="preserve">
+    <value>Valafind کی ترتیبات</value>
+  </data>
+  <data name="SettingsAddFolder" xml:space="preserve">
+    <value>فولڈر شامل کریں…</value>
+  </data>
+  <data name="SettingsAutoUpdate" xml:space="preserve">
+    <value>نئے ورژن خودکار طور پر انسٹال کریں</value>
+  </data>
+  <data name="SettingsBrowse" xml:space="preserve">
+    <value>براؤز کریں…</value>
+  </data>
+  <data name="SettingsCheckForUpdates" xml:space="preserve">
+    <value>اپ ڈیٹس کی جانچ کریں</value>
+  </data>
+  <data name="SettingsDefaultHotkey" xml:space="preserve">
+    <value>ڈیفالٹ: {0}</value>
+  </data>
+  <data name="SettingsDimensions" xml:space="preserve">
+    <value>ڈائمینشنز</value>
+  </data>
+  <data name="SettingsDimensionsA11y" xml:space="preserve">
+    <value>ایمبیڈنگ ڈائمینشنز</value>
+  </data>
+  <data name="SettingsDimensionsHint" xml:space="preserve">
+    <value>چھوٹے ویکٹرز کم میموری استعمال کرتے ہیں اور تیزی سے تلاش کرتے ہیں؛ 768 سب سے زیادہ درست ہے۔</value>
+  </data>
+  <data name="SettingsGeneral" xml:space="preserve">
+    <value>عمومی</value>
+  </data>
+  <data name="SettingsGlobalShortcut" xml:space="preserve">
+    <value>عالمی شارٹ کٹ</value>
+  </data>
+  <data name="SettingsHomeFolderRow" xml:space="preserve">
+    <value>آپ کا ہوم فولڈر ({0})</value>
+  </data>
+  <data name="SettingsHotkeyPlaceholder" xml:space="preserve">
+    <value>کلیدوں کا مجموعہ دبائیں</value>
+  </data>
+  <data name="SettingsIdleSection" xml:space="preserve">
+    <value>انڈیکسنگ صرف اس وقت جب کمپیوٹر فارغ ہو</value>
+  </data>
+  <data name="SettingsIndexedFolders" xml:space="preserve">
+    <value>انڈیکس شدہ فولڈرز</value>
+  </data>
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>زبان</value>
+  </data>
+  <data name="SettingsLanguageHint" xml:space="preserve">
+    <value>Valafind کے اگلی بار شروع ہونے پر نافذ ہوگا۔</value>
+  </data>
+  <data name="SettingsLanguageSystem" xml:space="preserve">
+    <value>سسٹم ڈیفالٹ</value>
+  </data>
+  <data name="SettingsLogs" xml:space="preserve">
+    <value>لاگز:</value>
+  </data>
+  <data name="SettingsMaxCpu" xml:space="preserve">
+    <value>زیادہ سے زیادہ CPU</value>
+  </data>
+  <data name="SettingsMaxCpuA11y" xml:space="preserve">
+    <value>زیادہ سے زیادہ CPU فیصد</value>
+  </data>
+  <data name="SettingsMaxDisk" xml:space="preserve">
+    <value>زیادہ سے زیادہ ڈسک مصروفیت</value>
+  </data>
+  <data name="SettingsMaxDiskA11y" xml:space="preserve">
+    <value>زیادہ سے زیادہ ڈسک مصروفیت فیصد</value>
+  </data>
+  <data name="SettingsMenu" xml:space="preserve">
+    <value>ترتیبات…</value>
+  </data>
+  <data name="SettingsModelDetected" xml:space="preserve">
+    <value>شناخت ہوئی: {0}</value>
+  </data>
+  <data name="SettingsModelFolder" xml:space="preserve">
+    <value>ماڈل فولڈر</value>
+  </data>
+  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
+    <value>خودکار</value>
+  </data>
+  <data name="SettingsModelNotFound" xml:space="preserve">
+    <value>نہیں ملا — {0} چلا کر اسے انسٹال کریں ({1} میں انسٹال ہوتا ہے)۔ Valafind اسے خود بخود پہچان لے گا۔</value>
+  </data>
+  <data name="SettingsModelSection" xml:space="preserve">
+    <value>ایمبیڈنگ ماڈل</value>
+  </data>
+  <data name="SettingsOpenLogFolder" xml:space="preserve">
+    <value>لاگ فولڈر کھولیں</value>
+  </data>
+  <data name="SettingsPauseOnBattery" xml:space="preserve">
+    <value>بیٹری پر ہونے کی صورت میں انڈیکسنگ روکیں</value>
+  </data>
+  <data name="SettingsPrivacy" xml:space="preserve">
+    <value>مکمل طور پر اسی کمپیوٹر پر چلتا ہے — آپ کی فائلیں اور تلاشیں کبھی اس سے باہر نہیں جاتیں۔</value>
+  </data>
+  <data name="SettingsReindexWarning" xml:space="preserve">
+    <value>ڈائمینشنز تبدیل کرنے سے تمام فائلیں دوبارہ انڈیکس ہوں گی۔</value>
+  </data>
+  <data name="SettingsRemove" xml:space="preserve">
+    <value>ہٹائیں</value>
+  </data>
+  <data name="SettingsReset" xml:space="preserve">
+    <value>ری سیٹ کریں</value>
+  </data>
+  <data name="SettingsRootsHint" xml:space="preserve">
+    <value>صرف یہاں درج فولڈرز انڈیکس ہوتے ہیں — بطور ڈیفالٹ آپ کا ہوم فولڈر۔ دیگر ڈرائیوز، بیرونی ڈسکیں یا نیٹ ورک فولڈرز ”فولڈر شامل کریں…“ کے ذریعے شامل کریں۔ فولڈر شامل کرنے سے ڈیفالٹ کی جگہ لے لی جاتی ہے، اس لیے اگر آپ اب بھی ہوم فولڈر چاہتے ہیں تو اسے بھی شامل کریں۔</value>
+  </data>
+  <data name="SettingsStartAtLogin" xml:space="preserve">
+    <value>لاگ ان پر Valafind شروع کریں</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Valafind کی ترتیبات</value>
+  </data>
+  <data name="ShowInFiles" xml:space="preserve">
+    <value>فائلیں میں دکھائیں</value>
+  </data>
+  <data name="ShowInFinder" xml:space="preserve">
+    <value>Finder میں دکھائیں</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>فولڈر میں دکھائیں</value>
+  </data>
+  <data name="StateIndexingWhileIdle" xml:space="preserve">
+    <value>فارغ وقت میں انڈیکسنگ</value>
+  </data>
+  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
+    <value>فارغ وقت میں انڈیکسنگ {0}</value>
+  </data>
+  <data name="StateModelUnavailable" xml:space="preserve">
+    <value>ماڈل دستیاب نہیں — تلاش بند ہے</value>
+  </data>
+  <data name="StateModelUnavailableShort" xml:space="preserve">
+    <value>ماڈل دستیاب نہیں</value>
+  </data>
+  <data name="StatePaused" xml:space="preserve">
+    <value>انڈیکسنگ رکی ہوئی ہے</value>
+  </data>
+  <data name="StatePausedByYou" xml:space="preserve">
+    <value>آپ نے روکا</value>
+  </data>
+  <data name="StatePausedOnBattery" xml:space="preserve">
+    <value>انڈیکسنگ رکی ہوئی — بیٹری پر</value>
+  </data>
+  <data name="StatePausedOnBatteryShort" xml:space="preserve">
+    <value>رکا ہوا — بیٹری پر</value>
+  </data>
+  <data name="StatePausedSystemBusy" xml:space="preserve">
+    <value>انڈیکسنگ رکی ہوئی — سسٹم مصروف ہے</value>
+  </data>
+  <data name="StatePausedSystemBusyShort" xml:space="preserve">
+    <value>رکا ہوا — سسٹم مصروف</value>
+  </data>
+  <data name="StatePreparing" xml:space="preserve">
+    <value>انڈیکس تیار ہو رہا ہے…</value>
+  </data>
+  <data name="StatePreparingShort" xml:space="preserve">
+    <value>انڈیکس تیار ہو رہا ہے</value>
+  </data>
+  <data name="StateStarting" xml:space="preserve">
+    <value>شروع ہو رہا ہے</value>
+  </data>
+  <data name="TimeAny" xml:space="preserve">
+    <value>کسی بھی وقت</value>
+  </data>
+  <data name="TimePastMonth" xml:space="preserve">
+    <value>پچھلا مہینہ</value>
+  </data>
+  <data name="TimePastWeek" xml:space="preserve">
+    <value>پچھلا ہفتہ</value>
+  </data>
+  <data name="TimePastYear" xml:space="preserve">
+    <value>پچھلا سال</value>
+  </data>
+  <data name="TimeToday" xml:space="preserve">
+    <value>آج</value>
+  </data>
+  <data name="TopMatch" xml:space="preserve">
+    <value>بہترین مماثلت</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>تازہ ترین</value>
+  </data>
+  <data name="UpdateChecksGitHub" xml:space="preserve">
+    <value>Valafind نئے ورژنز کے لیے GitHub چیک کرتا ہے</value>
+  </data>
+  <data name="UpdatesAutomatic" xml:space="preserve">
+    <value>اپ ڈیٹس خودکار طور پر جانچی جاتی ہیں</value>
+  </data>
+  <data name="UpdatesCannotWrite" xml:space="preserve">
+    <value>{0} {1} میں لکھ نہیں سکتا؛ اسے اسی طریقے سے اپ ڈیٹ کریں جس سے اسے انسٹال کیا گیا تھا</value>
+  </data>
+  <data name="UpdatesChecking" xml:space="preserve">
+    <value>اپ ڈیٹس کی جانچ ہو رہی ہے…</value>
+  </data>
+  <data name="UpdatesDownloading" xml:space="preserve">
+    <value>ورژن {0} ڈاؤن لوڈ ہو رہا ہے…</value>
+  </data>
+  <data name="UpdatesFailed" xml:space="preserve">
+    <value>اپ ڈیٹ نہیں ہو سکا: {0}</value>
+  </data>
+  <data name="UpdatesOff" xml:space="preserve">
+    <value>خودکار اپ ڈیٹس بند ہیں</value>
+  </data>
+  <data name="UpdatesOnlyReleaseBuilds" xml:space="preserve">
+    <value>صرف ریلیز بلڈز خود کو اپ ڈیٹ کرتے ہیں</value>
+  </data>
+  <data name="UpdatesReady" xml:space="preserve">
+    <value>ورژن {0} انسٹال ہو گیا ہے اور اگلی بار {1} کے شروع ہونے پر چلے گا</value>
+  </data>
+  <data name="UpdatesTimeout" xml:space="preserve">
+    <value>GitHub نے بروقت جواب نہیں دیا</value>
+  </data>
+  <data name="UpdatesTurnedOffByVariable" xml:space="preserve">
+    <value>اپ ڈیٹس بند ہیں ({0})</value>
+  </data>
+  <data name="UpdatesUnsupported" xml:space="preserve">
+    <value>یہ کاپی خود کو اپ ڈیٹ نہیں کر سکتی</value>
+  </data>
+  <data name="UpdatesUpToDate" xml:space="preserve">
+    <value>تازہ ترین ({0} کو جانچا گیا)</value>
+  </data>
+  <data name="WhyItMatched" xml:space="preserve">
+    <value>کیوں مماثل ہے</value>
+  </data>
+  <data name="WhyItMatchedClosestPassage" xml:space="preserve">
+    <value>کیوں مماثل ہے · قریب ترین اقتباس</value>
+  </data>
+</root>
