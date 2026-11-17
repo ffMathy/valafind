@@ -1,5 +1,7 @@
 # Valafind
 
+<p align="center"><img src="docs/screenshots/cover@2x.png" alt="Valafind: find files by what they mean, not what they're called. Semantic file search that runs entirely on your computer, shown next to its launcher answering a question"></p>
+
 **Find files by what they mean.** Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>, ask in your own words, and get the
 file, even when it is written in another language and named `scan_0042.pdf`. Everything runs on your computer.
 
