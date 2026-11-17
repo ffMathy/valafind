@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Valafind.App.Platform;
+using Valafind.App.Updates;
 using Valafind.Core.Configuration;
 
 namespace Valafind.App.ViewModels;
@@ -87,6 +88,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         SelectedDimensions = DimensionOptions.Contains(settings.EmbeddingDimensions) ? settings.EmbeddingDimensions : 256;
         ModelDirectory = settings.ModelDirectory ?? string.Empty;
         StartAtLogin = SafeIsAutostart();
+        AutomaticUpdates = settings.AutomaticUpdates;
         UpdateModelDetection();
     }
 
@@ -164,6 +166,55 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>Start Valafind when the user logs in.</summary>
     [ObservableProperty] public partial bool StartAtLogin { get; set; }
+
+    /// <summary>Download and install new releases automatically.</summary>
+    [ObservableProperty] public partial bool AutomaticUpdates { get; set; }
+
+    /// <summary>The updater, when the app has one (not in the designer or in tests).</summary>
+    public Updater? Updater
+    {
+        get => _updater;
+        init
+        {
+            _updater = value;
+            if (value is not null)
+                value.StateChanged += OnUpdaterStateChanged;
+        }
+    }
+
+    private readonly Updater? _updater;
+
+    /// <summary>What the updater is doing, or why this copy cannot update itself.</summary>
+    public string UpdateStatus => _updater?.StatusText ?? "Valafind checks GitHub for new versions";
+
+    /// <summary>Stops following the updater; called when the window closes.</summary>
+    public void Detach()
+    {
+        if (_updater is not null)
+            _updater.StateChanged -= OnUpdaterStateChanged;
+    }
+
+    private void OnUpdaterStateChanged(object? sender, EventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(UpdateStatus)));
+
+    /// <summary>Checks GitHub now; copies that cannot update themselves open the releases page instead.</summary>
+    [RelayCommand]
+    private void CheckForUpdates()
+    {
+        if (_updater is { IsSupported: true })
+        {
+            _ = _updater.CheckNowAsync();
+            return;
+        }
+        try
+        {
+            ShellIntegration.OpenUrl(Services.Installation.App.ReleasesPage);
+        }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException)
+        {
+            ErrorText = "Could not open the releases page: " + e.Message;
+        }
+    }
 
     /// <summary>Save failure message.</summary>
     [ObservableProperty] public partial string? ErrorText { get; private set; }
@@ -258,6 +309,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         _settings.PauseOnBattery = PauseOnBattery;
         _settings.EmbeddingDimensions = SelectedDimensions;
         _settings.ModelDirectory = string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim();
+        var updatesTurnedOn = AutomaticUpdates && !_settings.AutomaticUpdates;
+        _settings.AutomaticUpdates = AutomaticUpdates;
 
         try
         {
@@ -280,6 +333,9 @@ public sealed partial class SettingsViewModel : ObservableObject
             ErrorText = "Settings saved, but start at login could not be changed: " + e.Message;
         }
 
+        if (updatesTurnedOn && _updater is { IsSupported: true, State: UpdateState.Idle or UpdateState.Disabled })
+            _ = _updater.CheckNowAsync();
+
         var hotkeyChanged = !string.Equals(before.Hotkey, _settings.EffectiveHotkey, StringComparison.OrdinalIgnoreCase);
         HotkeyMessage = await _host.ApplyAsync(before, _settings).ConfigureAwait(true);
         // Stay open when the user just picked a chord that could not be registered, so they can choose another.
@@ -299,11 +355,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private static (string?, List<string>, double, double, bool, int, string?) Capture(ValafindSettings s) =>
-        (s.Hotkey, [.. s.Roots], s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory);
+    private static (string?, List<string>, double, double, bool, int, string?, bool) Capture(ValafindSettings s) =>
+        (s.Hotkey, [.. s.Roots], s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates);
 
-    private static void Restore(ValafindSettings s, (string?, List<string>, double, double, bool, int, string?) v) =>
-        (s.Hotkey, s.Roots, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory) = v;
+    private static void Restore(ValafindSettings s, (string?, List<string>, double, double, bool, int, string?, bool) v) =>
+        (s.Hotkey, s.Roots, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates) = v;
 
     /// <summary>Inert host for design-time data.</summary>
     internal sealed class DesignHost : ISettingsHost

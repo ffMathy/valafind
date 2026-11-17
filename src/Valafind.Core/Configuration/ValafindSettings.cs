@@ -35,6 +35,9 @@ public sealed class ValafindSettings
     /// <summary>Directory holding EmbeddingGemma (tokenizer.model + onnx/model*.onnx). Null = auto-locate.</summary>
     public string? ModelDirectory { get; set; }
 
+    /// <summary>Download and install new releases from GitHub automatically (the app's only network access).</summary>
+    public bool AutomaticUpdates { get; set; } = true;
+
     /// <summary>Ctrl+Alt+Space (⌃⌥Space on macOS) everywhere. Deliberately not ⌥Space (macOS 15+ refuses Option-only
     /// hotkeys), Super+Space (GNOME's input-source switch), Alt+Space (Windows window menu, KRunner) or Cmd+Space (Spotlight).</summary>
     [JsonIgnore]

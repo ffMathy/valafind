@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Valafind.App.Platform;
+using Valafind.App.Updates;
 using Valafind.App.ViewModels;
 using Valafind.App.Views;
 using Valafind.Core.Abstractions;
@@ -22,6 +23,9 @@ namespace Valafind.App.Services;
 public sealed class AppHost : IAsyncDisposable
 {
     private static readonly TimeSpan ShutdownTimeout = TimeSpan.FromSeconds(5);
+    /// <summary>The first update check waits this long, so it does not compete with starting up.</summary>
+    private static readonly TimeSpan FirstUpdateCheck = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(6);
 
     private readonly ServiceProvider _services;
     private readonly ValafindSettings _settings;
@@ -40,6 +44,9 @@ public sealed class AppHost : IAsyncDisposable
     private LauncherWindow? _launcher;
     private SettingsWindow? _settingsWindow;
     private TrayIconController? _tray;
+    private HttpClient? _updateHttp;
+    private Updater? _updater;
+    private DispatcherTimer? _restartTimer;
     private volatile IGlobalHotkeyService? _hotkeys;
     private Task<string?> _hotkeyTask = Task.FromResult<string?>(null);
 
@@ -111,7 +118,7 @@ public sealed class AppHost : IAsyncDisposable
             platformSettings.ColorValuesChanged += (_, _) => Dispatcher.UIThread.Post(() => WindowsAppTheme.Apply(Application.Current));
 
         _launcher = new LauncherWindow(_launcherVm, _launcherVm.Flavor);
-        _tray = new TrayIconController(app, ShowLauncher, TogglePause, ShowSettings, Quit);
+        _tray = new TrayIconController(app, ShowLauncher, TogglePause, ShowSettings, CheckForUpdates, Quit);
         _launcherVm.Status.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(IndexStatusViewModel.StateText) or nameof(IndexStatusViewModel.PauseMenuText))
@@ -126,6 +133,8 @@ public sealed class AppHost : IAsyncDisposable
             _instance.CommandReceived += OnInstanceCommand;
 
         _coreTask = LoadCoreAsync(_coreCts.Token);
+        ConfigureInstalledCopy();
+        StartUpdater();
 
         var background = _startupCommand == Program.BackgroundCommand;
         if (_startupCommand is "show" or "toggle" || (_firstRun && !background))
@@ -176,12 +185,90 @@ public sealed class AppHost : IAsyncDisposable
             existing.Activate();
             return;
         }
-        var vm = new SettingsViewModel(_settings, new SettingsHost(this));
+        var vm = new SettingsViewModel(_settings, new SettingsHost(this)) { Updater = _updater };
         var window = new SettingsWindow(vm);
-        window.Closed += (_, _) => _settingsWindow = null;
+        window.Closed += (_, _) =>
+        {
+            vm.Detach();
+            _settingsWindow = null;
+        };
         _settingsWindow = window;
         window.Show();
         window.Activate();
+    }
+
+    // ------------------------------------------------------------------ installation and updates
+
+    /// <summary>
+    /// The installed copy starts at login: switched on when Valafind was just installed, and pointed at the installed
+    /// executable when it was switched on for a copy elsewhere.
+    /// </summary>
+    private void ConfigureInstalledCopy()
+    {
+        if (Installation.Startup is not { IsInstalledCopy: true } installed)
+            return;
+        try
+        {
+            if (installed.FirstInstall || Autostart.IsEnabled())
+                Autostart.SetEnabled(true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or System.Security.SecurityException)
+        {
+            Log.PlatformCallFailed(_log, "set up start at login", e);
+        }
+    }
+
+    private void StartUpdater()
+    {
+        _updateHttp = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        _updateHttp.DefaultRequestHeaders.UserAgent.ParseAdd("Valafind/" + ReleaseVersion.Current());
+        _updater = new Updater(
+            Installation.App,
+            RunningApp.Current(),
+            Installation.Layout(),
+            _updateHttp,
+            new Installation.UpdateLog(_loggerFactory.CreateLogger<Updater>()),
+            () => _settings.AutomaticUpdates);
+        _updater.UpdateReady += (_, _) => Dispatcher.UIThread.Post(RestartWhenIdle);
+        _updater.Start(FirstUpdateCheck, UpdateCheckInterval);
+    }
+
+    /// <summary>Checks for an update now and shows the result in the settings window.</summary>
+    public void CheckForUpdates()
+    {
+        if (_updater is not { IsSupported: true })
+        {
+            Shell(p => ShellIntegration.OpenUrl(new Uri(p)), Installation.App.ReleasesPage.AbsoluteUri, "open the releases page");
+            return;
+        }
+        ShowSettings();
+        _ = _updater.CheckNowAsync();
+    }
+
+    /// <summary>Restarts into the new version once the launcher and the settings window are closed.</summary>
+    private void RestartWhenIdle()
+    {
+        if (_updater is not { State: UpdateState.ReadyToRestart } || _quitting)
+            return;
+        if (_launcher?.IsVisible == true || _settingsWindow is not null)
+        {
+            _restartTimer ??= new DispatcherTimer(TimeSpan.FromSeconds(15), DispatcherPriority.Background, (_, _) => RestartWhenIdle());
+            _restartTimer.Start();
+            return;
+        }
+
+        _restartTimer?.Stop();
+        try
+        {
+            // The new copy waits for this process to exit, then runs in the background like a start at login.
+            _updater.Restart([Autostart.BackgroundArgument]);
+        }
+        catch (Exception e) when (e is Win32Exception or InvalidOperationException)
+        {
+            Log.PlatformCallFailed(_log, "start the updated Valafind", e);
+            return;
+        }
+        Quit();
     }
 
     private void OnInstanceCommand(object? sender, string command) =>
@@ -579,6 +666,9 @@ public sealed class AppHost : IAsyncDisposable
             Log.PlatformCallFailed(_log, "dispose hotkey", e);
         }
         _tray?.Dispose();
+        _restartTimer?.Stop();
+        _updater?.Dispose();
+        _updateHttp?.Dispose();
         _settingsWindow?.Close();
         _launcher?.CloseForShutdown();
         _launcherVm.Dispose();

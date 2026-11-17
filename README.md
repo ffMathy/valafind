@@ -31,7 +31,8 @@ once everything is indexed, the launcher just shows a small ✓ *Up to date*.
 ## Nothing leaves your computer
 
 The [EmbeddingGemma](https://ai.google.dev/gemma/docs/embeddinggemma) model runs locally and is built into the app, so
-there is nothing else to download. Valafind makes no network requests.
+there is nothing else to download. Your files, the index and your searches never leave your computer. The only network
+request Valafind makes is checking GitHub for a newer release every few hours (see below); turn that off in Settings.
 
 ## Get it
 
@@ -44,8 +45,27 @@ a single executable with the model inside. Every merge to `main` publishes a new
 | macOS (Apple silicon / Intel) | `valafind-osx-arm64.app.zip`, `valafind-osx-x64.app.zip` (`Valafind.app`), or the bare `valafind-osx-*` executable |
 | Linux (x64 / Arm64) | `valafind-linux-x64`, `valafind-linux-arm64` (`chmod +x` it first) |
 
-Run it, and Valafind sits in the tray (menu bar on macOS) until you press the shortcut. On first start it unpacks the
-model (~310 MB) into its data folder, which takes a second or two. `SHA256SUMS.txt` in each release lists the checksums.
+Run it, and Valafind installs itself for your user (no administrator rights), sets itself to start at login and sits in
+the tray (menu bar on macOS) until you press the shortcut. On first start it unpacks the model (~310 MB) into its data
+folder, which takes a second or two. `SHA256SUMS.txt` in each release lists the checksums.
+
+<details>
+<summary><b>Installing, updating and uninstalling</b></summary>
+
+| OS | Installed to | Also |
+|---|---|---|
+| Windows | `%LOCALAPPDATA%\Programs\Valafind` | Start menu shortcut, entry in Apps and Control Panel |
+| macOS | `~/Applications/Valafind.app` | |
+| Linux | `~/.local/bin/valafind` | desktop entry `app.valafind.Valafind.desktop` in `~/.local/share/applications` |
+
+Valafind checks the latest GitHub release a minute after it starts and every six hours after that. A newer version
+is downloaded, checked against its published SHA-256 and put in place of the running one, and Valafind restarts into
+it once the launcher and Settings are closed. Turn this off in Settings, or set `VALAFIND_NO_UPDATE=1`; **Check for
+updates** in the tray menu and Settings checks right away.
+
+Start it with `--no-install` (or set `VALAFIND_NO_INSTALL=1`) to run a copy where it is. Uninstall it from Apps or
+Control Panel on Windows, or run it with `--uninstall` anywhere; your settings and index stay in the data folder.
+</details>
 
 <details>
 <summary><b>Build from source</b></summary>
@@ -60,6 +80,9 @@ dotnet publish src/Valafind.App -c Release -r linux-x64 --self-contained -p:Publ
 
 Runtimes: `win-x64`, `win-arm64`, `osx-arm64`, `osx-x64`, `linux-x64`, `linux-arm64`. For a macOS app bundle, run
 `packaging/macos/make-app-bundle.sh publish dist`.
+
+A single-file build installs itself on first start and updates to the latest release. While trying out such a build,
+start it with `--no-install` and set `VALAFIND_NO_UPDATE=1`. `dotnet run` and the tests are never installed or updated.
 
 Leave out `-p:ValafindModelDir` for a smaller build without the model. It ships the `tools/fetch-model.*` scripts next
 to the executable and, on first run, shows the command that installs the model; it notices the model without a restart.
@@ -80,8 +103,8 @@ to the executable and, on first run, shows the command that installs the model; 
 | <kbd>Esc</kbd> | Close |
 
 **Wayland:** apps can't grab keys there. On KDE Plasma and GNOME 48+, Valafind asks the desktop to register the shortcut.
-Elsewhere, bind your own shortcut to `<path-to-Valafind> --toggle`; Settings shows the exact command. For the desktop to
-recognize the app, install `packaging/linux/app.valafind.Valafind.desktop` into `~/.local/share/applications/`.
+Elsewhere, bind your own shortcut to `valafind --toggle` (`~/.local/bin/valafind`); Settings shows the exact command.
+The desktop recognizes the app through the desktop entry the installer writes.
 </details>
 
 <details>

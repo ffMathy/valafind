@@ -135,7 +135,7 @@
               <Button Grid.Column="2" Content="Browse…" Command="{Binding BrowseModelDirectoryCommand}" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding ModelDetectionText}" />
-            <TextBlock Classes="hint" Text="Runs entirely on this computer — Valafind never downloads or uploads anything." />
+            <TextBlock Classes="hint" Text="Runs entirely on this computer — your files and searches never leave it." />
           </StackPanel>
         </Border>
 
@@ -144,6 +144,13 @@
         <Border Classes="card">
           <StackPanel Spacing="10">
             <CheckBox Content="Start Valafind when I log in" IsChecked="{Binding StartAtLogin}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <StackPanel Spacing="2">
+                <CheckBox Content="Install new versions automatically" IsChecked="{Binding AutomaticUpdates}" />
+                <TextBlock Classes="hint" Text="{Binding UpdateStatus}" TextWrapping="Wrap" />
+              </StackPanel>
+              <Button Grid.Column="1" VerticalAlignment="Top" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
+            </Grid>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <TextBlock Classes="hint" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" TextWrapping="NoWrap">
                 <Run Text="Logs: " /><Run Text="{Binding LogDirectory}" />
