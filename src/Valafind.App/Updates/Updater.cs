@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Updates;
 
@@ -104,19 +105,19 @@ public sealed class Updater : IDisposable
             {
                 if (State is UpdateState.Idle or UpdateState.UpToDate or UpdateState.Disabled && !isEnabled())
                 {
-                    return "Automatic updates are off";
+                    return Strings.UpdatesOff;
                 }
 
                 return State switch
                 {
-                    UpdateState.Unsupported => unsupportedReason ?? "This copy cannot update itself",
-                    UpdateState.Disabled => "Automatic updates are off",
-                    UpdateState.Checking => "Checking for updates…",
-                    UpdateState.UpToDate => $"Up to date (checked {LastChecked?.ToLocalTime().ToString("t", CultureInfo.CurrentCulture)})",
-                    UpdateState.Downloading => $"Downloading version {PendingVersion}…",
-                    UpdateState.ReadyToRestart => $"Version {PendingVersion} is installed and starts the next time {app.Name} does",
-                    UpdateState.Failed => $"Could not update: {LastError}",
-                    _ => "Updates are checked automatically",
+                    UpdateState.Unsupported => unsupportedReason ?? Strings.UpdatesUnsupported,
+                    UpdateState.Disabled => Strings.UpdatesOff,
+                    UpdateState.Checking => Strings.UpdatesChecking,
+                    UpdateState.UpToDate => Loc.Format(Strings.UpdatesUpToDate, LastChecked?.ToLocalTime().ToString("t", CultureInfo.CurrentCulture)),
+                    UpdateState.Downloading => Loc.Format(Strings.UpdatesDownloading, PendingVersion),
+                    UpdateState.ReadyToRestart => Loc.Format(Strings.UpdatesReady, PendingVersion, app.Name),
+                    UpdateState.Failed => Loc.Format(Strings.UpdatesFailed, LastError),
+                    _ => Strings.UpdatesAutomatic,
                 };
             }
         }
@@ -216,7 +217,7 @@ public sealed class Updater : IDisposable
                                               or InvalidOperationException or OperationCanceledException or Win32Exception
                                               or System.Text.Json.JsonException or CryptographicException)
         {
-            LastError = exception is OperationCanceledException ? "GitHub did not answer in time" : exception.Message;
+            LastError = exception is OperationCanceledException ? Strings.UpdatesTimeout : exception.Message;
             log.Warning("Could not update", exception);
             SetState(UpdateState.Failed);
             return false;
@@ -346,18 +347,18 @@ public sealed class Updater : IDisposable
     {
         if (Environment.GetEnvironmentVariable(app.NoUpdateVariable) == "1")
         {
-            return $"Updates are turned off ({app.NoUpdateVariable})";
+            return Loc.Format(Strings.UpdatesTurnedOffByVariable, app.NoUpdateVariable);
         }
 
         if (!running.IsSingleFile)
         {
-            return "Only release builds update themselves";
+            return Strings.UpdatesOnlyReleaseBuilds;
         }
 
         var directory = Path.GetDirectoryName(running.ReplaceablePath);
         if (directory is null || !CanWrite(directory))
         {
-            return $"{app.Name} cannot write to {directory}; update it the way it was installed";
+            return Loc.Format(Strings.UpdatesCannotWrite, app.Name, directory);
         }
 
         return null;

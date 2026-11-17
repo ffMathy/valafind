@@ -13,6 +13,7 @@ using Valafind.App.ViewModels;
 using Valafind.App.Views;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Configuration;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Services;
 
@@ -81,6 +82,7 @@ public sealed class AppHost : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(loggerFactory);
         var firstRun = !File.Exists(AppPaths.SettingsFile);
         var settings = ValafindSettings.Load();
+        Localization.Loc.Apply(settings.Language);
         var flavor = UiFlavors.Detect();
         var services = new ServiceCollection()
             .AddSingleton(loggerFactory)
@@ -360,13 +362,13 @@ public sealed class AppHost : IAsyncDisposable
             if (hotkeys.TryRegister(chord, OnHotkeyPressed, out var error))
                 return null;
             return string.IsNullOrWhiteSpace(error)
-                ? $"Could not register {chord} — bind a system shortcut to: {GlobalHotkeyFactory.ToggleCommand}"
+                ? Loc.Format(Strings.HotkeyCouldNotRegisterBind, chord, GlobalHotkeyFactory.ToggleCommand)
                 : error;
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
             Log.HotkeyRegistrationFailed(_log, e);
-            return $"Global hotkey unavailable — bind a system shortcut to: {GlobalHotkeyFactory.ToggleCommand}";
+            return Loc.Format(Strings.HotkeyUnavailableBind, GlobalHotkeyFactory.ToggleCommand);
         }
     }
 
@@ -413,7 +415,7 @@ public sealed class AppHost : IAsyncDisposable
 
         if (modelDir is null && unpackError is not null)
         {
-            _launcherVm.SetModelFailed($"Could not unpack the built-in model to {CoreServicesFactory.DefaultModelDirectory}: {unpackError.Message}");
+            _launcherVm.SetModelFailed(Loc.Format(Strings.ModelUnpackFailed, CoreServicesFactory.DefaultModelDirectory, unpackError.Message));
             _launcherVm.UpdateStatus(IndexStatus.Initial with { State = IndexingState.ModelUnavailable });
             if (!ct.IsCancellationRequested && !_quitting)
                 _modelWatcher.Start(baseline: null);

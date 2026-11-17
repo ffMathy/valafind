@@ -4,6 +4,7 @@
      VfBusyBarBrush, VfErrorBrush (plus the common VfText/Subtle/Divider/Track/Accent brushes). -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="using:Valafind.App.Localization"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:Valafind.App.ViewModels"
@@ -48,7 +49,7 @@
     <DockPanel Margin="4,0">
       <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
                  Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />
-      <TextBlock Classes="indexTitle" Text="Index" />
+      <TextBlock Classes="indexTitle" Text="{x:Static l:Strings.IndexTitle}" />
     </DockPanel>
 
     <Border x:Name="Panel" Background="{DynamicResource VfIndexPanelBrush}" BorderBrush="{DynamicResource VfIndexPanelBorderBrush}"
@@ -60,13 +61,13 @@
             <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="14" Height="14" StrokeThickness="2.6"
                           Foreground="{DynamicResource VfGoodBrush}" VerticalAlignment="Center"
                           IsVisible="{Binding Status.IsFrequentComplete}" />
-            <TextBlock Text="Phase 1 · Frequently used" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"
+            <TextBlock Text="{x:Static l:Strings.IndexPhase1}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis" />
           </StackPanel>
           <c:MeterBar Height="6" Radius="3" Value="{Binding Status.FrequentFraction}" Track="{DynamicResource VfTrackBrush}"
                       Fill="{DynamicResource VfGoodBarBrush}" />
           <TextBlock Classes="num" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}">
-            <Run Text="{Binding Status.FrequentText}" /><Run Text=" files" />
+            <Run Text="{Binding Status.FrequentFilesText}" />
           </TextBlock>
         </StackPanel>
 
@@ -76,7 +77,7 @@
             <DockPanel>
               <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding Status.AllPercentText}" FontSize="12.5" FontWeight="SemiBold" />
               <TextBlock FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding IndexScopeDetail}">
-                <Run Text="Phase 2 · " /><Run Text="{Binding IndexScopeText}" />
+                <Run Text="{Binding Phase2Text}" />
               </TextBlock>
             </DockPanel>
             <c:MeterBar Height="6" Radius="3" Value="{Binding Status.AllFraction}" Track="{DynamicResource VfTrackBrush}"
@@ -103,11 +104,11 @@
             </DockPanel>
             <Grid ColumnDefinitions="30,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
                   TextElement.FontSize="11.5" TextElement.Foreground="{DynamicResource VfSubtleBrush}">
-              <TextBlock Text="CPU" VerticalAlignment="Center" />
+              <TextBlock Text="{x:Static l:Strings.IndexCpu}" VerticalAlignment="Center" />
               <c:MeterBar Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Height="4" Radius="2"
                           VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
               <TextBlock Grid.Column="2" Classes="num" Text="{Binding Status.CpuText}" HorizontalAlignment="Right" />
-              <TextBlock Grid.Row="1" Text="Disk" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="1" Text="{x:Static l:Strings.IndexDisk}" VerticalAlignment="Center" />
               <c:MeterBar Grid.Row="1" Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Height="4"
                           Radius="2" VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
               <TextBlock Grid.Row="1" Grid.Column="2" Classes="num" Text="{Binding Status.DiskText}" HorizontalAlignment="Right" />

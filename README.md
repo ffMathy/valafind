@@ -123,6 +123,17 @@ index fully. That is why your everyday files go first.
 </details>
 
 <details>
+<summary><b>Languages</b></summary>
+
+Valafind speaks 20 languages: English, Chinese (Simplified), Hindi, Spanish, Arabic, French, Bengali, Portuguese,
+Russian, Indonesian, Urdu, German, Japanese, Marathi, Vietnamese, Telugu, Hausa, Turkish, Tamil and Korean. It follows
+your operating system's language; pick another one under **Settings → General → Language** (applies at the next start).
+Arabic and Urdu use a right-to-left layout.
+
+Searching works across languages regardless of the UI language: EmbeddingGemma matches meaning, not words.
+</details>
+
+<details>
 <summary><b>Where your data lives</b></summary>
 
 | OS | Folder |
@@ -155,6 +166,8 @@ VALAFIND_TEST_MODEL_DIR=~/.local/share/valafind/models/embeddinggemma-300m dotne
 ```
 
 - `VALAFIND_UI=windows|mac|linux` switches the launcher design.
+- UI text lives in `src/Valafind.App/Localization/Strings.resx` (English) and `Strings.<culture>.resx` (translations).
+  Add a text to every file; `LocalizationTests` fails when a translation misses a text or a `{0}` placeholder.
 - `VALAFIND_SCREENSHOT_DIR=<dir>` makes `tests/Valafind.App.Tests` render the launchers headlessly.
 - The code is in `src/Valafind.Core`: `Embedding`, `Extraction`, `Storage`, `Search`, `Indexing` and `Platform`. The
   Avalonia app is in `src/Valafind.App`; `src/Valafind.Model` embeds the model files when built with

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Valafind.App.Platform;
 using Valafind.App.Updates;
 using Valafind.Core.Configuration;
+using Valafind.App.Localization;
 
 namespace Valafind.App.ViewModels;
 
@@ -58,6 +59,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ValafindSettings _settings;
     private readonly ISettingsHost _host;
     private readonly int _originalDimensions;
+    private readonly string _originalLanguage;
     private readonly bool _macOS;
     private readonly string _home;
 
@@ -89,6 +91,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         ModelDirectory = settings.ModelDirectory ?? string.Empty;
         StartAtLogin = SafeIsAutostart();
         AutomaticUpdates = settings.AutomaticUpdates;
+        _originalLanguage = settings.Language ?? string.Empty;
+        SelectedLanguage = LanguageOptions.FirstOrDefault(l => string.Equals(l.Code, settings.Language, StringComparison.OrdinalIgnoreCase))
+            ?? LanguageOptions[0];
         UpdateModelDetection();
     }
 
@@ -105,7 +110,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string? HotkeyMessage { get; set; }
 
     /// <summary>Platform default chord, shown as a hint.</summary>
-    public static string DefaultHotkeyText => "Default: " + ValafindSettings.DefaultHotkey;
+    public static string DefaultHotkeyText => Loc.Format(Strings.SettingsDefaultHotkey, ValafindSettings.DefaultHotkey);
 
     /// <summary>Indexed folders; empty means the home folder.</summary>
     public ObservableCollection<string> Roots { get; }
@@ -114,13 +119,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     public bool HasNoRoots => Roots.Count == 0;
 
     /// <summary>Empty-state row: "Your home folder (/home/me)".</summary>
-    public string RootsEmptyText => "Your home folder (" + _home + ")";
+    public string RootsEmptyText => Loc.Format(Strings.SettingsHomeFolderRow, _home);
 
     /// <summary>Explains what is (not) covered and how to add more.</summary>
-    public static string RootsHint =>
-        "Only the folders listed here are indexed — by default your home folder. Add other drives, external disks or "
-        + "network folders with “Add folder…”. Adding a folder replaces the default, so add your home folder too if you "
-        + "still want it.";
+    public static string RootsHint => Strings.SettingsRootsHint;
 
     /// <summary>Where the log files are written.</summary>
     public string LogDirectory => _host.LogDirectory;
@@ -170,6 +172,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Download and install new releases automatically.</summary>
     [ObservableProperty] public partial bool AutomaticUpdates { get; set; }
 
+    /// <summary>Language choices: the system's language first (empty code), then every shipped translation.</summary>
+    public IReadOnlyList<UiLanguage> LanguageOptions { get; } = [new(string.Empty, Strings.SettingsLanguageSystem), .. Loc.Languages];
+
+    /// <summary>Chosen UI language.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowLanguageRestartHint))]
+    public partial UiLanguage SelectedLanguage { get; set; }
+
+    /// <summary>True when the chosen language differs from the one in use (it applies at the next start).</summary>
+    public bool ShowLanguageRestartHint => !string.Equals(SelectedLanguage?.Code ?? string.Empty, _originalLanguage, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>The updater, when the app has one (not in the designer or in tests).</summary>
     public Updater? Updater
     {
@@ -185,7 +198,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly Updater? _updater;
 
     /// <summary>What the updater is doing, or why this copy cannot update itself.</summary>
-    public string UpdateStatus => _updater?.StatusText ?? "Valafind checks GitHub for new versions";
+    public string UpdateStatus => _updater?.StatusText ?? Strings.UpdateChecksGitHub;
 
     /// <summary>Stops following the updater; called when the window closes.</summary>
     public void Detach()
@@ -212,7 +225,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
         catch (Exception e) when (e is InvalidOperationException or ArgumentException)
         {
-            ErrorText = "Could not open the releases page: " + e.Message;
+            ErrorText = Loc.Format(Strings.ErrorOpenReleasesPage, e.Message);
         }
     }
 
@@ -235,9 +248,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         IsModelDetected = found is not null;
         var custom = string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim();
         ModelDetectionText = found is not null
-            ? "Detected: " + found
-            : "Not found — install it by running " + ModelInstallHelp.FetchCommand(OperatingSystem.IsWindows(), _host.AppDirectory, custom)
-              + " (installs into " + (custom ?? _host.DefaultModelDirectory) + "). Valafind picks it up automatically.";
+            ? Loc.Format(Strings.SettingsModelDetected, found)
+            : Loc.Format(Strings.SettingsModelNotFound, ModelInstallHelp.FetchCommand(OperatingSystem.IsWindows(), _host.AppDirectory, custom), custom ?? _host.DefaultModelDirectory);
     }
 
     [RelayCommand]
@@ -245,7 +257,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (PickFolderAsync is null)
             return;
-        var path = await PickFolderAsync("Choose a folder to index").ConfigureAwait(true);
+        var path = await PickFolderAsync(Strings.PickFolderToIndex).ConfigureAwait(true);
         if (!string.IsNullOrWhiteSpace(path) && !Roots.Contains(path, StringComparer.Ordinal))
             Roots.Add(path);
     }
@@ -262,7 +274,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (PickFolderAsync is null)
             return;
-        var path = await PickFolderAsync("Choose the EmbeddingGemma model folder").ConfigureAwait(true);
+        var path = await PickFolderAsync(Strings.PickModelFolder).ConfigureAwait(true);
         if (!string.IsNullOrWhiteSpace(path))
             ModelDirectory = path;
     }
@@ -311,6 +323,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _settings.ModelDirectory = string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim();
         var updatesTurnedOn = AutomaticUpdates && !_settings.AutomaticUpdates;
         _settings.AutomaticUpdates = AutomaticUpdates;
+        _settings.Language = string.IsNullOrEmpty(SelectedLanguage?.Code) ? null : SelectedLanguage.Code;
 
         try
         {
@@ -319,7 +332,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Restore(_settings, previous);
-            ErrorText = "Could not save settings: " + e.Message;
+            ErrorText = Loc.Format(Strings.ErrorSaveSettings, e.Message);
             return;
         }
 
@@ -330,7 +343,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or PlatformNotSupportedException)
         {
-            ErrorText = "Settings saved, but start at login could not be changed: " + e.Message;
+            ErrorText = Loc.Format(Strings.ErrorAutostart, e.Message);
         }
 
         if (updatesTurnedOn && _updater is { IsSupported: true, State: UpdateState.Idle or UpdateState.Disabled })
@@ -355,11 +368,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private static (string?, List<string>, double, double, bool, int, string?, bool) Capture(ValafindSettings s) =>
-        (s.Hotkey, [.. s.Roots], s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates);
+    private static (string?, List<string>, double, double, bool, int, string?, bool, string?) Capture(ValafindSettings s) =>
+        (s.Hotkey, [.. s.Roots], s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates, s.Language);
 
-    private static void Restore(ValafindSettings s, (string?, List<string>, double, double, bool, int, string?, bool) v) =>
-        (s.Hotkey, s.Roots, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates) = v;
+    private static void Restore(ValafindSettings s, (string?, List<string>, double, double, bool, int, string?, bool, string?) v) =>
+        (s.Hotkey, s.Roots, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates, s.Language) = v;
 
     /// <summary>Inert host for design-time data.</summary>
     internal sealed class DesignHost : ISettingsHost

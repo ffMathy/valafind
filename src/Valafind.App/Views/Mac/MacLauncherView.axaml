@@ -1,6 +1,7 @@
 <!-- macOS A · Floating Bar (Spotlight-like with preview pane). Mockup: Mac-Spotlight.dc.html -->
 <views:LauncherViewBase xmlns="https://github.com/avaloniaui"
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="using:Valafind.App.Localization"
                         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                         xmlns:vm="using:Valafind.App.ViewModels"
@@ -198,11 +199,11 @@
         <c:StrokeIcon Data="{StaticResource VfIconSearch}" Width="22" Height="22" StrokeThickness="2"
                       Foreground="{DynamicResource MacSearchIconBrush}" VerticalAlignment="Center" />
         <TextBox x:Name="SearchBox" Grid.Column="1" Classes="bare" FontSize="22" LetterSpacing="-0.2"
-                 Text="{Binding Query}" PlaceholderText="Describe what you are looking for"
-                 AutomationProperties.Name="Search files by meaning" />
+                 Text="{Binding Query}" PlaceholderText="{x:Static l:Strings.SearchPlaceholder}"
+                 AutomationProperties.Name="{x:Static l:Strings.SearchByMeaning}" />
         <Button Grid.Column="2" Classes="vf" Width="20" Height="20" CornerRadius="10" Background="{DynamicResource MacClearBrush}"
                 Command="{Binding ClearQueryCommand}" IsVisible="{Binding HasQuery}" VerticalAlignment="Center"
-                AutomationProperties.Name="Clear search">
+                AutomationProperties.Name="{x:Static l:Strings.ClearSearch}">
           <c:StrokeIcon Data="{StaticResource VfIconClose}" Width="10" Height="10" StrokeThickness="3.6" Foreground="White" />
         </Button>
       </Grid>
@@ -283,9 +284,9 @@
               <DockPanel DataContext="{Binding SelectedResult}" x:DataType="vm:ResultItemViewModel"
                          IsVisible="{Binding $parent[views:LauncherViewBase].((vm:LauncherViewModel)DataContext).HasSelection}">
                 <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
-                  <Button Classes="vf action primary" Content="Open" Command="{Binding Launcher.OpenSelectedCommand}" />
-                  <Button Classes="vf action" Content="Show in Finder" Command="{Binding Launcher.RevealSelectedCommand}" />
-                  <Button Classes="vf action" Content="Quick Look" Command="{Binding Launcher.QuickLookSelectedCommand}" />
+                  <Button Classes="vf action primary" Content="{x:Static l:Strings.Open}" Command="{Binding Launcher.OpenSelectedCommand}" />
+                  <Button Classes="vf action" Content="{x:Static l:Strings.ShowInFinder}" Command="{Binding Launcher.RevealSelectedCommand}" />
+                  <Button Classes="vf action" Content="{x:Static l:Strings.QuickLook}" Command="{Binding Launcher.QuickLookSelectedCommand}" />
                 </StackPanel>
                 <StackPanel Spacing="12">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
@@ -309,7 +310,7 @@
                   </Grid>
 
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                    <TextBlock Text="Semantic match" FontSize="11" Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{x:Static l:Strings.SemanticMatch}" FontSize="11" Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
                     <c:MeterBar Grid.Column="1" Height="5" Value="{Binding ScoreFraction}" Radius="2.5" VerticalAlignment="Center"
                                 Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
                     <TextBlock Grid.Column="2" Classes="num" Text="{Binding ScoreText}" FontSize="11" FontWeight="SemiBold"
@@ -319,7 +320,7 @@
                   <Border Background="{DynamicResource MacPaperBrush}" CornerRadius="10" BoxShadow="0 0 0 0.5 #1F000000"
                           Padding="14,12" IsVisible="{Binding HasSnippet}">
                     <StackPanel Spacing="6">
-                      <TextBlock Text="Why it matched" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VfSubtleBrush}" />
+                      <TextBlock Text="{x:Static l:Strings.WhyItMatched}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VfSubtleBrush}" />
                       <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}"
                                               FontSize="12.5" LineHeight="19.4" TextWrapping="Wrap" MaxLines="6"
                                               TextTrimming="CharacterEllipsis"
@@ -346,9 +347,9 @@
               TextElement.FontSize="11" TextElement.Foreground="{DynamicResource VfSubtleBrush}">
         <DockPanel>
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
-            <TextBlock VerticalAlignment="Center"><Run Text="↑↓" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" Navigate" /></TextBlock>
-            <TextBlock VerticalAlignment="Center"><Run Text="↵" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" Open" /></TextBlock>
-            <TextBlock VerticalAlignment="Center"><Run Text="⌘↵" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" Reveal" /></TextBlock>
+            <TextBlock VerticalAlignment="Center"><Run Text="↑↓" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" " /><Run Text="{x:Static l:Strings.KeyHintNavigate}" /></TextBlock>
+            <TextBlock VerticalAlignment="Center"><Run Text="↵" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" " /><Run Text="{x:Static l:Strings.Open}" /></TextBlock>
+            <TextBlock VerticalAlignment="Center"><Run Text="⌘↵" FontWeight="SemiBold" Foreground="{DynamicResource VfTextBrush}" /><Run Text=" " /><Run Text="{x:Static l:Strings.KeyHintReveal}" /></TextBlock>
             <Border Padding="6,1" CornerRadius="4" Background="{DynamicResource MacButtonBrush}" VerticalAlignment="Center"
                     IsVisible="{Binding !HasHotkeyError}">
               <TextBlock Text="{Binding HotkeyLabel}" FontWeight="Medium" Foreground="{DynamicResource VfTextBrush}" />
@@ -358,7 +359,7 @@
                       IsVisible="{Binding Status.IsUpToDate}" ToolTip.Tip="{Binding Status.UpToDateDetail}">
             <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="13" Height="13" StrokeThickness="2.4"
                           Foreground="{DynamicResource VfGoodBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="Up to date" VerticalAlignment="Center" />
+            <TextBlock Text="{x:Static l:Strings.UpToDate}" VerticalAlignment="Center" />
           </StackPanel>
         </DockPanel>
       </Border>

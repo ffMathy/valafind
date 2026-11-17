@@ -35,6 +35,9 @@ public sealed class ValafindSettings
     /// <summary>Directory holding EmbeddingGemma (tokenizer.model + onnx/model*.onnx). Null = auto-locate.</summary>
     public string? ModelDirectory { get; set; }
 
+    /// <summary>UI language as a culture name ("de", "zh-Hans", …). Null = the operating system's language.</summary>
+    public string? Language { get; set; }
+
     /// <summary>Download and install new releases from GitHub automatically (the app's only network access).</summary>
     public bool AutomaticUpdates { get; set; } = true;
 

@@ -30,6 +30,17 @@
     <!-- The icon of the Linux desktop entry the installer writes, readable before Avalonia starts. -->
     <EmbeddedResource Include="Assets\valafind.png" LogicalName="Valafind.Application.png" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- UI text. Strings.resx is the English source; Strings.<culture>.resx hold the translations (satellite
+         assemblies, bundled into single-file publishes). The Strings class is generated at build time. -->
+    <EmbeddedResource Update="Localization\Strings.resx">
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>Valafind.App.Localization</StronglyTypedNamespace>
+      <StronglyTypedClassName>Strings</StronglyTypedClassName>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Strings.Designer.cs</StronglyTypedFileName>
+      <PublicClass>true</PublicClass>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup Condition="'$(ValafindModelDir)' == ''">
     <!-- Builds without a bundled model (ValafindModelDir unset, see src/Valafind.Model) need a one-time download.
          The model download scripts ship next to the executable (<app>/tools/…), so the "model not installed"

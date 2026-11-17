@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Services;
 
@@ -17,15 +18,15 @@ internal sealed class TrayIconController : IDisposable
     public TrayIconController(Application app, Action open, Action togglePause, Action settings, Action checkForUpdates, Action quit)
     {
         _app = app;
-        _open = new NativeMenuItem("Open Valafind");
+        _open = new NativeMenuItem(Strings.OpenValafind);
         _open.Click += (_, _) => open();
-        _pause = new NativeMenuItem("Pause indexing");
+        _pause = new NativeMenuItem(Strings.PauseIndexing);
         _pause.Click += (_, _) => togglePause();
-        var settingsItem = new NativeMenuItem("Settings…");
+        var settingsItem = new NativeMenuItem(Strings.SettingsMenu);
         settingsItem.Click += (_, _) => settings();
-        var updatesItem = new NativeMenuItem("Check for updates…");
+        var updatesItem = new NativeMenuItem(Strings.CheckForUpdatesMenu);
         updatesItem.Click += (_, _) => checkForUpdates();
-        var quitItem = new NativeMenuItem("Quit Valafind");
+        var quitItem = new NativeMenuItem(Strings.QuitValafind);
         quitItem.Click += (_, _) => quit();
 
         var menu = new NativeMenu();
@@ -64,7 +65,7 @@ internal sealed class TrayIconController : IDisposable
     public void SetHotkey(string chord, bool registered)
     {
         _open.Gesture = null;
-        _open.Header = "Open Valafind";
+        _open.Header = Strings.OpenValafind;
         if (!registered)
             return;
         try
@@ -75,7 +76,7 @@ internal sealed class TrayIconController : IDisposable
         }
         catch (ArgumentException)
         {
-            _open.Header = "Open Valafind (" + chord + ")";
+            _open.Header = Loc.Format(Strings.OpenValafindWithHotkey, chord);
         }
     }
 

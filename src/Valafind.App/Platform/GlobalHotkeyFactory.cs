@@ -1,3 +1,4 @@
+using Valafind.App.Localization;
 
 namespace Valafind.App.Platform;
 
@@ -7,7 +8,7 @@ public static class GlobalHotkeyFactory
     /// <summary>Message shown when a Wayland session offers no way to register a global shortcut. Names the real
     /// executable: nothing installs a "valafind" command on PATH, so a bare name would fail silently.</summary>
     internal static string WaylandUnavailableMessage =>
-        "Global hotkeys are not available on Wayland. Bind a shortcut in your desktop settings to run: " + ToggleCommand;
+        Loc.Format(Strings.HotkeyWaylandUnavailable, ToggleCommand);
 
     /// <summary>The command that toggles the running launcher, e.g. <c>/opt/Valafind/Valafind --toggle</c>.</summary>
     internal static string ToggleCommand => BuildToggleCommand(Environment.ProcessPath, AppExecutable.EntryAssemblyPath);
@@ -45,11 +46,11 @@ public static class GlobalHotkeyFactory
                 LinuxSession.X11 => new X11HotkeyService(),
                 LinuxSession.Wayland => new PortalHotkeyService(),
                 _ => new UnsupportedHotkeyService(
-                    "Global hotkeys need a graphical session (neither DISPLAY nor WAYLAND_DISPLAY is set)."),
+                    Strings.HotkeyNoGraphicalSession),
             };
         }
 
-        return new UnsupportedHotkeyService("Global hotkeys are not supported on this operating system.");
+        return new UnsupportedHotkeyService(Strings.HotkeyUnsupportedOs);
     }
 
     internal enum LinuxSession
@@ -119,5 +120,5 @@ internal static class HotkeyDispatch
     }
 
     public static string InUseMessage(HotkeyChord chord) =>
-        $"{chord.DisplayString()} is already in use by another app. Choose a different shortcut.";
+        Loc.Format(Strings.HotkeyInUse, chord.DisplayString());
 }

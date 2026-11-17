@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Valafind.App.Localization;
 
 namespace Valafind.App.Platform;
 
@@ -325,11 +326,11 @@ internal sealed unsafe class X11HotkeyService : IGlobalHotkeyService
         var keysymName = HotkeyKeyMaps.XKeysymName(chord.Key);
         var keysym = keysymName is null ? 0 : Xlib.XStringToKeysym(keysymName);
         if (keysym == 0)
-            return $"The key '{chord.Key}' cannot be used as a global shortcut on X11.";
+            return Loc.Format(Strings.HotkeyKeyNotUsableX11, chord.Key);
 
         int keycode = Xlib.XKeysymToKeycode(_display, keysym);
         if (keycode == 0)
-            return $"The key '{chord.Key}' is not present on the current keyboard layout.";
+            return Loc.Format(Strings.HotkeyKeyNotOnLayout, chord.Key);
 
         uint modifiers = 0;
         if (chord.Ctrl) modifiers |= Xlib.ControlMask;

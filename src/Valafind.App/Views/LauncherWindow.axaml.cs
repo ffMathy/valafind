@@ -38,6 +38,7 @@ public partial class LauncherWindow : Window
     {
         _vm = vm ?? throw new ArgumentNullException(nameof(vm));
         InitializeComponent();
+        FlowDirection = Localization.Loc.FlowDirection;
         DataContext = vm;
         _view = CreateView(flavor);
         Content = _view;
