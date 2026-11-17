@@ -294,6 +294,29 @@ public sealed class SqliteIndexStoreTests : IDisposable
     }
 
     [Fact]
+    public void Counts_files_by_kind_live_and_after_reopening()
+    {
+        using (var store = _db.OpenStore())
+        {
+            Assert.Empty(store.GetFileCountsByKind());
+            store.UpsertFile(File(P("/k/a.pdf"), FileKind.Pdf), [Chunk(0, Vectors.Axis(Dims, 0))]);
+            store.UpsertFile(File(P("/k/b.pdf"), FileKind.Pdf), [Chunk(0, Vectors.Axis(Dims, 0))]);
+            store.UpsertFile(File(P("/k/c.cs"), FileKind.Code), [Chunk(0, Vectors.Axis(Dims, 0))]);
+            Assert.Equal(new Dictionary<FileKind, long> { [FileKind.Pdf] = 2, [FileKind.Code] = 1 }, store.GetFileCountsByKind());
+
+            // Re-indexing a file under another kind moves it; removing drops it.
+            store.UpsertFile(File(P("/k/b.pdf"), FileKind.Document), [Chunk(0, Vectors.Axis(Dims, 0))]);
+            store.RemoveFile(P("/k/c.cs"));
+            Assert.Equal(new Dictionary<FileKind, long> { [FileKind.Pdf] = 1, [FileKind.Document] = 1 }, store.GetFileCountsByKind());
+        }
+
+        using var reopened = _db.OpenStore();
+        Assert.Equal(new Dictionary<FileKind, long> { [FileKind.Pdf] = 1, [FileKind.Document] = 1 }, reopened.GetFileCountsByKind());
+        reopened.RemoveUnder(P("/k"));
+        Assert.Empty(reopened.GetFileCountsByKind());
+    }
+
+    [Fact]
     public void Meta_round_trips_and_overwrites()
     {
         using var store = _db.OpenStore();
