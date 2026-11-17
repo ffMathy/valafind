@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 モデルフォルダを選択</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU が {0} を超えるか、ディスクの使用率が高いと自動的に一時停止します</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU とディスクがアイドル状態になると自動的に再開します</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind を表示／非表示</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>一致した理由 · 最も近い箇所</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPU を {0}、ディスクを {1} 前後に保つよう速度を自動調整します</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>電源に接続すると再開します</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>目標 {0}</value>
   </data>
 </root>

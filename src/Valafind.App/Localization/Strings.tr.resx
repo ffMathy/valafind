@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 model klasörünü seçin</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU {0} değerini aştığında veya disk etkinliği yüksek olduğunda otomatik olarak duraklar</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU ve disk boşta olduğunda otomatik olarak sürer</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind'ı göster veya gizle</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>NEDEN EŞLEŞTİ · EN YAKIN BÖLÜM</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPU'yu {0}, diski {1} civarında tutmak için hızlanır veya yavaşlar</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>Bilgisayar prize takıldığında devam eder</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>Hedef {0}</value>
   </data>
 </root>

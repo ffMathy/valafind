@@ -108,7 +108,7 @@ public class InotifyTreeWatcherTests
             {
                 Debounce = TimeSpan.FromMilliseconds(100),
                 IdlePoll = TimeSpan.FromMilliseconds(200),
-                Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+                Throttle = new ThrottleOptions(30, 25, true, TimeSpan.FromMilliseconds(25)),
             });
         await coordinator.StartAsync(TestContext.Current.CancellationToken);
         await WaitFor(() => coordinator.Status.State == IndexingState.UpToDate, "up to date");

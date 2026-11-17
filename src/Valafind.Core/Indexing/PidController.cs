@@ -82,7 +82,18 @@ public sealed class PidController
         return Output;
     }
 
-    /// <summary>Forgets history (derivative and previous measurement) and restarts from <paramref name="output"/>.</summary>
+    /// <summary>Tracking anti-windup for a controller whose output is overridden by a lower one (several
+    /// controllers, the lowest output wins): pulls the output and the integral down to <paramref name="output"/>, so
+    /// once this controller is in charge again it starts from what was really applied.</summary>
+    public void TrackDown(double output)
+    {
+        if (Output <= output)
+            return;
+        _integral = Math.Clamp(_integral - (Output - output), _gains.OutputMin, _gains.OutputMax);
+        Output = Math.Clamp(output, _gains.OutputMin, _gains.OutputMax);
+    }
+
+        /// <summary>Forgets history (derivative and previous measurement) and restarts from <paramref name="output"/>.</summary>
     public void Reset(double output)
     {
         _integral = Math.Clamp(output, _gains.OutputMin, _gains.OutputMax);

@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 ماڈل فولڈر منتخب کریں</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU کے {0} سے بڑھنے یا ڈسک کی سرگرمی زیادہ ہونے پر خود بخود رک جاتی ہے</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU اور ڈسک فارغ ہونے پر خود بخود دوبارہ شروع ہوتی ہے</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind دکھائیں یا چھپائیں</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>کیوں مماثل ہے · قریب ترین اقتباس</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPU کو {0} اور ڈسک کو {1} کے قریب رکھنے کے لیے رفتار بڑھاتا یا گھٹاتا ہے</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>کمپیوٹر کو بجلی سے جوڑنے پر دوبارہ شروع ہوتا ہے</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>ہدف {0}</value>
   </data>
 </root>
