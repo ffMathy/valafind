@@ -105,6 +105,10 @@ public sealed class AppHost : IAsyncDisposable
         desktop.ShutdownRequested += OnShutdownRequested;
 
         TryPlatform(MacActivation.UseAccessoryActivationPolicy, "switch to accessory activation policy");
+        WindowsAppTheme.Apply(app);
+        // Avalonia raises this when Windows broadcasts a colour/theme change; re-read the authoritative app mode then.
+        if (app.PlatformSettings is { } platformSettings)
+            platformSettings.ColorValuesChanged += (_, _) => Dispatcher.UIThread.Post(() => WindowsAppTheme.Apply(Application.Current));
 
         _launcher = new LauncherWindow(_launcherVm, _launcherVm.Flavor);
         _tray = new TrayIconController(app, ShowLauncher, TogglePause, ShowSettings, Quit);
@@ -152,6 +156,7 @@ public sealed class AppHost : IAsyncDisposable
         if (_launcher is null || _quitting)
             return;
         TryPlatform(MacActivation.ActivateIgnoringOtherApps, "activate the app");
+        WindowsAppTheme.Apply(Application.Current); // Cheap; catches an app-mode switch made while we were hidden.
         _launcher.ShowLauncher();
         // Re-opening Valafind is the natural thing to try after installing the model: look right away.
         if (_launcherVm.ModelState is ModelState.Missing or ModelState.Failed)
@@ -165,6 +170,7 @@ public sealed class AppHost : IAsyncDisposable
             return;
         _launcher?.HideLauncher();
         TryPlatform(MacActivation.ActivateIgnoringOtherApps, "activate the app");
+        WindowsAppTheme.Apply(Application.Current);
         if (_settingsWindow is { } existing)
         {
             existing.Activate();

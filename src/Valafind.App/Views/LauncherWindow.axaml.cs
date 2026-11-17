@@ -40,8 +40,10 @@ public partial class LauncherWindow : Window
         _view = CreateView(flavor);
         Content = _view;
 
+        // Windows: Mica first, the material of Settings and other native Windows 11 windows (light/dark follows the
+        // app theme); acrylic where Mica is unavailable (Windows 10).
         TransparencyLevelHint = OperatingSystem.IsWindows()
-            ? [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Mica, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent]
+            ? [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent]
             : [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent];
         try
         {
@@ -135,9 +137,10 @@ public partial class LauncherWindow : Window
             level = WindowTransparencyLevel.None;
         var surface = level == WindowTransparencyLevel.None ? LauncherSurface.Opaque
             : level == WindowTransparencyLevel.Transparent ? LauncherSurface.Floating
+            : level == WindowTransparencyLevel.Mica ? LauncherSurface.Mica
             : LauncherSurface.Blurred;
         _view.SetSurface(surface);
-        if (surface == LauncherSurface.Blurred && OperatingSystem.IsWindows() && TryGetPlatformHandle() is { } handle)
+        if (surface is LauncherSurface.Blurred or LauncherSurface.Mica && OperatingSystem.IsWindows() && TryGetPlatformHandle() is { } handle)
             WindowsChrome.TryRoundCorners(handle.Handle);
     }
 

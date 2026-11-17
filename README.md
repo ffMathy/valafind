@@ -17,8 +17,8 @@ file, even when it is written in another language and named `scan_0042.pdf`. Eve
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/linux-launcher.png" width="560" alt="Linux GNOME-style dialog with results and the index status">
-  <br><sub>Linux (GNOME style).</sub>
+  <img src="docs/screenshots/linux-launcher.png" width="860" alt="Linux GNOME-style dialog: results, details of the selected file and the index status">
+  <br><sub>Linux (GNOME style): the selected file's details on the right, index progress below.</sub>
 </p>
 
 ## Stays out of your way

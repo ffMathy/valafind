@@ -44,6 +44,10 @@ public sealed partial class ResultItemViewModel : ObservableObject
     /// <summary>File name with extension.</summary>
     public string FileName { get; }
 
+    /// <summary><see cref="FileName"/> with invisible break opportunities after '_', '-' and '.', so a long name
+    /// wraps at natural points in the details panes ("…_2024." / "pdf") instead of mid-word.</summary>
+    public string WrappableFileName => DisplayFormat.WithBreakOpportunities(FileName);
+
     /// <summary>Containing directory, unabbreviated.</summary>
     public string FullDirectory { get; }
 

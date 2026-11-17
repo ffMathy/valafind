@@ -1,0 +1,118 @@
+<!-- Index progress, shared by all launchers: Phase 1 (frequently used), Phase 2 (all files) and the live state with
+     CPU / disk pressure. Colours and shape come from the hosting view's resources:
+     VfIndexPanelBrush, VfIndexPanelBorderBrush, VfIndexPanelRadius, VfGoodBrush, VfGoodBarBrush, VfBusyBrush,
+     VfBusyBarBrush, VfErrorBrush (plus the common VfText/Subtle/Divider/Track/Accent brushes). -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Valafind.App.ViewModels"
+             xmlns:c="using:Valafind.App.Controls"
+             xmlns:common="using:Valafind.App.Views.Common"
+             mc:Ignorable="d" d:DesignWidth="900"
+             x:Class="Valafind.App.Views.Common.IndexPanelView"
+             x:DataType="vm:LauncherViewModel">
+  <Design.DataContext>
+    <x:Static Member="vm:DesignData.Windows" />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.indexTitle">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tone">
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tone.busy, TextBlock.tone.paused">
+      <Setter Property="Foreground" Value="{DynamicResource VfBusyBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tone.good">
+      <Setter Property="Foreground" Value="{DynamicResource VfGoodBrush}" />
+    </Style>
+    <Style Selector="TextBlock.tone.error">
+      <Setter Property="Foreground" Value="{DynamicResource VfErrorBrush}" />
+    </Style>
+    <Style Selector="c|MeterBar.pressure">
+      <Setter Property="Fill" Value="{DynamicResource VfAccentBrush}" />
+    </Style>
+    <Style Selector="c|MeterBar.pressure.high">
+      <Setter Property="Fill" Value="{DynamicResource VfBusyBarBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="8">
+    <DockPanel Margin="4,0">
+      <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
+                 Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />
+      <TextBlock Classes="indexTitle" Text="Index" />
+    </DockPanel>
+
+    <Border x:Name="Panel" Background="{DynamicResource VfIndexPanelBrush}" BorderBrush="{DynamicResource VfIndexPanelBorderBrush}"
+            BorderThickness="1" CornerRadius="{DynamicResource VfIndexPanelRadius}" ClipToBounds="True">
+      <Grid ColumnDefinitions="*,*,*">
+        <!-- Phase 1 -->
+        <StackPanel Margin="16,11" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="14" Height="14" StrokeThickness="2.6"
+                          Foreground="{DynamicResource VfGoodBrush}" VerticalAlignment="Center"
+                          IsVisible="{Binding Status.IsFrequentComplete}" />
+            <TextBlock Text="Phase 1 · Frequently used" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <c:MeterBar Height="6" Radius="3" Value="{Binding Status.FrequentFraction}" Track="{DynamicResource VfTrackBrush}"
+                      Fill="{DynamicResource VfGoodBarBrush}" />
+          <TextBlock Classes="num" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}">
+            <Run Text="{Binding Status.FrequentText}" /><Run Text=" files" />
+          </TextBlock>
+        </StackPanel>
+
+        <!-- Phase 2 -->
+        <Border Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
+          <StackPanel Margin="16,11" Spacing="6">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding Status.AllPercentText}" FontSize="12.5" FontWeight="SemiBold" />
+              <TextBlock FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding IndexScopeDetail}">
+                <Run Text="Phase 2 · " /><Run Text="{Binding IndexScopeText}" />
+              </TextBlock>
+            </DockPanel>
+            <c:MeterBar Height="6" Radius="3" Value="{Binding Status.AllFraction}" Track="{DynamicResource VfTrackBrush}"
+                        Fill="{DynamicResource VfAccentBrush}" />
+            <TextBlock Classes="num" Text="{Binding Status.AllCaptionText}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Border>
+
+        <!-- State + pressure -->
+        <Border Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
+          <StackPanel Margin="16,11" Spacing="6">
+            <DockPanel>
+              <Panel DockPanel.Dock="Right" IsVisible="{Binding $parent[common:IndexPanelView].ShowResumeButton}">
+                <Button x:Name="ResumeButton" Classes="vf action primary" Padding="10,2" MinHeight="22"
+                        FontSize="11.5" Content="{Binding Status.ResumeActionText}" Command="{Binding ResumeNowCommand}"
+                        VerticalAlignment="Center" Margin="8,-3,0,-3"
+                        IsVisible="{Binding Status.ShowBanner}" />
+              </Panel>
+              <TextBlock Classes="tone" Classes.busy="{Binding Status.IsToneBusy}" Classes.paused="{Binding Status.IsTonePaused}"
+                         Classes.good="{Binding Status.IsToneGood}" Classes.error="{Binding Status.IsToneError}"
+                         Text="{Binding Status.ShortStateText}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                         VerticalAlignment="Center" />
+            </DockPanel>
+            <Grid ColumnDefinitions="30,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
+                  TextElement.FontSize="11.5" TextElement.Foreground="{DynamicResource VfSubtleBrush}">
+              <TextBlock Text="CPU" VerticalAlignment="Center" />
+              <c:MeterBar Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Height="4" Radius="2"
+                          VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
+              <TextBlock Grid.Column="2" Classes="num" Text="{Binding Status.CpuText}" HorizontalAlignment="Right" />
+              <TextBlock Grid.Row="1" Text="Disk" VerticalAlignment="Center" />
+              <c:MeterBar Grid.Row="1" Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Height="4"
+                          Radius="2" VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
+              <TextBlock Grid.Row="1" Grid.Column="2" Classes="num" Text="{Binding Status.DiskText}" HorizontalAlignment="Right" />
+            </Grid>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+  </StackPanel>
+</UserControl>

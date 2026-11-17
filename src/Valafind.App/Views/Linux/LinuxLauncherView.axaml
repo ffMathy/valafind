@@ -80,6 +80,14 @@
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#A32B6B" />
           <SolidColorBrush x:Key="VfKindArchiveBg" Color="#F5EFDD" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#7D5F0E" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#12000000" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#1F7A3D" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#2EC27E" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#8A4B00" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#C64600" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#C01C28" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="VfTextBrush" Color="#FFFFFF" />
@@ -142,8 +150,17 @@
           <SolidColorBrush x:Key="VfKindMediaFg" Color="#F49AC2" />
           <SolidColorBrush x:Key="VfKindArchiveBg" Color="#403A24" />
           <SolidColorBrush x:Key="VfKindArchiveFg" Color="#F9E58F" />
+          <!-- Index panel (Views/Common/IndexPanelView) -->
+          <SolidColorBrush x:Key="VfIndexPanelBrush" Color="#2E2E32" />
+          <SolidColorBrush x:Key="VfIndexPanelBorderBrush" Color="#17FFFFFF" />
+          <SolidColorBrush x:Key="VfGoodBrush" Color="#8FF0A4" />
+          <SolidColorBrush x:Key="VfGoodBarBrush" Color="#26A269" />
+          <SolidColorBrush x:Key="VfBusyBrush" Color="#FFBE6F" />
+          <SolidColorBrush x:Key="VfBusyBarBrush" Color="#E66100" />
+          <SolidColorBrush x:Key="VfErrorBrush" Color="#FF7B63" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
+      <CornerRadius x:Key="VfIndexPanelRadius">12</CornerRadius>
     </ResourceDictionary>
   </views:LauncherViewBase.Resources>
 
@@ -237,7 +254,7 @@
     </Style>
   </views:LauncherViewBase.Styles>
 
-  <Border x:Name="Card" Width="780" Height="706" ClipToBounds="True">
+  <Border x:Name="Card" Width="1140" Height="706" ClipToBounds="True">
     <DockPanel>
       <!-- Header bar -->
       <Border DockPanel.Dock="Top" Height="50" Padding="8,0" Background="{DynamicResource GnomeHeaderBrush}"
@@ -327,111 +344,112 @@
       </Border>
 
       <!-- Content -->
-      <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" RowSpacing="10" Margin="18,14,18,0">
+      <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10" Margin="18,14,18,0">
         <DockPanel Margin="4,0">
           <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding ResultSummary}" FontSize="12"
                      Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" />
           <TextBlock Classes="h2" Text="Best matches by meaning" />
         </DockPanel>
 
-        <Border Grid.Row="1" Classes="boxed" ClipToBounds="True">
-          <Panel>
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" IsVisible="{Binding IsResultsVisible}">
-              <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:ResultItemViewModel">
-                    <Border Classes="row" Classes.selected="{Binding IsSelected}" Padding="16,11"
-                            BorderThickness="0,0,0,1" BorderBrush="{DynamicResource VfDividerBrush}">
-                      <Grid ColumnDefinitions="38,*,96" ColumnSpacing="14">
-                        <c:FileKindIcon Kind="{Binding Kind}" Width="38" Height="38" GlyphSize="20" StrokeThickness="1.8"
-                                        CornerRadius="9" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                          <TextBlock Text="{Binding FileName}" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Text="{Binding Caption}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
-                                     TextTrimming="CharacterEllipsis" />
-                          <!-- Tab hides the snippet lines for a compact list. -->
-                          <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" FontSize="12.5"
-                                                  LineHeight="17.5" Foreground="{DynamicResource GnomeSnippetBrush}"
-                                                  TextTrimming="CharacterEllipsis"
-                                                  HighlightBackground="{DynamicResource GnomeHighlightBrush}"
-                                                  HighlightForeground="{DynamicResource VfTextBrush}" HighlightFontWeight="SemiBold"
-                                                  IsVisible="{Binding Launcher.IsPreviewVisible, FallbackValue=True}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
-                          <TextBlock Classes="num" Text="{Binding ScoreText}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Right" />
-                          <c:MeterBar Width="84" Height="6" Radius="3" Value="{Binding ScoreFraction}"
-                                      Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
-                        </StackPanel>
-                      </Grid>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-            <ScrollViewer IsVisible="{Binding IsMessageVisible}">
-              <common:LauncherMessageView />
-            </ScrollViewer>
-          </Panel>
-        </Border>
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <Border Classes="boxed" ClipToBounds="True">
+            <Panel>
+              <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" IsVisible="{Binding IsResultsVisible}">
+                <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ResultItemViewModel">
+                      <Border Classes="row" Classes.selected="{Binding IsSelected}" Padding="16,11"
+                              BorderThickness="0,0,0,1" BorderBrush="{DynamicResource VfDividerBrush}">
+                        <Grid ColumnDefinitions="38,*,96" ColumnSpacing="14">
+                          <c:FileKindIcon Kind="{Binding Kind}" Width="38" Height="38" GlyphSize="20" StrokeThickness="1.8"
+                                          CornerRadius="9" VerticalAlignment="Center" />
+                          <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding FileName}" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Caption}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" FontSize="12.5"
+                                                    LineHeight="17.5" Foreground="{DynamicResource GnomeSnippetBrush}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    HighlightBackground="{DynamicResource GnomeHighlightBrush}"
+                                                    HighlightForeground="{DynamicResource VfTextBrush}" HighlightFontWeight="SemiBold" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="2" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Classes="num" Text="{Binding ScoreText}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Right" />
+                            <c:MeterBar Width="84" Height="6" Radius="3" Value="{Binding ScoreFraction}"
+                                        Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+              <ScrollViewer IsVisible="{Binding IsMessageVisible}">
+                <common:LauncherMessageView />
+              </ScrollViewer>
+            </Panel>
+          </Border>
 
-        <DockPanel Grid.Row="2" Margin="4,4,4,0">
-          <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
-                     Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" />
-          <TextBlock Classes="h2" Text="Index" />
-        </DockPanel>
+          <!-- Details of the selected file (Tab hides it) -->
+          <Border x:Name="DetailsPane" Grid.Column="1" Width="360" Classes="boxed" Padding="18,16"
+                  IsVisible="{Binding IsPreviewVisible}">
+            <DockPanel DataContext="{Binding SelectedResult}" x:DataType="vm:ResultItemViewModel"
+                       IsVisible="{Binding $parent[views:LauncherViewBase].((vm:LauncherViewModel)DataContext).HasSelection}">
+              <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,14,0,0">
+                <Button Classes="vf suggested" Content="Open" Command="{Binding Launcher.OpenSelectedCommand}" />
+                <Button Classes="vf pill" Content="{Binding Launcher.RevealLabel}" Command="{Binding Launcher.RevealSelectedCommand}" />
+                <Button Classes="vf pill" Content="Copy Path" Command="{Binding Launcher.CopyPathCommand}" />
+              </StackPanel>
+              <StackPanel DockPanel.Dock="Top" Spacing="14" Margin="0,0,0,14">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <c:FileKindIcon Kind="{Binding Kind}" Width="48" Height="48" GlyphSize="24" StrokeThickness="1.8"
+                                  CornerRadius="12" VerticalAlignment="Top" />
+                  <TextBlock Grid.Column="1" Text="{Binding WrappableFileName}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap"
+                             MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </Grid>
 
-        <Border Grid.Row="3" Classes="boxed" ClipToBounds="True">
-          <Grid ColumnDefinitions="*,*,*">
-            <StackPanel Classes="phase1" Classes.done="{Binding Status.IsFrequentComplete}" Margin="16,11" Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="14" Height="14" StrokeThickness="2.6"
-                              Foreground="{DynamicResource GnomeGoodBrush}" VerticalAlignment="Center"
-                              IsVisible="{Binding Status.IsFrequentComplete}" />
-                <TextBlock Text="Phase 1 · Frequently used" FontSize="12.5" FontWeight="Bold" VerticalAlignment="Center" />
-              </StackPanel>
-              <c:MeterBar Height="6" Radius="3" Value="{Binding Status.FrequentFraction}" Track="{DynamicResource VfTrackBrush}"
-                          Fill="{DynamicResource GnomeGoodBarBrush}" />
-              <TextBlock Classes="num" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}">
-                <Run Text="{Binding Status.FrequentText}" /><Run Text=" files" />
-              </TextBlock>
-            </StackPanel>
-            <Border Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
-              <StackPanel Margin="16,11" Spacing="6">
-                <DockPanel>
-                  <TextBlock DockPanel.Dock="Right" Classes="num" Text="{Binding Status.AllPercentText}" FontSize="12.5" FontWeight="Bold" />
-                  <TextBlock FontSize="12.5" FontWeight="Bold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding IndexScopeDetail}">
-                    <Run Text="Phase 2 · " /><Run Text="{Binding IndexScopeText}" />
-                  </TextBlock>
-                </DockPanel>
-                <c:MeterBar Height="6" Radius="3" Value="{Binding Status.AllFraction}" Track="{DynamicResource VfTrackBrush}"
-                            Fill="{DynamicResource VfAccentBrush}" />
-                <TextBlock Classes="num" Text="{Binding Status.AllCaptionText}" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}"
-                           TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </Border>
-            <Border Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
-              <StackPanel Margin="16,11" Spacing="6">
-                <TextBlock Classes="tone" Classes.busy="{Binding Status.IsToneBusy}" Classes.paused="{Binding Status.IsTonePaused}"
-                           Classes.good="{Binding Status.IsToneGood}" Classes.error="{Binding Status.IsToneError}"
-                           Text="{Binding Status.ShortStateText}" FontSize="12.5" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-                <Grid ColumnDefinitions="30,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
-                      TextElement.FontSize="11.5" TextElement.Foreground="{DynamicResource GnomeMetaBrush}">
-                  <TextBlock Text="CPU" VerticalAlignment="Center" />
-                  <c:MeterBar Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Height="4" Radius="2"
-                              VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
-                  <TextBlock Grid.Column="2" Classes="num" Text="{Binding Status.CpuText}" HorizontalAlignment="Right" />
-                  <TextBlock Grid.Row="1" Text="Disk" VerticalAlignment="Center" />
-                  <c:MeterBar Grid.Row="1" Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Height="4"
-                              Radius="2" VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
-                  <TextBlock Grid.Row="1" Grid.Column="2" Classes="num" Text="{Binding Status.DiskText}" HorizontalAlignment="Right" />
+                <!-- Property rows -->
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="6"
+                      TextElement.FontSize="12.5">
+                  <TextBlock Text="Location" Foreground="{DynamicResource GnomeMetaBrush}" />
+                  <TextBlock Grid.Column="1" Text="{Binding DisplayDirectory}" TextWrapping="Wrap" MaxLines="2"
+                             TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding FullDirectory}" />
+                  <TextBlock Grid.Row="1" Text="Type" Foreground="{DynamicResource GnomeMetaBrush}" />
+                  <TextBlock Grid.Row="1" Grid.Column="1"><Run Text="{Binding ExtensionLabel}" /><Run Text=" · " /><Run Text="{Binding GroupName}" /></TextBlock>
+                  <TextBlock Grid.Row="2" Text="Size" Foreground="{DynamicResource GnomeMetaBrush}" />
+                  <TextBlock Grid.Row="2" Grid.Column="1" Classes="num" Text="{Binding SizeText}" />
+                  <TextBlock Grid.Row="3" Text="Modified" Foreground="{DynamicResource GnomeMetaBrush}" />
+                  <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DateText}" />
+                </Grid>
+
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <TextBlock Text="Match" FontSize="12.5" Foreground="{DynamicResource GnomeMetaBrush}" VerticalAlignment="Center" />
+                  <c:MeterBar Grid.Column="1" Height="6" Radius="3" Value="{Binding ScoreFraction}" VerticalAlignment="Center"
+                              Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
+                  <TextBlock Grid.Column="2" Classes="num" Text="{Binding ScoreText}" FontSize="13" FontWeight="Bold"
+                             VerticalAlignment="Center" />
                 </Grid>
               </StackPanel>
-            </Border>
-          </Grid>
-        </Border>
+              <!-- Fills the remaining height and clips, so a long passage never runs into the buttons. -->
+              <Border ClipToBounds="True" VerticalAlignment="Top">
+                  <StackPanel Spacing="6" IsVisible="{Binding HasSnippet}">
+                    <TextBlock Classes="h2" Text="Why it matched" />
+                    <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" FontSize="13"
+                                            LineHeight="19" TextWrapping="Wrap" MaxLines="7" TextTrimming="CharacterEllipsis"
+                                            Foreground="{DynamicResource GnomeSnippetBrush}"
+                                            HighlightBackground="{DynamicResource GnomeHighlightBrush}"
+                                            HighlightForeground="{DynamicResource VfTextBrush}" HighlightFontWeight="SemiBold" />
+                  </StackPanel>
+              </Border>
+            </DockPanel>
+          </Border>
+        </Grid>
+
+        <!-- Index progress (shared with the Windows and macOS launchers; the paused banner above has the button) -->
+        <common:IndexPanelView Grid.Row="2" Margin="0,4,0,0" ShowResumeButton="False" />
 
         <!-- Filter chips -->
-        <DockPanel Grid.Row="4" Margin="0,2,0,0">
+        <DockPanel Grid.Row="3" Margin="0,2,0,0">
           <Button DockPanel.Dock="Right" Classes="vf pill" CornerRadius="8" Padding="12,0,10,0">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <TextBlock Text="{Binding SelectedTimeRange.Label}" VerticalAlignment="Center" />

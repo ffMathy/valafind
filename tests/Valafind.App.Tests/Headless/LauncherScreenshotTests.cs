@@ -99,6 +99,39 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
             Assert.False(view.FindControl<Border>("DetailsPane")!.IsVisible);
         }, TestContext.Current.CancellationToken);
 
+    [Theory]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public Task RendersWindowsLauncherOnMica(string theme) =>
+        fixture.Session.Dispatch(() =>
+        {
+            // Headless has no real Mica: a busy backdrop stands in for it, to check the transparent card stays legible.
+            var vm = DesignData.Create(UiFlavor.Windows);
+            var variant = theme == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+            var view = LauncherWindow.CreateView(UiFlavor.Windows);
+            view.DataContext = vm;
+            view.SetSurface(LauncherSurface.Mica);
+            var window = new Window
+            {
+                RequestedThemeVariant = variant,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                Background = theme == "dark"
+                    ? new SolidColorBrush(Color.Parse("#202020"))
+                    : new SolidColorBrush(Color.Parse("#F3F3F3")),
+                Content = view,
+            };
+            window.Show();
+            try
+            {
+                var frame = window.CaptureRenderedFrame() ?? throw new InvalidOperationException("No frame rendered");
+                Save(frame, $"windows-mica-{theme}.png");
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, TestContext.Current.CancellationToken);
+
     [Fact]
     public Task RendersSettingsWindow() =>
         fixture.Session.Dispatch(() =>

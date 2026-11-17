@@ -18,11 +18,14 @@ public enum LauncherSurface
     Blurred,
     /// <summary>No transparency available: square, fully opaque card.</summary>
     Opaque,
+    /// <summary>Windows 11 Mica (the backdrop of Settings and other native windows): like <see cref="Blurred"/>, but
+    /// the card itself is transparent so the Mica material is the window background.</summary>
+    Mica,
 }
 
 /// <summary>
 /// Shared behaviour of the platform launcher views: search-box focus, row selection by pointer, keeping the
-/// selection scrolled into view and switching surface styles (<c>blurred</c> / <c>opaque</c> classes).
+/// selection scrolled into view and switching surface styles (<c>blurred</c> / <c>mica</c> / <c>opaque</c> classes).
 /// Views name their search box <c>SearchBox</c> and their results <see cref="ItemsControl"/> <c>ResultsList</c>.
 /// </summary>
 public abstract class LauncherViewBase : UserControl
@@ -48,7 +51,8 @@ public abstract class LauncherViewBase : UserControl
     /// <summary>Applies the surface style classes.</summary>
     public void SetSurface(LauncherSurface surface)
     {
-        Classes.Set("blurred", surface == LauncherSurface.Blurred);
+        Classes.Set("blurred", surface is LauncherSurface.Blurred or LauncherSurface.Mica);
+        Classes.Set("mica", surface == LauncherSurface.Mica);
         Classes.Set("opaque", surface == LauncherSurface.Opaque);
     }
 

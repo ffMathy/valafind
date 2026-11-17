@@ -6,6 +6,16 @@ namespace Valafind.App.Tests.ViewModels;
 
 public sealed class DisplayFormatTests
 {
+    [Fact]
+    public void Break_opportunities_follow_separators_and_are_invisible()
+    {
+        var wrapped = DisplayFormat.WithBreakOpportunities("Lejekontrakt_Nørrebrogade_2024.pdf");
+        Assert.Equal("Lejekontrakt_\u200BNørrebrogade_\u200B2024.\u200Bpdf", wrapped);
+        Assert.Equal("Lejekontrakt_Nørrebrogade_2024.pdf", wrapped.Replace("\u200B", "", StringComparison.Ordinal));
+        Assert.Equal("trailing.", DisplayFormat.WithBreakOpportunities("trailing."));
+        Assert.Equal("", DisplayFormat.WithBreakOpportunities(""));
+    }
+
     private static readonly DateTimeOffset Now = new(2026, 11, 16, 14, 32, 0, TimeSpan.Zero);
 
     [Fact]
