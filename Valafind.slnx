@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Valafind.App/Valafind.App.csproj" />
     <Project Path="src/Valafind.Core/Valafind.Core.csproj" />
+    <Project Path="src/Valafind.Model/Valafind.Model.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Valafind.App.Tests/Valafind.App.Tests.csproj" />

@@ -47,6 +47,27 @@ internal sealed class CoreServices(
 /// </summary>
 internal static class CoreServicesFactory
 {
+    /// <summary>True when this build carries the model inside the executable (release builds).</summary>
+    public static bool IsModelBundled => BundledModel.IsBundled(Valafind.Model.ModelResources.Assembly);
+
+    /// <summary>
+    /// Unpacks the model embedded in release builds into <see cref="DefaultModelDirectory"/> (first start, or after the
+    /// files there were damaged). Skipped when nothing is bundled or when another valid model is in use (Settings,
+    /// <c>VALAFIND_MODEL_DIR</c>, a copy next to the app), so no disk space goes to an unused copy. Slow on first start
+    /// (~310 MB written): call off the UI thread. Returns the number of files written.
+    /// </summary>
+    public static int InstallBundledModel(string? configuredDirectory, CancellationToken cancellationToken)
+    {
+        var assembly = Valafind.Model.ModelResources.Assembly;
+        if (!BundledModel.IsBundled(assembly))
+            return 0;
+        var found = ModelLocator.Find(configuredDirectory);
+        if (found is not null && !string.Equals(Path.GetFullPath(found), Path.GetFullPath(DefaultModelDirectory),
+                OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+            return 0;
+        return BundledModel.EnsureInstalled(assembly, DefaultModelDirectory, cancellationToken);
+    }
+
     /// <summary>Finds the installed EmbeddingGemma model directory, honouring the configured override.</summary>
     public static string? LocateModel(string? configuredDirectory) => ModelLocator.Find(configuredDirectory);
 

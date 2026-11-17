@@ -10,4 +10,8 @@
     <Company>Valafind</Company>
     <Product>Valafind</Product>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <!-- Single-file publishes ship one file: symbols go inside the assemblies instead of next to the executable. -->
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 </Project>

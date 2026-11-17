@@ -79,7 +79,10 @@ public sealed class AppHost : IAsyncDisposable
             .AddSingleton(loggerFactory)
             .AddSingleton(typeof(ILogger<>), typeof(Logger<>))
             .AddSingleton(settings)
-            .AddSingleton(sp => new LauncherViewModel(flavor, sp.GetRequiredService<ValafindSettings>()))
+            .AddSingleton(sp => new LauncherViewModel(flavor, sp.GetRequiredService<ValafindSettings>())
+            {
+                IsModelBundled = CoreServicesFactory.IsModelBundled,
+            })
             .BuildServiceProvider();
         return new AppHost(services, instance, startupCommand, firstRun);
     }
@@ -285,10 +288,22 @@ public sealed class AppHost : IAsyncDisposable
         _launcherVm.UpdateStatus(IndexStatus.Initial);
         string? modelDir;
         string? signature = null;
+        Exception? unpackError = null;
         try
         {
             (modelDir, signature) = await Task.Run(() =>
             {
+                try
+                {
+                    var written = CoreServicesFactory.InstallBundledModel(_settings.ModelDirectory, ct);
+                    if (written > 0)
+                        Log.BundledModelInstalled(_log, written, CoreServicesFactory.DefaultModelDirectory);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    Log.BundledModelInstallFailed(_log, CoreServicesFactory.DefaultModelDirectory, e);
+                    unpackError = e;
+                }
                 var dir = CoreServicesFactory.LocateModel(_settings.ModelDirectory);
                 return (dir, dir is null ? null : CoreServicesFactory.ModelSignature(_settings.ModelDirectory));
             }, ct).ConfigureAwait(true);
@@ -301,6 +316,15 @@ public sealed class AppHost : IAsyncDisposable
         {
             Log.ModelLookupFailed(_log, e);
             modelDir = null;
+        }
+
+        if (modelDir is null && unpackError is not null)
+        {
+            _launcherVm.SetModelFailed($"Could not unpack the built-in model to {CoreServicesFactory.DefaultModelDirectory}: {unpackError.Message}");
+            _launcherVm.UpdateStatus(IndexStatus.Initial with { State = IndexingState.ModelUnavailable });
+            if (!ct.IsCancellationRequested && !_quitting)
+                _modelWatcher.Start(baseline: null);
+            return;
         }
 
         if (modelDir is null)
@@ -434,7 +458,13 @@ public sealed class AppHost : IAsyncDisposable
             return;
         }
         if (_launcherVm.ModelState is ModelState.Failed)
-            _ = Task.Run(_modelWatcher.Poll);
+        {
+            // Built-in model: a reload re-unpacks any damaged file (cheap when the files are fine).
+            if (_launcherVm.IsModelBundled)
+                _ = RestartCoreAsync();
+            else
+                _ = Task.Run(_modelWatcher.Poll);
+        }
     }
 
     // Raised on a background thread, possibly very often: coalesce into one UI update at a time.

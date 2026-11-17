@@ -196,6 +196,13 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string FetchCommandText { get; private set; }
 
+    /// <summary>True when the model ships inside the executable, so the fetch scripts are not shipped and "Check again"
+    /// unpacks the built-in copy again instead.</summary>
+    public bool IsModelBundled { get; init; }
+
+    /// <summary>Inverse of <see cref="IsModelBundled"/> (for bindings).</summary>
+    public bool IsModelDownloadable => !IsModelBundled;
+
     /// <summary>Same as <see cref="FetchCommandText"/> but re-downloads every file (repairs a broken install).</summary>
     [ObservableProperty]
     public partial string RepairCommandText { get; private set; }

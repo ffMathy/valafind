@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Carries the EmbeddingGemma files as embedded resources so a single-file publish contains the model.
+
+    The model is only embedded when ValafindModelDir points at a downloaded model folder (tools/fetch-model.sh <dir>),
+    which the release workflow does:
+
+      dotnet publish src/Valafind.App -c Release -r linux-x64 -p:ValafindModelDir=/path/to/embeddinggemma-300m
+
+    Without it this assembly is empty and the app falls back to a model installed by the user. It is a separate
+    assembly so the ~310 MB of weights never pass through the main app's compile and are only touched when the app
+    unpacks them (see Valafind.Core.Embedding.BundledModel).
+  -->
+  <PropertyGroup>
+    <RootNamespace>Valafind.Model</RootNamespace>
+    <!-- Accept the folder with or without a trailing separator. -->
+    <_ModelDir Condition="'$(ValafindModelDir)' != ''">$([MSBuild]::EnsureTrailingSlash('$([System.IO.Path]::GetFullPath('$(ValafindModelDir)'))'))</_ModelDir>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(ValafindModelDir)' != ''">
+    <ValafindModelFile Include="$(_ModelDir)tokenizer.model;$(_ModelDir)tokenizer.json;$(_ModelDir)tokenizer_config.json;$(_ModelDir)special_tokens_map.json;$(_ModelDir)config.json" />
+    <ValafindModelFile Include="$(_ModelDir)onnx/model_quantized.onnx;$(_ModelDir)onnx/model_quantized.onnx_data" SubFolder="onnx/" />
+    <EmbeddedResource Include="@(ValafindModelFile)" LogicalName="ValafindModel/%(SubFolder)%(Filename)%(Extension)" WithCulture="false" />
+  </ItemGroup>
+  <Target Name="ValafindCheckModelDir" BeforeTargets="BeforeBuild" Condition="'$(ValafindModelDir)' != ''">
+    <Error Condition="!Exists('%(ValafindModelFile.Identity)')" Text="ValafindModelDir: missing model file %(ValafindModelFile.Identity). Run tools/fetch-model.sh &quot;$(ValafindModelDir)&quot; first." />
+  </Target>
+</Project>
