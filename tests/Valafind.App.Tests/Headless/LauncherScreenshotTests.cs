@@ -136,6 +136,7 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
     [InlineData(UiFlavor.Windows, "de")]
     [InlineData(UiFlavor.Mac, "ja")]
     [InlineData(UiFlavor.Linux, "ar")]
+    [InlineData(UiFlavor.Windows, "da")]
     public Task RendersTranslatedLauncher(UiFlavor flavor, string language) =>
         fixture.Session.Dispatch(() =>
         {
