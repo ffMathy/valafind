@@ -56,6 +56,7 @@ public sealed class AppHost : IAsyncDisposable
     private Task _coreTask = Task.CompletedTask;
     private IndexStatus? _pendingStatus;
     private int _statusPostQueued;
+    private bool _interactive;
     private bool _quitting;
 
     private AppHost(ServiceProvider services, SingleInstance? instance, string? startupCommand, bool firstRun)
@@ -295,15 +296,17 @@ public sealed class AppHost : IAsyncDisposable
 
     private void OnLauncherPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(LauncherViewModel.IsLauncherVisible))
-            SetInteractive(_core, _launcherVm.IsLauncherVisible);
+        if (e.PropertyName == nameof(LauncherViewModel.IsSearchActive))
+            SetInteractive(_core, _launcherVm.IsSearchActive);
     }
 
-    // While the launcher is on screen, indexing starts no new model batches so query embedding never waits behind it.
+    // While the user is searching, indexing starts no new model batches so query embedding never waits behind it. An
+    // open launcher with an empty query shows the index panel, so indexing keeps going and its counts update live.
     private void SetInteractive(CoreServices? core, bool interactive)
     {
-        if (core is null)
+        if (core is null || _interactive == interactive)
             return;
+        _interactive = interactive;
         try
         {
             core.Indexing.SetInteractive(interactive);
@@ -468,7 +471,8 @@ public sealed class AppHost : IAsyncDisposable
         _launcherVm.UpdateStatus(core.Indexing.Status);
         if (_settings.UserPaused)
             core.Indexing.SetUserPaused(true);
-        if (_launcherVm.IsLauncherVisible)
+        _interactive = false;
+        if (_launcherVm.IsSearchActive)
             SetInteractive(core, true);
 
         try
