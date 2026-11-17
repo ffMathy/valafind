@@ -82,18 +82,21 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
         }, TestContext.Current.CancellationToken);
 
     [Fact]
-    public Task TogglingPreviewCollapsesTheExpandedRow() =>
+    public Task WindowsDetailsPaneFollowsSelectionAndTabHidesIt() =>
         fixture.Session.Dispatch(() =>
         {
+            // Like macOS, the Windows launcher shows the selected file in a details pane on the right.
             var vm = DesignData.Create(UiFlavor.Windows);
-            var expanded = Render(UiFlavor.Windows, vm, ThemeVariant.Light, out _);
-            vm.TogglePreviewCommand.Execute(null);
-            var compact = Render(UiFlavor.Windows, vm, ThemeVariant.Light, out _);
-            Assert.True(compact.PixelSize.Height < expanded.PixelSize.Height);
             vm.MoveDownCommand.Execute(null);
+            var withPane = Render(UiFlavor.Windows, vm, ThemeVariant.Light, out var view);
+            var pane = view.FindControl<Border>("DetailsPane")!;
+            Assert.True(pane.IsVisible);
+            Assert.Same(vm.Results[1], ((Control)pane.Child!).DataContext);
+            Save(withPane, "windows-second-selected.png");
+
             vm.TogglePreviewCommand.Execute(null);
-            var second = Render(UiFlavor.Windows, vm, ThemeVariant.Light, out _);
-            Save(second, "windows-second-selected.png");
+            Render(UiFlavor.Windows, vm, ThemeVariant.Light, out view);
+            Assert.False(view.FindControl<Border>("DetailsPane")!.IsVisible);
         }, TestContext.Current.CancellationToken);
 
     [Fact]

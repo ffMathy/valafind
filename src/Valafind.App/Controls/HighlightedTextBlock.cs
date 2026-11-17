@@ -137,7 +137,9 @@ public class HighlightedTextBlock : TextBlock
         {
             if (i == text.Length || marks[i] != marks[segStart])
             {
-                result.Add((text[segStart..i], marks[segStart]));
+                // Snippets keep line breaks as sentence boundaries; on screen they read as plain spaces (same length,
+                // so highlight offsets stay valid).
+                result.Add((text[segStart..i].Replace('\n', ' '), marks[segStart]));
                 segStart = i;
             }
         }

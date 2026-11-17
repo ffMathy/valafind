@@ -61,8 +61,12 @@ public sealed class TextChunkerTests
             Assert.False(char.IsWhiteSpace(span[^1]));
             Assert.Equal(TextChunker.Collapse(span), chunk.Text);
             Assert.DoesNotContain("  ", chunk.Text, StringComparison.Ordinal);
-            Assert.DoesNotContain('\n', chunk.Text);
             Assert.DoesNotContain('\t', chunk.Text);
+            Assert.DoesNotContain('\r', chunk.Text);
+            // Each whitespace run became ONE character; a line break only where the run held one.
+            for (var k = 1; k < chunk.Text.Length; k++)
+                Assert.False(char.IsWhiteSpace(chunk.Text[k - 1]) && char.IsWhiteSpace(chunk.Text[k]), "whitespace run not collapsed");
+            Assert.True(chunk.Text.Count(c => c == '\n') <= span.Count(c => c == '\n'), "line break invented");
             Assert.False(char.IsLowSurrogate(original[chunk.Start]), "chunk starts inside a surrogate pair");
             Assert.False(char.IsHighSurrogate(original[chunk.Start + chunk.Length - 1]), "chunk ends inside a surrogate pair");
         }
@@ -85,7 +89,8 @@ public sealed class TextChunkerTests
 
         var chunk = Assert.Single(chunks);
         Assert.Equal(text.IndexOf('H', StringComparison.Ordinal), chunk.Start);
-        Assert.Equal("Hello world. Second paragraph here.", chunk.Text);
+        // Runs collapse to one character; the run between the paragraphs held line breaks, so it stays a line break.
+        Assert.Equal("Hello world.\nSecond paragraph here.", chunk.Text);
         Assert.Equal("Hello   world.\n\nSecond\tparagraph here.", text.Substring(chunk.Start, chunk.Length));
     }
 

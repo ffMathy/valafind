@@ -263,7 +263,7 @@
     </Style>
   </views:LauncherViewBase.Styles>
 
-  <Border x:Name="Card" Width="720" BorderThickness="1" BorderBrush="{DynamicResource WinCardBorderBrush}" ClipToBounds="True">
+  <Border x:Name="Card" Width="1040" BorderThickness="1" BorderBrush="{DynamicResource WinCardBorderBrush}" ClipToBounds="True">
     <StackPanel>
       <!-- Search row -->
       <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14" Margin="20,16,16,14">
@@ -319,20 +319,18 @@
         </ItemsControl>
       </DockPanel>
 
-      <!-- Results / messages -->
-      <ScrollViewer MaxHeight="476" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
-                    IsVisible="{Binding IsResultsVisible}">
-        <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}" Margin="8,4,8,8">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Spacing="2" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:ResultItemViewModel">
-              <Panel>
-                <!-- Compact row -->
-                <Border Classes="row" Classes.selected="{Binding IsSelected}" IsVisible="{Binding IsCompact}"
+      <!-- Results + details pane (Tab hides the pane) / messages -->
+      <Grid x:Name="Body" ColumnDefinitions="*,Auto" Height="476" IsVisible="{Binding IsResultsVisible}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}" Margin="8,4,8,8">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="2" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ResultItemViewModel">
+                <Border Classes="row" Classes.selected="{Binding IsSelected}"
                         Padding="12,8" CornerRadius="6" BorderThickness="1" BorderBrush="Transparent">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                     <c:FileKindIcon Kind="{Binding Kind}" Width="32" Height="32" GlyphSize="18" CornerRadius="6" />
@@ -345,54 +343,70 @@
                                Foreground="{DynamicResource WinScoreBrush}" VerticalAlignment="Center" />
                   </Grid>
                 </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
 
-                <!-- Selected row with "why it matched" -->
-                <Border Classes="row" IsVisible="{Binding IsExpanded}" Padding="12,10,12,12" CornerRadius="6"
-                        Background="{DynamicResource WinAccentSoftBrush}" BorderBrush="{DynamicResource WinAccentBorderBrush}"
-                        BorderThickness="1">
-                  <StackPanel>
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <c:FileKindIcon Kind="{Binding Kind}" Width="32" Height="32" GlyphSize="18" CornerRadius="6" />
-                      <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding FileName}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                        <TextBlock FontSize="12" Foreground="{DynamicResource VfSubtleBrush}" TextTrimming="CharacterEllipsis">
-                          <Run Text="{Binding DisplayDirectory}" /><Run Text=" · " /><Run Text="{Binding ModifiedText}" />
-                        </TextBlock>
-                      </StackPanel>
-                      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <c:MeterBar Width="44" Height="4" Value="{Binding ScoreFraction}" Radius="2"
-                                    Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
-                        <TextBlock Classes="num" Text="{Binding ScoreText}" FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource VfAccentBrush}" />
-                      </StackPanel>
-                    </Grid>
-                    <Border Margin="44,10,0,0" Padding="12,10" CornerRadius="6" BorderThickness="1"
-                            Background="{DynamicResource WinInnerCardBrush}" BorderBrush="{DynamicResource WinInnerBorderBrush}">
-                      <StackPanel Spacing="6">
-                        <TextBlock Text="WHY IT MATCHED · CLOSEST PASSAGE" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.2"
-                                   Foreground="{DynamicResource VfSubtleBrush}" IsVisible="{Binding HasSnippet}" />
-                        <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="“" Suffix="”"
-                                                FontSize="13" LineHeight="19.5" TextWrapping="Wrap" MaxLines="4"
-                                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource WinSnippetBrush}"
-                                                HighlightBackground="{DynamicResource WinMarkBrush}"
-                                                HighlightUnderline="{DynamicResource VfAccentBrush}"
-                                                HighlightForeground="{DynamicResource VfTextBrush}"
-                                                IsVisible="{Binding HasSnippet}" />
-                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
-                          <Button Classes="vf action primary" Content="Open" Command="{Binding Launcher.OpenSelectedCommand}" />
-                          <Button Classes="vf action" Content="{Binding Launcher.RevealLabel}"
-                                  Command="{Binding Launcher.RevealSelectedCommand}" />
-                          <Button Classes="vf action" Content="Copy path" Command="{Binding Launcher.CopyPathCommand}" />
-                        </StackPanel>
-                      </StackPanel>
-                    </Border>
-                  </StackPanel>
-                </Border>
-              </Panel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
+        <!-- Details of the selected file -->
+        <Border x:Name="DetailsPane" Grid.Column="1" Width="372" BorderThickness="1,0,0,0"
+                BorderBrush="{DynamicResource WinStripBorderBrush}" Background="{DynamicResource WinStripBrush}"
+                Padding="20,16,20,16" IsVisible="{Binding IsPreviewVisible}">
+          <DockPanel DataContext="{Binding SelectedResult}" x:DataType="vm:ResultItemViewModel"
+                     IsVisible="{Binding $parent[views:LauncherViewBase].((vm:LauncherViewModel)DataContext).HasSelection}">
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="6" Margin="0,14,0,0">
+              <Button Classes="vf action primary" Content="Open" Command="{Binding Launcher.OpenSelectedCommand}" />
+              <Button Classes="vf action" Content="{Binding Launcher.RevealLabel}" Command="{Binding Launcher.RevealSelectedCommand}" />
+              <Button Classes="vf action" Content="Copy path" Command="{Binding Launcher.CopyPathCommand}" />
+            </StackPanel>
+            <StackPanel Spacing="14">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <c:FileKindIcon Kind="{Binding Kind}" Width="44" Height="44" GlyphSize="24" CornerRadius="8" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
+                           MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              </Grid>
+
+              <!-- File facts -->
+              <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="5"
+                    TextElement.FontSize="12">
+                <TextBlock Text="Location" Foreground="{DynamicResource VfSubtleBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding FullDirectory}" TextWrapping="Wrap" MaxLines="2"
+                           TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding FullDirectory}" />
+                <TextBlock Grid.Row="1" Text="Type" Foreground="{DynamicResource VfSubtleBrush}" />
+                <TextBlock Grid.Row="1" Grid.Column="1"><Run Text="{Binding ExtensionLabel}" /><Run Text=" · " /><Run Text="{Binding GroupName}" /></TextBlock>
+                <TextBlock Grid.Row="2" Text="Size" Foreground="{DynamicResource VfSubtleBrush}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Classes="num" Text="{Binding SizeText}" />
+                <TextBlock Grid.Row="3" Text="Modified" Foreground="{DynamicResource VfSubtleBrush}" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DateText}" />
+              </Grid>
+
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <TextBlock Text="Semantic match" FontSize="12" Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
+                <c:MeterBar Grid.Column="1" Height="4" Radius="2" Value="{Binding ScoreFraction}" VerticalAlignment="Center"
+                            Track="{DynamicResource VfTrackBrush}" Fill="{DynamicResource VfAccentBrush}" />
+                <TextBlock Grid.Column="2" Classes="num" Text="{Binding ScoreText}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource VfAccentBrush}" VerticalAlignment="Center" />
+              </Grid>
+
+              <Border Padding="12,10" CornerRadius="6" BorderThickness="1" IsVisible="{Binding HasSnippet}"
+                      Background="{DynamicResource WinInnerCardBrush}" BorderBrush="{DynamicResource WinInnerBorderBrush}">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="WHY IT MATCHED · CLOSEST PASSAGE" FontSize="11" FontWeight="SemiBold" LetterSpacing="0.2"
+                             Foreground="{DynamicResource VfSubtleBrush}" />
+                  <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" Prefix="“" Suffix="”"
+                                          FontSize="13" LineHeight="19.5" TextWrapping="Wrap" MaxLines="7"
+                                          TextTrimming="CharacterEllipsis" Foreground="{DynamicResource WinSnippetBrush}"
+                                          HighlightBackground="{DynamicResource WinMarkBrush}"
+                                          HighlightUnderline="{DynamicResource VfAccentBrush}"
+                                          HighlightForeground="{DynamicResource VfTextBrush}" />
+                  <TextBlock Text="{Binding Launcher.MatchExplanation}" FontSize="11" TextWrapping="Wrap"
+                             Foreground="{DynamicResource VfSubtleBrush}" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+      </Grid>
       <common:LauncherMessageView IsVisible="{Binding IsMessageVisible}" />
 
       <!-- Hotkey problem (e.g. Wayland) -->
