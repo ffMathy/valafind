@@ -5,7 +5,9 @@ namespace Valafind.Core.Search;
 
 /// <summary>
 /// A display snippet cut from a chunk: a window of ≈ <see cref="TargetLength"/> characters around a focus span,
-/// trimmed at word boundaries, with whitespace runs collapsed to single spaces and "…" marking cut ends.
+/// trimmed at word boundaries, with whitespace runs collapsed to one character ('\n' when the run held a line break,
+/// otherwise a space) and "…" marking cut ends. Line breaks are kept so sentence splitting can separate mail headers,
+/// list items and table rows; the UI shows them as spaces.
 /// Keeps a map from source offsets to snippet offsets so spans in the chunk can be projected into the snippet.
 /// </summary>
 internal sealed class Snippet
@@ -83,22 +85,25 @@ internal sealed class Snippet
             sb.Append(Ellipsis);
         var contentStart = sb.Length;
         var pendingSpace = false;
+        var pendingLineBreak = false;
 
         for (var i = start; i < end; i++)
         {
             var c = source[i];
             if (char.IsWhiteSpace(c) || (char.IsControl(c) && !char.IsSurrogate(c)))
             {
-                // Leading whitespace is dropped; inner runs collapse into the single space emitted before the next word.
+                // Leading whitespace is dropped; inner runs collapse into the one separator emitted before the next word.
                 pendingSpace = sb.Length > contentStart;
+                pendingLineBreak |= pendingSpace && c is '\n' or '\r' or '\u2028' or '\u2029' or '\u0085';
                 map[i - start] = -1;
                 continue;
             }
             if (pendingSpace)
             {
-                sb.Append(' ');
+                sb.Append(pendingLineBreak ? '\n' : ' ');
                 pendingSpace = false;
             }
+            pendingLineBreak = false;
             map[i - start] = sb.Length;
             sb.Append(c);
         }

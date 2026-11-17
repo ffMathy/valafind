@@ -172,7 +172,8 @@ public sealed class SnippetTests
     {
         const string text = "  Line one.\n\n\tLine   two.  ";
         var snippet = Snippet.Build(text, new TextSpan(14, 12));
-        Assert.Equal("Line one. Line two.", snippet.Text);
+        // The run between the lines held line breaks: it collapses to one '\n' (a sentence boundary), the rest to spaces.
+        Assert.Equal("Line one.\nLine two.", snippet.Text);
         var mapped = snippet.MapSourceSpan(new TextSpan(14, 12));
         Assert.NotNull(mapped);
         Assert.Equal("Line two.", snippet.Text.Substring(mapped.Value.Start, mapped.Value.Length));
