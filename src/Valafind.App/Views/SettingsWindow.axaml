@@ -1,0 +1,158 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Valafind.App.ViewModels"
+        xmlns:c="using:Valafind.App.Controls"
+        mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="720"
+        x:Class="Valafind.App.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Valafind Settings"
+        Width="580" Height="720" MinWidth="480" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+  <Design.DataContext>
+    <x:Static Member="vm:DesignData.Settings" />
+  </Design.DataContext>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,8,0,2" />
+    </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Opacity" Value="0.75" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="16,12" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Padding="20,12" BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+          <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True" MinWidth="88" />
+          <Button Content="Save" Command="{Binding SaveCommand}" IsDefault="True" MinWidth="88" Classes="accent" />
+        </StackPanel>
+        <TextBlock Text="{Binding ErrorText}" Foreground="{DynamicResource SystemFillColorCriticalBrush}" TextWrapping="Wrap"
+                   VerticalAlignment="Center" Margin="0,0,12,0" />
+      </DockPanel>
+    </Border>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="20,16,20,20" Spacing="10">
+        <!-- Hotkey -->
+        <TextBlock Classes="section" Text="Global shortcut" />
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <c:HotkeyBox Text="{Binding Hotkey}" PlaceholderText="Press a key combination"
+                           AutomationProperties.Name="Global shortcut" />
+              <Button Grid.Column="1" Content="Reset" Command="{Binding ResetHotkeyCommand}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding DefaultHotkeyText}" />
+            <TextBlock Text="{Binding HotkeyMessage}" IsVisible="{Binding HotkeyMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Foreground="{DynamicResource SystemFillColorCautionBrush}" TextWrapping="Wrap" FontSize="12" />
+          </StackPanel>
+        </Border>
+
+        <!-- Folders -->
+        <TextBlock Classes="section" Text="Indexed folders" />
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <!-- Empty state: the home folder is what gets indexed. -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,2" IsVisible="{Binding HasNoRoots}">
+              <c:StrokeIcon Data="{StaticResource VfIconFolder}" Width="16" Height="16" StrokeThickness="1.8"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding RootsEmptyText}" VerticalAlignment="Center"
+                         TextTrimming="PathSegmentEllipsis" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Roots}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,2">
+                    <c:StrokeIcon Data="{StaticResource VfIconFolder}" Width="16" Height="16" StrokeThickness="1.8"
+                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding}" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" />
+                    <Button Grid.Column="2" Content="Remove"
+                            Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).RemoveRootCommand}"
+                            CommandParameter="{Binding}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="Add folder…" Command="{Binding AddRootCommand}" HorizontalAlignment="Left" />
+            <TextBlock Classes="hint" Text="{Binding RootsHint}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Resources -->
+        <TextBlock Classes="section" Text="Indexing only while the computer is idle" />
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="160,*,48" ColumnSpacing="12">
+              <TextBlock Text="Maximum CPU" VerticalAlignment="Center" />
+              <Slider Grid.Column="1" Minimum="5" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
+                      Value="{Binding MaxCpuPercent}" AutomationProperties.Name="Maximum CPU percent" />
+              <TextBlock Grid.Column="2" Text="{Binding MaxCpuText}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            </Grid>
+            <Grid ColumnDefinitions="160,*,48" ColumnSpacing="12">
+              <TextBlock Text="Maximum disk busy" VerticalAlignment="Center" />
+              <Slider Grid.Column="1" Minimum="5" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
+                      Value="{Binding MaxDiskBusyPercent}" AutomationProperties.Name="Maximum disk busy percent" />
+              <TextBlock Grid.Column="2" Text="{Binding MaxDiskText}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            </Grid>
+            <CheckBox Content="Pause indexing on battery power" IsChecked="{Binding PauseOnBattery}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Model -->
+        <TextBlock Classes="section" Text="Embedding model" />
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="160,*" ColumnSpacing="12">
+              <TextBlock Text="Dimensions" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding DimensionOptions}" SelectedItem="{Binding SelectedDimensions}"
+                        MinWidth="120" AutomationProperties.Name="Embedding dimensions" />
+            </Grid>
+            <TextBlock Classes="hint" Text="Smaller vectors use less memory and search faster; 768 is most accurate." />
+            <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}" CornerRadius="4" Padding="10,6"
+                    IsVisible="{Binding ShowReindexWarning}">
+              <TextBlock Text="Changing the dimensions re-indexes all files." TextWrapping="Wrap" FontSize="12" />
+            </Border>
+            <Grid ColumnDefinitions="160,*,Auto" ColumnSpacing="12">
+              <TextBlock Text="Model folder" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding ModelDirectory}" PlaceholderText="Automatic"
+                       AutomationProperties.Name="Model folder" />
+              <Button Grid.Column="2" Content="Browse…" Command="{Binding BrowseModelDirectoryCommand}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding ModelDetectionText}" />
+            <TextBlock Classes="hint" Text="Runs entirely on this computer — Valafind never downloads or uploads anything." />
+          </StackPanel>
+        </Border>
+
+        <!-- General -->
+        <TextBlock Classes="section" Text="General" />
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <CheckBox Content="Start Valafind when I log in" IsChecked="{Binding StartAtLogin}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <TextBlock Classes="hint" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" TextWrapping="NoWrap">
+                <Run Text="Logs: " /><Run Text="{Binding LogDirectory}" />
+              </TextBlock>
+              <Button Grid.Column="1" Content="Open log folder" Command="{Binding OpenLogFolderCommand}" />
+            </Grid>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

@@ -1,0 +1,131 @@
+using Microsoft.Extensions.Logging;
+using Valafind.Core.Abstractions;
+using Valafind.Core.Configuration;
+using Valafind.Core.Embedding;
+using Valafind.Core.Extraction;
+using Valafind.Core.Indexing;
+using Valafind.Core.Platform;
+using Valafind.Core.Search;
+using Valafind.Core.Storage;
+
+namespace Valafind.App.Services;
+
+/// <summary>The running Core services; disposed together, indexing first.</summary>
+internal sealed class CoreServices(
+    IEmbeddingModel model,
+    IIndexStore store,
+    ISearchService search,
+    IIndexingService indexing,
+    ISystemPressureMonitor monitor) : IAsyncDisposable
+{
+    public IEmbeddingModel Model { get; } = model;
+    public IIndexStore Store { get; } = store;
+    public ISearchService Search { get; } = search;
+    public IIndexingService Indexing { get; } = indexing;
+    public ISystemPressureMonitor Monitor { get; } = monitor;
+
+    public async ValueTask DisposeAsync()
+    {
+        // Stop the indexer before tearing down what it uses. Dispose calls are expected to be idempotent in case the
+        // coordinator already disposed something it owns.
+        try
+        {
+            await Indexing.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            Monitor.Dispose();
+            Store.Dispose();
+            Model.Dispose();
+        }
+    }
+}
+
+/// <summary>
+/// The only place that names concrete Core implementations. Everything else in the App talks to the contracts in
+/// <c>Valafind.Core.Abstractions</c>.
+/// </summary>
+internal static class CoreServicesFactory
+{
+    /// <summary>Finds the installed EmbeddingGemma model directory, honouring the configured override.</summary>
+    public static string? LocateModel(string? configuredDirectory) => ModelLocator.Find(configuredDirectory);
+
+    /// <summary>
+    /// Identifies the model install that <see cref="LocateModel"/> would load right now: its folder plus the size and
+    /// time stamp of the files that matter, or null when no valid model is installed. Cheap (a few file probes); used
+    /// to notice an install (or a repaired one) without restarting.
+    /// </summary>
+    public static string? ModelSignature(string? configuredDirectory) => SignatureOf(ModelLocator.Find(configuredDirectory));
+
+    /// <summary>Signature of the model in <paramref name="directory"/>, or null when it is not a valid model folder.</summary>
+    internal static string? SignatureOf(string? directory)
+    {
+        if (directory is null || !ModelLocator.IsValid(directory, out var modelFile))
+            return null;
+        var sb = new System.Text.StringBuilder(directory).Append('|').Append(modelFile);
+        var model = Path.Combine(directory, modelFile.Replace('/', Path.DirectorySeparatorChar));
+        foreach (var file in new[] { model, model + "_data", Path.Combine(directory, "tokenizer.json"), Path.Combine(directory, "tokenizer.model") })
+        {
+            var info = new FileInfo(file);
+            sb.Append('|');
+            if (info.Exists)
+                sb.Append(info.Length).Append('@').Append(info.LastWriteTimeUtc.Ticks);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Where the user should install the model (configured directory or the default models folder).</summary>
+    public static string ExpectedModelDirectory(ValafindSettings settings) =>
+        string.IsNullOrWhiteSpace(settings.ModelDirectory) ? DefaultModelDirectory : settings.ModelDirectory;
+
+    /// <summary>The folder tools/fetch-model.* installs into by default.</summary>
+    public static string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, ModelLocator.ModelFolderName);
+
+    /// <summary>
+    /// Loads the model and opens the index (slow: seconds). Call off the UI thread. On failure every partially
+    /// created service is disposed and the exception propagates.
+    /// </summary>
+    public static CoreServices Create(string modelDirectory, ValafindSettings settings, ILoggerFactory loggerFactory)
+    {
+        // Typed as the contracts on purpose: this file is the only one naming the implementations.
+#pragma warning disable CA1859
+        IEmbeddingModel? model = null;
+        IIndexStore? store = null;
+#pragma warning restore CA1859
+        ISystemPressureMonitor? monitor = null;
+        try
+        {
+            var gemma = new EmbeddingGemmaModel(new EmbeddingOptions
+            {
+                ModelDirectory = modelDirectory,
+                Dimensions = settings.EmbeddingDimensions,
+            });
+            model = gemma;
+            // Load now (we are off the UI thread) rather than on the first keystroke: a corrupt model surfaces as
+            // "model failed" at startup, and the first search is as fast as the rest (~0.25 s instead of ~2.5 s).
+            gemma.EnsureLoaded();
+            _ = gemma.EmbedQuery("warm up");
+            IDocumentReader reader = new DocumentReader();
+            ITextChunker chunker = new TextChunker(new ChunkerOptions(), model.CountTokens);
+
+            AppPaths.EnsurePrivateDirectory(AppPaths.DataDirectory);
+            store = new SqliteIndexStore(AppPaths.IndexDatabase);
+            store.Open(model.ModelId, model.Dimensions);
+
+            ISearchService search = new SearchService(model, store);
+            monitor = SystemPressureMonitor.Create();
+            IFileDiscovery discovery = new UserFileDiscovery(settings);
+            IIndexingService indexing = new IndexingCoordinator(discovery, reader, chunker, model, store, monitor, settings,
+                loggerFactory.CreateLogger<IndexingCoordinator>(), null);
+
+            return new CoreServices(model, store, search, indexing, monitor);
+        }
+        catch
+        {
+            monitor?.Dispose();
+            store?.Dispose();
+            model?.Dispose();
+            throw;
+        }
+    }
+}

@@ -1,0 +1,150 @@
+<!-- Non-result states of the launcher (hint, no results, error, model loading / missing / failed). Inherits font
+     and colours from the hosting platform view. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Valafind.App.ViewModels"
+             xmlns:c="using:Valafind.App.Controls"
+             mc:Ignorable="d" d:DesignWidth="680"
+             x:Class="Valafind.App.Views.Common.LauncherMessageView"
+             x:DataType="vm:LauncherViewModel">
+  <Design.DataContext>
+    <x:Static Member="vm:DesignData.Windows" />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.body">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="LineHeight" Value="19" />
+      <Setter Property="Foreground" Value="{DynamicResource VfSubtleBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Border.code">
+      <Setter Property="Background" Value="{DynamicResource VfCodeBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource VfDividerBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,6,6,6" />
+    </Style>
+    <Style Selector="Border.code SelectableTextBlock">
+      <Setter Property="FontFamily" Value="Cascadia Mono, SF Mono, Menlo, DejaVu Sans Mono, Consolas, monospace" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Button.copy">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+    <Style Selector="Button.check">
+      <Setter Property="Background" Value="{DynamicResource VfCodeBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource VfDividerBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource VfTextBrush}" />
+      <Setter Property="Margin" Value="0,2,0,0" />
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel Margin="20,18,20,22">
+    <!-- Empty query -->
+    <StackPanel Spacing="6" IsVisible="{Binding IsHintVisible}">
+      <TextBlock Classes="title" Text="Search your files by meaning" IsVisible="{Binding !IsSearching}" />
+      <TextBlock Classes="title" Text="Searching…" IsVisible="{Binding IsSearching}" />
+      <TextBlock Classes="body"
+                 Text="Describe what you are looking for in your own words — “the lease where we negotiated the deposit”. Everything runs on this computer." />
+      <TextBlock Classes="body" IsVisible="{Binding !HasHotkeyError}">
+        <Run Text="Summon Valafind from anywhere with " /><Run Text="{Binding HotkeyLabel}" FontWeight="SemiBold" /><Run Text="." />
+      </TextBlock>
+    </StackPanel>
+
+    <!-- Nothing found -->
+    <StackPanel Spacing="6" IsVisible="{Binding IsNoResultsVisible}">
+      <TextBlock Classes="title" Text="No matching files" />
+      <TextBlock Classes="body" Text="Try describing it differently, pick another filter, or wait for indexing to cover more of your files." />
+    </StackPanel>
+
+    <!-- Search error -->
+    <StackPanel Spacing="6" IsVisible="{Binding IsErrorVisible}">
+      <TextBlock Classes="title" Text="Search failed" />
+      <TextBlock Classes="body" Text="{Binding ErrorText}" />
+    </StackPanel>
+
+    <!-- Model loading -->
+    <StackPanel Spacing="10" IsVisible="{Binding IsModelLoadingVisible}">
+      <TextBlock Classes="title" Text="Loading EmbeddingGemma…" />
+      <ProgressBar IsIndeterminate="True" Height="3" MinHeight="3" Width="180" HorizontalAlignment="Left"
+                   Foreground="{DynamicResource VfAccentBrush}" Background="{DynamicResource VfTrackBrush}" />
+      <TextBlock Classes="body" Text="The on-device model takes a few seconds to start. Your search runs as soon as it is ready." />
+    </StackPanel>
+
+    <!-- Model not installed -->
+    <StackPanel Spacing="8" IsVisible="{Binding IsModelMissingVisible}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <c:StrokeIcon Data="{StaticResource VfIconWarning}" Width="18" Height="18" StrokeThickness="2"
+                      Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
+        <TextBlock Classes="title" Text="EmbeddingGemma model not installed" VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBlock Classes="body"
+                 Text="Valafind never downloads anything by itself. Install the model once by running this command in a terminal:" />
+      <Border Classes="code">
+        <DockPanel>
+          <Button Classes="vf copy" DockPanel.Dock="Right" ToolTip.Tip="Copy command"
+                  Command="{Binding CopyTextCommand}" CommandParameter="{Binding FetchCommandText}">
+            <c:StrokeIcon Data="{StaticResource VfIconCopy}" Width="14" Height="14" Foreground="{DynamicResource VfSubtleBrush}" />
+          </Button>
+          <SelectableTextBlock Text="{Binding FetchCommandText}" />
+        </DockPanel>
+      </Border>
+      <TextBlock Classes="body" Text="It installs into:" />
+      <Border Classes="code">
+        <DockPanel>
+          <Button Classes="vf copy" DockPanel.Dock="Right" ToolTip.Tip="Copy folder"
+                  Command="{Binding CopyTextCommand}" CommandParameter="{Binding ModelTargetDirectory}">
+            <c:StrokeIcon Data="{StaticResource VfIconCopy}" Width="14" Height="14" Foreground="{DynamicResource VfSubtleBrush}" />
+          </Button>
+          <SelectableTextBlock Text="{Binding ModelTargetDirectory}" />
+        </DockPanel>
+      </Border>
+      <TextBlock Classes="body"
+                 Text="Valafind notices the model by itself as soon as it is there — no restart needed. Already have a copy? Choose its folder in Settings." />
+      <Button Classes="vf check" Content="Check again" Command="{Binding CheckModelCommand}" />
+    </StackPanel>
+
+    <!-- Model failed -->
+    <StackPanel Spacing="8" IsVisible="{Binding IsModelFailedVisible}">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <c:StrokeIcon Data="{StaticResource VfIconWarning}" Width="18" Height="18" StrokeThickness="2"
+                      Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
+        <TextBlock Classes="title" Text="EmbeddingGemma could not be loaded" VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBlock Classes="body" Text="{Binding ModelErrorText}" />
+      <TextBlock Classes="body" Text="The model files are probably incomplete. Download them again with:" />
+      <Border Classes="code">
+        <DockPanel>
+          <Button Classes="vf copy" DockPanel.Dock="Right" ToolTip.Tip="Copy command"
+                  Command="{Binding CopyTextCommand}" CommandParameter="{Binding RepairCommandText}">
+            <c:StrokeIcon Data="{StaticResource VfIconCopy}" Width="14" Height="14" Foreground="{DynamicResource VfSubtleBrush}" />
+          </Button>
+          <SelectableTextBlock Text="{Binding RepairCommandText}" />
+        </DockPanel>
+      </Border>
+      <TextBlock Classes="body"
+                 Text="Valafind reloads the model by itself once the files change, or choose another model folder in Settings." />
+      <Button Classes="vf check" Content="Check again" Command="{Binding CheckModelCommand}" />
+    </StackPanel>
+  </Panel>
+</UserControl>

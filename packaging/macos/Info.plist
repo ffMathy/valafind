@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>Valafind</string>
+  <key>CFBundleDisplayName</key>
+  <string>Valafind</string>
+  <key>CFBundleIdentifier</key>
+  <string>app.valafind.Valafind</string>
+  <key>CFBundleExecutable</key>
+  <string>Valafind</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>Valafind</string>
+  <key>CFBundleShortVersionString</key>
+  <string>__VERSION__</string>
+  <key>CFBundleVersion</key>
+  <string>__VERSION__</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>12.0</string>
+  <!-- Menu-bar style app: no Dock icon, no app menu. The launcher is summoned with the global hotkey or the tray icon. -->
+  <key>LSUIElement</key>
+  <true/>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>NSHumanReadableCopyright</key>
+  <string>Valafind. EmbeddingGemma is provided under the Gemma Terms of Use.</string>
+</dict>
+</plist>

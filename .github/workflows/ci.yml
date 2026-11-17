@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build & test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Valafind.slnx
+
+      - name: Build
+        run: dotnet build Valafind.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --solution Valafind.slnx --configuration Release --no-build
+
+  model-parity:
+    # Downloads EmbeddingGemma once and checks tokenizer + embedding parity against the committed reference.
+    name: EmbeddingGemma parity (Linux)
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      VALAFIND_TEST_MODEL_DIR: ${{ github.workspace }}/.model/embeddinggemma-300m
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/cache@v4
+        with:
+          path: .model
+          key: embeddinggemma-300m-q8-v1
+      - name: Fetch model
+        run: |
+          if [ ! -f "$VALAFIND_TEST_MODEL_DIR/onnx/model_quantized.onnx_data" ]; then
+            bash tools/fetch-model.sh "$VALAFIND_TEST_MODEL_DIR"
+          fi
+      - name: Embedding tests
+        run: dotnet test --project tests/Valafind.Core.Tests --configuration Release -- --filter-namespace "Valafind.Core.Tests.Embedding" --filter-namespace "Valafind.Core.Tests.EndToEnd"
+
+  publish:
+    name: Publish (${{ matrix.rid }})
+    needs: build-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: windows-latest, rid: win-arm64 }
+          - { os: macos-latest, rid: osx-arm64 }
+          - { os: macos-latest, rid: osx-x64 }
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: ubuntu-latest, rid: linux-arm64 }
+    runs-on: ${{ matrix.os }}
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Publish
+        shell: bash
+        run: dotnet publish src/Valafind.App -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o publish/${{ matrix.rid }}
+      - name: Check model download scripts are shipped
+        shell: bash
+        run: |
+          test -f publish/${{ matrix.rid }}/tools/fetch-model.sh
+          test -f publish/${{ matrix.rid }}/tools/fetch-model.ps1
+      - name: Package macOS app bundle
+        if: runner.os == 'macOS'
+        run: |
+          packaging/macos/make-app-bundle.sh publish/${{ matrix.rid }} bundle/${{ matrix.rid }}
+          plutil -lint bundle/${{ matrix.rid }}/Valafind.app/Contents/Info.plist
+          mkdir -p dist && ditto -c -k --keepParent bundle/${{ matrix.rid }}/Valafind.app dist/valafind-${{ matrix.rid }}.zip
+      - name: Package Linux / Windows folder
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          mkdir -p dist/${{ matrix.rid }}
+          cp -R publish/${{ matrix.rid }}/. dist/${{ matrix.rid }}/
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            cp packaging/linux/app.valafind.Valafind.desktop dist/${{ matrix.rid }}/
+            cp src/Valafind.App/Assets/valafind.png dist/${{ matrix.rid }}/valafind.png
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: valafind-${{ matrix.rid }}
+          path: |
+            dist/valafind-${{ matrix.rid }}.zip
+            dist/${{ matrix.rid }}
+          if-no-files-found: ignore

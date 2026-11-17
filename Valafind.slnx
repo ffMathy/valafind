@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Valafind.App/Valafind.App.csproj" />
+    <Project Path="src/Valafind.Core/Valafind.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Valafind.App.Tests/Valafind.App.Tests.csproj" />
+    <Project Path="tests/Valafind.Core.Tests/Valafind.Core.Tests.csproj" />
+  </Folder>
+</Solution>
