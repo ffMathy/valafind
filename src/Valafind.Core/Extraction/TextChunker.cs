@@ -30,7 +30,8 @@ public sealed class ChunkerOptions
 /// </summary>
 /// <remarks>
 /// <para><see cref="TextChunk.Start"/>/<see cref="TextChunk.Length"/> index the original, unmodified text.
-/// <see cref="TextChunk.Text"/> is that span with every whitespace run collapsed to a single space.</para>
+/// <see cref="TextChunk.Text"/> is that span with every whitespace run collapsed to a single character (a line break if
+/// the run contained one, otherwise a space).</para>
 /// <para>With a token counter, every chunk's <see cref="TextChunk.Text"/> measures at most
 /// <see cref="ChunkerOptions.TargetTokens"/> (unless a single grapheme alone exceeds it). Without one, tokens
 /// are estimated conservatively as ceil(chars / 3.5).</para>
@@ -198,30 +199,39 @@ public sealed class TextChunker : ITextChunker
 
     private double Budget => _target - _overhead;
 
-    /// <summary>Collapses every whitespace run to one space (input spans never start/end with whitespace).</summary>
+    /// <summary>
+    /// Collapses every whitespace run to one character: a line break when the run contains one, otherwise a space
+    /// (input spans never start/end with whitespace). Keeping line breaks preserves the structure of mail headers,
+    /// lists, table rows and code, which the search layer uses as sentence boundaries for snippets.
+    /// </summary>
     internal static string Collapse(ReadOnlySpan<char> span)
     {
         var builder = new StringBuilder(span.Length);
         var inWhitespace = false;
+        var sawLineBreak = false;
         foreach (var c in span)
         {
             if (char.IsWhiteSpace(c))
             {
                 inWhitespace = true;
+                sawLineBreak |= IsLineBreak(c);
                 continue;
             }
 
             if (inWhitespace && builder.Length > 0)
             {
-                builder.Append(' ');
+                builder.Append(sawLineBreak ? '\n' : ' ');
             }
 
             inWhitespace = false;
+            sawLineBreak = false;
             builder.Append(c);
         }
 
         return builder.ToString();
     }
+
+    private static bool IsLineBreak(char c) => c is '\n' or '\r' or '\u2028' or '\u2029' or '\u0085';
 
     /// <summary>Boundary strength before a unit; higher is a better place to cut.</summary>
     internal enum Boundary : byte

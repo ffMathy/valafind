@@ -172,6 +172,21 @@ public sealed class SearchServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Mail_headers_are_separate_sentences_so_the_explanation_is_the_body_line()
+    {
+        // Chunk text keeps line breaks; without them the headers and the first sentence fused into one "sentence".
+        const string mail = "Subject: Re: Depositum\nFrom: Henrik Larsen\nTo: Alex\nDate: 2024-02-21\nHi Alex, we can accept two months of deposit instead of three.";
+        var service = new SearchService(_model, new FixedStore(Hit(P("/m/re.eml"), 0.8f, mail)));
+        var results = await service.SearchAsync("accept two months of deposit instead of three", SearchFilter.None, 5, Ct);
+        var explained = await service.ExplainAsync("accept two months of deposit instead of three", results, Ct);
+
+        var why = Assert.Single(explained[0].Highlights);
+        var sentence = explained[0].Snippet.Substring(why.Start, why.Length);
+        Assert.StartsWith("Hi Alex", sentence, StringComparison.Ordinal);
+        Assert.DoesNotContain("Subject", sentence, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Explain_invents_no_reason_for_weak_results_or_unrelated_sentences()
     {
         var service = new SearchService(_model, new FixedStore(
@@ -389,7 +404,8 @@ public sealed class SearchServiceTests : IDisposable
                 Assert.InRange(r.Snippet.Length, 0, Snippet.TargetLength + 2);
                 if (string.IsNullOrWhiteSpace(hits.Single(h => h.Path == r.Path).ChunkText))
                     Assert.Equal("", r.Snippet);
-                Assert.DoesNotContain('\n', r.Snippet);
+                Assert.DoesNotContain("\n\n", r.Snippet, StringComparison.Ordinal);
+                Assert.DoesNotContain('\r', r.Snippet);
                 foreach (var h in r.Highlights)
                 {
                     Assert.True(h.Length > 0);
