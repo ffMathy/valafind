@@ -15,6 +15,16 @@
          model into memory on every start. -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
+  <!-- Native packages also ship build-time files that the bundler leaves next to the executable: debug symbols
+       (libSkiaSharp.pdb, libHarfBuzzSharp.pdb) and ONNX Runtime import libraries (onnxruntime*.lib) on Windows. None are
+       needed at run time (managed symbols are embedded), so keep them out of single-file publishes. -->
+  <Target Name="ValafindDropBuildTimeNativeFiles" AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(PublishSingleFile)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(Extension)' == '.pdb' or '%(Extension)' == '.lib'" />
+    </ItemGroup>
+  </Target>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
