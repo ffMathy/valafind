@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BannerPausedOnBattery" xml:space="preserve">
+    <value>Đã tạm dừng lập chỉ mục trong khi dùng pin</value>
+  </data>
+  <data name="BannerPausedSystemBusy" xml:space="preserve">
+    <value>Đã tạm dừng lập chỉ mục trong khi hệ thống đang bận</value>
+  </data>
+  <data name="BannerSearchable" xml:space="preserve">
+    <value>Có thể tìm kiếm {0} tệp của bạn</value>
+  </data>
+  <data name="BestMatchesByMeaning" xml:space="preserve">
+    <value>Kết quả khớp nhất theo ý nghĩa</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Hủy</value>
+  </data>
+  <data name="CheckAgain" xml:space="preserve">
+    <value>Kiểm tra lại</value>
+  </data>
+  <data name="CheckForUpdatesMenu" xml:space="preserve">
+    <value>Kiểm tra cập nhật…</value>
+  </data>
+  <data name="ClearSearch" xml:space="preserve">
+    <value>Xóa tìm kiếm</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Đóng</value>
+  </data>
+  <data name="CopyCommand" xml:space="preserve">
+    <value>Sao chép lệnh</value>
+  </data>
+  <data name="CopyFolder" xml:space="preserve">
+    <value>Sao chép thư mục</value>
+  </data>
+  <data name="CopyPath" xml:space="preserve">
+    <value>Sao chép đường dẫn</value>
+  </data>
+  <data name="CopyPathTitleCase" xml:space="preserve">
+    <value>Sao chép đường dẫn</value>
+  </data>
+  <data name="DateToday" xml:space="preserve">
+    <value>Hôm nay {0}</value>
+  </data>
+  <data name="DateYesterday" xml:space="preserve">
+    <value>Hôm qua</value>
+  </data>
+  <data name="DetailLocation" xml:space="preserve">
+    <value>Vị trí</value>
+  </data>
+  <data name="DetailModified" xml:space="preserve">
+    <value>Ngày sửa đổi</value>
+  </data>
+  <data name="DetailSize" xml:space="preserve">
+    <value>Kích thước</value>
+  </data>
+  <data name="DetailType" xml:space="preserve">
+    <value>Loại</value>
+  </data>
+  <data name="ErrorAutostart" xml:space="preserve">
+    <value>Đã lưu cài đặt, nhưng không thể thay đổi tùy chọn khởi động khi đăng nhập: {0}</value>
+  </data>
+  <data name="ErrorOpenReleasesPage" xml:space="preserve">
+    <value>Không thể mở trang phát hành: {0}</value>
+  </data>
+  <data name="ErrorSaveSettings" xml:space="preserve">
+    <value>Không thể lưu cài đặt: {0}</value>
+  </data>
+  <data name="FilterAll" xml:space="preserve">
+    <value>Tất cả</value>
+  </data>
+  <data name="FilterCode" xml:space="preserve">
+    <value>Mã</value>
+  </data>
+  <data name="FilterDocuments" xml:space="preserve">
+    <value>Tài liệu</value>
+  </data>
+  <data name="FilterImages" xml:space="preserve">
+    <value>Hình ảnh</value>
+  </data>
+  <data name="FilterMail" xml:space="preserve">
+    <value>Thư</value>
+  </data>
+  <data name="FilterPdfs" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="FilterSlides" xml:space="preserve">
+    <value>Trang chiếu</value>
+  </data>
+  <data name="FilterSpreadsheets" xml:space="preserve">
+    <value>Bảng tính</value>
+  </data>
+  <data name="GroupMedia" xml:space="preserve">
+    <value>Đa phương tiện</value>
+  </data>
+  <data name="GroupOther" xml:space="preserve">
+    <value>Khác</value>
+  </data>
+  <data name="GroupPresentations" xml:space="preserve">
+    <value>Bản trình bày</value>
+  </data>
+  <data name="HintBody" xml:space="preserve">
+    <value>Mô tả điều bạn đang tìm bằng lời của chính bạn — “hợp đồng thuê nhà mà chúng ta đã thương lượng tiền đặt cọc”. Mọi thứ đều chạy trên máy tính này.</value>
+  </data>
+  <data name="HintSummon" xml:space="preserve">
+    <value>Gọi Valafind từ bất cứ đâu bằng {0}.</value>
+  </data>
+  <data name="HintTitle" xml:space="preserve">
+    <value>Tìm tệp theo ý nghĩa</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterBind" xml:space="preserve">
+    <value>Không thể đăng ký {0} — hãy gán một phím tắt hệ thống cho: {1}</value>
+  </data>
+  <data name="HotkeyCouldNotRegisterReason" xml:space="preserve">
+    <value>Không thể đăng ký {0}: {1}</value>
+  </data>
+  <data name="HotkeyDuplicateModifier" xml:space="preserve">
+    <value>Phím bổ trợ “{0}” xuất hiện nhiều lần trong “{1}”.</value>
+  </data>
+  <data name="HotkeyEmpty" xml:space="preserve">
+    <value>Phím tắt đang trống.</value>
+  </data>
+  <data name="HotkeyEmptyPart" xml:space="preserve">
+    <value>“{0}” không phải là phím tắt hợp lệ (có phần trống).</value>
+  </data>
+  <data name="HotkeyEscape" xml:space="preserve">
+    <value>Không thể dùng Escape làm phím tắt toàn cục.</value>
+  </data>
+  <data name="HotkeyInUse" xml:space="preserve">
+    <value>{0} đã được một ứng dụng khác sử dụng. Hãy chọn phím tắt khác.</value>
+  </data>
+  <data name="HotkeyKeyNotOnLayout" xml:space="preserve">
+    <value>Phím “{0}” không có trên bố cục bàn phím hiện tại.</value>
+  </data>
+  <data name="HotkeyKeyNotUsable" xml:space="preserve">
+    <value>Không thể dùng phím “{0}” làm phím tắt toàn cục.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableMac" xml:space="preserve">
+    <value>Không thể dùng phím “{0}” làm phím tắt toàn cục trên macOS.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableWindows" xml:space="preserve">
+    <value>Không thể dùng phím “{0}” làm phím tắt toàn cục trên Windows.</value>
+  </data>
+  <data name="HotkeyKeyNotUsableX11" xml:space="preserve">
+    <value>Không thể dùng phím “{0}” làm phím tắt toàn cục trên X11.</value>
+  </data>
+  <data name="HotkeyMacOptionOnly" xml:space="preserve">
+    <value>macOS không cho phép phím tắt chỉ dùng Option ({0}). Hãy thêm Control hoặc Command, ví dụ ⌃⌥Space.</value>
+  </data>
+  <data name="HotkeyMacOptionShiftOnly" xml:space="preserve">
+    <value>macOS không cho phép phím tắt chỉ dùng Option và Shift ({0}). Hãy thêm Control hoặc Command, ví dụ ⌃⌥Space.</value>
+  </data>
+  <data name="HotkeyNeedsModifier" xml:space="preserve">
+    <value>Phím tắt toàn cục cần có Ctrl, Alt hoặc Super (chỉ phím chức năng mới được dùng riêng hoặc chỉ kèm Shift).</value>
+  </data>
+  <data name="HotkeyNoGraphicalSession" xml:space="preserve">
+    <value>Phím nóng toàn cục cần một phiên đồ họa (cả DISPLAY lẫn WAYLAND_DISPLAY đều chưa được đặt).</value>
+  </data>
+  <data name="HotkeyNoKey" xml:space="preserve">
+    <value>“{0}” không có phím.</value>
+  </data>
+  <data name="HotkeyNoKeyAfterModifiers" xml:space="preserve">
+    <value>“{0}” không có phím; hãy thêm một phím sau các phím bổ trợ (ví dụ: “{0}+Space”).</value>
+  </data>
+  <data name="HotkeyNotModifier" xml:space="preserve">
+    <value>“{0}” không phải là phím bổ trợ. Hãy dùng Ctrl, Alt, Shift hoặc Super trước phím.</value>
+  </data>
+  <data name="HotkeyPortalCancelled" xml:space="preserve">
+    <value>Yêu cầu phím tắt đã bị hủy trong hộp thoại của màn hình nền.</value>
+  </data>
+  <data name="HotkeySpotlightHint" xml:space="preserve">
+    <value>⌘Space thường được Spotlight sử dụng; hãy thử ⌃⌥Space thay thế.</value>
+  </data>
+  <data name="HotkeyUnavailableBind" xml:space="preserve">
+    <value>Phím nóng toàn cục không khả dụng — hãy gán một phím tắt hệ thống cho: {0}</value>
+  </data>
+  <data name="HotkeyUnsupportedKey" xml:space="preserve">
+    <value>“{0}” không phải là phím được hỗ trợ. Được hỗ trợ: Space, A-Z, 0-9, F1-F24, Enter, Tab, Backquote, Comma, Period, Slash, Semicolon.</value>
+  </data>
+  <data name="HotkeyUnsupportedOs" xml:space="preserve">
+    <value>Phím nóng toàn cục không được hỗ trợ trên hệ điều hành này.</value>
+  </data>
+  <data name="HotkeyWaylandUnavailable" xml:space="preserve">
+    <value>Phím nóng toàn cục không khả dụng trên Wayland. Hãy gán một phím tắt trong cài đặt màn hình nền để chạy: {0}</value>
+  </data>
+  <data name="IndexCountOf" xml:space="preserve">
+    <value>{0} / {1}</value>
+  </data>
+  <data name="IndexCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="IndexDisk" xml:space="preserve">
+    <value>Ổ đĩa</value>
+  </data>
+  <data name="IndexFilesCount" xml:space="preserve">
+    <value>{0} tệp</value>
+  </data>
+  <data name="IndexFrequent" xml:space="preserve">
+    <value>Thường dùng</value>
+  </data>
+  <data name="IndexFrequentPercent" xml:space="preserve">
+    <value>Thường dùng {0}</value>
+  </data>
+  <data name="IndexNow" xml:space="preserve">
+    <value>Lập chỉ mục ngay</value>
+  </data>
+  <data name="IndexPhase1" xml:space="preserve">
+    <value>Giai đoạn 1 · Thường dùng</value>
+  </data>
+  <data name="IndexPhase2" xml:space="preserve">
+    <value>Giai đoạn 2 · {0}</value>
+  </data>
+  <data name="IndexStatusAndPreferences" xml:space="preserve">
+    <value>Trạng thái chỉ mục và tùy chọn</value>
+  </data>
+  <data name="IndexTitle" xml:space="preserve">
+    <value>Chỉ mục</value>
+  </data>
+  <data name="IndexUpToDate" xml:space="preserve">
+    <value>Chỉ mục đã cập nhật</value>
+  </data>
+  <data name="IndexUpToDateDetail" xml:space="preserve">
+    <value>Chỉ mục đã cập nhật · có thể tìm {0} tệp</value>
+  </data>
+  <data name="KeyHintNavigate" xml:space="preserve">
+    <value>Di chuyển</value>
+  </data>
+  <data name="KeyHintNavigateLower" xml:space="preserve">
+    <value>di chuyển</value>
+  </data>
+  <data name="KeyHintOpenLower" xml:space="preserve">
+    <value>mở</value>
+  </data>
+  <data name="KeyHintPreview" xml:space="preserve">
+    <value>Xem trước</value>
+  </data>
+  <data name="KeyHintPreviewLower" xml:space="preserve">
+    <value>xem trước</value>
+  </data>
+  <data name="KeyHintReveal" xml:space="preserve">
+    <value>Hiển thị</value>
+  </data>
+  <data name="KeyHintShowInFilesLower" xml:space="preserve">
+    <value>hiển thị trong Tập tin</value>
+  </data>
+  <data name="MainMenu" xml:space="preserve">
+    <value>Menu chính</value>
+  </data>
+  <data name="Match" xml:space="preserve">
+    <value>Độ khớp</value>
+  </data>
+  <data name="MatchExplanation" xml:space="preserve">
+    <value>Gần nghĩa với “{0}” — không cần trùng từ khóa.</value>
+  </data>
+  <data name="ModelFailedBundledBody" xml:space="preserve">
+    <value>Không thể giải nén hoặc tải mô hình tích hợp. Hãy giải phóng dung lượng ổ đĩa nếu cần, sau đó bấm Kiểm tra lại để giải nén lại.</value>
+  </data>
+  <data name="ModelFailedDownloadBody" xml:space="preserve">
+    <value>Có thể các tệp mô hình chưa đầy đủ. Hãy tải xuống lại bằng:</value>
+  </data>
+  <data name="ModelFailedFooter" xml:space="preserve">
+    <value>Valafind sẽ tự tải lại mô hình khi các tệp thay đổi, hoặc bạn có thể chọn thư mục mô hình khác trong Cài đặt.</value>
+  </data>
+  <data name="ModelFailedTitle" xml:space="preserve">
+    <value>Không thể tải EmbeddingGemma</value>
+  </data>
+  <data name="ModelInstallsInto" xml:space="preserve">
+    <value>Mô hình được cài vào:</value>
+  </data>
+  <data name="ModelLoadingBody" xml:space="preserve">
+    <value>Mô hình trên thiết bị cần vài giây để khởi động. Tìm kiếm của bạn sẽ chạy ngay khi mô hình sẵn sàng.</value>
+  </data>
+  <data name="ModelLoadingTitle" xml:space="preserve">
+    <value>Đang tải EmbeddingGemma…</value>
+  </data>
+  <data name="ModelMissingBody" xml:space="preserve">
+    <value>Bản dựng Valafind này không kèm mô hình và sẽ không tự tải xuống. Hãy cài đặt một lần bằng cách chạy lệnh sau trong cửa sổ dòng lệnh:</value>
+  </data>
+  <data name="ModelMissingFooter" xml:space="preserve">
+    <value>Valafind tự nhận ra mô hình ngay khi mô hình có mặt — không cần khởi động lại. Đã có bản sao? Hãy chọn thư mục của nó trong Cài đặt.</value>
+  </data>
+  <data name="ModelMissingTitle" xml:space="preserve">
+    <value>Chưa cài đặt mô hình EmbeddingGemma</value>
+  </data>
+  <data name="ModelUnpackFailed" xml:space="preserve">
+    <value>Không thể giải nén mô hình tích hợp vào {0}: {1}</value>
+  </data>
+  <data name="ModifiedOn" xml:space="preserve">
+    <value>Sửa đổi {0}</value>
+  </data>
+  <data name="NoResultsBody" xml:space="preserve">
+    <value>Hãy thử mô tả theo cách khác, chọn bộ lọc khác hoặc đợi quá trình lập chỉ mục bao quát thêm tệp của bạn.</value>
+  </data>
+  <data name="NoResultsTitle" xml:space="preserve">
+    <value>Không có tệp phù hợp</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Mở</value>
+  </data>
+  <data name="OpenValafind" xml:space="preserve">
+    <value>Mở Valafind</value>
+  </data>
+  <data name="OpenValafindWithHotkey" xml:space="preserve">
+    <value>Mở Valafind ({0})</value>
+  </data>
+  <data name="PauseIndexing" xml:space="preserve">
+    <value>Tạm dừng lập chỉ mục</value>
+  </data>
+  <data name="PhaseDone" xml:space="preserve">
+    <value>xong</value>
+  </data>
+  <data name="PhaseIndexing" xml:space="preserve">
+    <value>đang lập chỉ mục</value>
+  </data>
+  <data name="PhasePaused" xml:space="preserve">
+    <value>đã tạm dừng</value>
+  </data>
+  <data name="PhaseQueued" xml:space="preserve">
+    <value>đang chờ</value>
+  </data>
+  <data name="PhaseStopped" xml:space="preserve">
+    <value>đã dừng</value>
+  </data>
+  <data name="PickFolderToIndex" xml:space="preserve">
+    <value>Chọn thư mục để lập chỉ mục</value>
+  </data>
+  <data name="PickModelFolder" xml:space="preserve">
+    <value>Chọn thư mục mô hình EmbeddingGemma</value>
+  </data>
+  <data name="PolicyPauses" xml:space="preserve">
+    <value>Tự động tạm dừng khi CPU vượt quá {0} hoặc ổ đĩa hoạt động nhiều</value>
+  </data>
+  <data name="PolicyResumes" xml:space="preserve">
+    <value>Tự động tiếp tục khi CPU và ổ đĩa rảnh</value>
+  </data>
+  <data name="PortalShortcutDescription" xml:space="preserve">
+    <value>Hiện hoặc ẩn Valafind</value>
+  </data>
+  <data name="Preferences" xml:space="preserve">
+    <value>Tùy chọn</value>
+  </data>
+  <data name="QuickLook" xml:space="preserve">
+    <value>Xem nhanh</value>
+  </data>
+  <data name="QuitValafind" xml:space="preserve">
+    <value>Thoát Valafind</value>
+  </data>
+  <data name="ResultSummaryMany" xml:space="preserve">
+    <value>{0} kết quả · {1} ms</value>
+  </data>
+  <data name="ResultSummaryOne" xml:space="preserve">
+    <value>{0} kết quả · {1} ms</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>Tiếp tục</value>
+  </data>
+  <data name="ResumeIndexing" xml:space="preserve">
+    <value>Tiếp tục lập chỉ mục</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Lưu</value>
+  </data>
+  <data name="ScopeEverythingIn" xml:space="preserve">
+    <value>Mọi thứ trong {0}</value>
+  </data>
+  <data name="ScopeEverythingInHome" xml:space="preserve">
+    <value>Mọi thứ trong thư mục nhà của bạn</value>
+  </data>
+  <data name="ScopeEverythingInHomeAt" xml:space="preserve">
+    <value>Mọi thứ trong thư mục nhà của bạn ({0})</value>
+  </data>
+  <data name="ScopeFolderCount" xml:space="preserve">
+    <value>{0} thư mục</value>
+  </data>
+  <data name="ScopeHome" xml:space="preserve">
+    <value>Nhà</value>
+  </data>
+  <data name="ScopeHomeFolder" xml:space="preserve">
+    <value>Thư mục nhà</value>
+  </data>
+  <data name="SearchByMeaning" xml:space="preserve">
+    <value>Tìm tệp theo ý nghĩa</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>Tìm kiếm thất bại</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Mô tả điều bạn đang tìm</value>
+  </data>
+  <data name="Searching" xml:space="preserve">
+    <value>Đang tìm kiếm…</value>
+  </data>
+  <data name="SemanticMatch" xml:space="preserve">
+    <value>Khớp ngữ nghĩa</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Cài đặt</value>
+  </data>
+  <data name="SettingsA11y" xml:space="preserve">
+    <value>Cài đặt Valafind</value>
+  </data>
+  <data name="SettingsAddFolder" xml:space="preserve">
+    <value>Thêm thư mục…</value>
+  </data>
+  <data name="SettingsAutoUpdate" xml:space="preserve">
+    <value>Tự động cài đặt phiên bản mới</value>
+  </data>
+  <data name="SettingsBrowse" xml:space="preserve">
+    <value>Duyệt…</value>
+  </data>
+  <data name="SettingsCheckForUpdates" xml:space="preserve">
+    <value>Kiểm tra cập nhật</value>
+  </data>
+  <data name="SettingsDefaultHotkey" xml:space="preserve">
+    <value>Mặc định: {0}</value>
+  </data>
+  <data name="SettingsDimensions" xml:space="preserve">
+    <value>Số chiều</value>
+  </data>
+  <data name="SettingsDimensionsA11y" xml:space="preserve">
+    <value>Số chiều vectơ nhúng</value>
+  </data>
+  <data name="SettingsDimensionsHint" xml:space="preserve">
+    <value>Vectơ nhỏ hơn dùng ít bộ nhớ hơn và tìm kiếm nhanh hơn; 768 là chính xác nhất.</value>
+  </data>
+  <data name="SettingsGeneral" xml:space="preserve">
+    <value>Chung</value>
+  </data>
+  <data name="SettingsGlobalShortcut" xml:space="preserve">
+    <value>Phím tắt toàn cục</value>
+  </data>
+  <data name="SettingsHomeFolderRow" xml:space="preserve">
+    <value>Thư mục nhà của bạn ({0})</value>
+  </data>
+  <data name="SettingsHotkeyPlaceholder" xml:space="preserve">
+    <value>Nhấn một tổ hợp phím</value>
+  </data>
+  <data name="SettingsIdleSection" xml:space="preserve">
+    <value>Chỉ lập chỉ mục khi máy tính đang rảnh</value>
+  </data>
+  <data name="SettingsIndexedFolders" xml:space="preserve">
+    <value>Thư mục được lập chỉ mục</value>
+  </data>
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>Ngôn ngữ</value>
+  </data>
+  <data name="SettingsLanguageHint" xml:space="preserve">
+    <value>Có hiệu lực vào lần tới Valafind khởi động.</value>
+  </data>
+  <data name="SettingsLanguageSystem" xml:space="preserve">
+    <value>Mặc định của hệ thống</value>
+  </data>
+  <data name="SettingsLogs" xml:space="preserve">
+    <value>Nhật ký:</value>
+  </data>
+  <data name="SettingsMaxCpu" xml:space="preserve">
+    <value>CPU tối đa</value>
+  </data>
+  <data name="SettingsMaxCpuA11y" xml:space="preserve">
+    <value>Phần trăm CPU tối đa</value>
+  </data>
+  <data name="SettingsMaxDisk" xml:space="preserve">
+    <value>Mức bận ổ đĩa tối đa</value>
+  </data>
+  <data name="SettingsMaxDiskA11y" xml:space="preserve">
+    <value>Phần trăm bận ổ đĩa tối đa</value>
+  </data>
+  <data name="SettingsMenu" xml:space="preserve">
+    <value>Cài đặt…</value>
+  </data>
+  <data name="SettingsModelDetected" xml:space="preserve">
+    <value>Đã phát hiện: {0}</value>
+  </data>
+  <data name="SettingsModelFolder" xml:space="preserve">
+    <value>Thư mục mô hình</value>
+  </data>
+  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
+    <value>Tự động</value>
+  </data>
+  <data name="SettingsModelNotFound" xml:space="preserve">
+    <value>Không tìm thấy — hãy cài đặt bằng cách chạy {0} (cài vào {1}). Valafind sẽ tự động nhận ra.</value>
+  </data>
+  <data name="SettingsModelSection" xml:space="preserve">
+    <value>Mô hình nhúng</value>
+  </data>
+  <data name="SettingsOpenLogFolder" xml:space="preserve">
+    <value>Mở thư mục nhật ký</value>
+  </data>
+  <data name="SettingsPauseOnBattery" xml:space="preserve">
+    <value>Tạm dừng lập chỉ mục khi dùng pin</value>
+  </data>
+  <data name="SettingsPrivacy" xml:space="preserve">
+    <value>Chạy hoàn toàn trên máy tính này — tệp và nội dung tìm kiếm của bạn không bao giờ rời khỏi máy.</value>
+  </data>
+  <data name="SettingsReindexWarning" xml:space="preserve">
+    <value>Thay đổi số chiều sẽ lập chỉ mục lại tất cả các tệp.</value>
+  </data>
+  <data name="SettingsRemove" xml:space="preserve">
+    <value>Xóa</value>
+  </data>
+  <data name="SettingsReset" xml:space="preserve">
+    <value>Đặt lại</value>
+  </data>
+  <data name="SettingsRootsHint" xml:space="preserve">
+    <value>Chỉ các thư mục được liệt kê ở đây mới được lập chỉ mục — mặc định là thư mục nhà của bạn. Thêm ổ đĩa khác, ổ đĩa ngoài hoặc thư mục mạng bằng “Thêm thư mục…”. Việc thêm thư mục sẽ thay thế mặc định, vì vậy hãy thêm cả thư mục nhà nếu bạn vẫn muốn lập chỉ mục nó.</value>
+  </data>
+  <data name="SettingsStartAtLogin" xml:space="preserve">
+    <value>Khởi động Valafind khi tôi đăng nhập</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Cài đặt Valafind</value>
+  </data>
+  <data name="ShowInFiles" xml:space="preserve">
+    <value>Hiển thị trong Tập tin</value>
+  </data>
+  <data name="ShowInFinder" xml:space="preserve">
+    <value>Hiển thị trong Finder</value>
+  </data>
+  <data name="ShowInFolder" xml:space="preserve">
+    <value>Hiển thị trong thư mục</value>
+  </data>
+  <data name="StateIndexingWhileIdle" xml:space="preserve">
+    <value>Đang lập chỉ mục khi rảnh</value>
+  </data>
+  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
+    <value>Đang lập chỉ mục khi rảnh {0}</value>
+  </data>
+  <data name="StateModelUnavailable" xml:space="preserve">
+    <value>Mô hình không khả dụng — tìm kiếm đã tắt</value>
+  </data>
+  <data name="StateModelUnavailableShort" xml:space="preserve">
+    <value>Mô hình không khả dụng</value>
+  </data>
+  <data name="StatePaused" xml:space="preserve">
+    <value>Đã tạm dừng lập chỉ mục</value>
+  </data>
+  <data name="StatePausedByYou" xml:space="preserve">
+    <value>Bạn đã tạm dừng</value>
+  </data>
+  <data name="StatePausedOnBattery" xml:space="preserve">
+    <value>Đã tạm dừng lập chỉ mục — đang dùng pin</value>
+  </data>
+  <data name="StatePausedOnBatteryShort" xml:space="preserve">
+    <value>Đã tạm dừng — đang dùng pin</value>
+  </data>
+  <data name="StatePausedSystemBusy" xml:space="preserve">
+    <value>Đã tạm dừng lập chỉ mục — hệ thống đang bận</value>
+  </data>
+  <data name="StatePausedSystemBusyShort" xml:space="preserve">
+    <value>Đã tạm dừng — hệ thống đang bận</value>
+  </data>
+  <data name="StatePreparing" xml:space="preserve">
+    <value>Đang chuẩn bị chỉ mục…</value>
+  </data>
+  <data name="StatePreparingShort" xml:space="preserve">
+    <value>Đang chuẩn bị chỉ mục</value>
+  </data>
+  <data name="StateStarting" xml:space="preserve">
+    <value>Đang khởi động</value>
+  </data>
+  <data name="TimeAny" xml:space="preserve">
+    <value>Mọi lúc</value>
+  </data>
+  <data name="TimePastMonth" xml:space="preserve">
+    <value>Tháng qua</value>
+  </data>
+  <data name="TimePastWeek" xml:space="preserve">
+    <value>Tuần qua</value>
+  </data>
+  <data name="TimePastYear" xml:space="preserve">
+    <value>Năm qua</value>
+  </data>
+  <data name="TimeToday" xml:space="preserve">
+    <value>Hôm nay</value>
+  </data>
+  <data name="TopMatch" xml:space="preserve">
+    <value>Khớp nhất</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>Đã cập nhật</value>
+  </data>
+  <data name="UpdateChecksGitHub" xml:space="preserve">
+    <value>Valafind kiểm tra phiên bản mới trên GitHub</value>
+  </data>
+  <data name="UpdatesAutomatic" xml:space="preserve">
+    <value>Cập nhật được kiểm tra tự động</value>
+  </data>
+  <data name="UpdatesCannotWrite" xml:space="preserve">
+    <value>{0} không thể ghi vào {1}; hãy cập nhật theo cách bạn đã cài đặt nó</value>
+  </data>
+  <data name="UpdatesChecking" xml:space="preserve">
+    <value>Đang kiểm tra cập nhật…</value>
+  </data>
+  <data name="UpdatesDownloading" xml:space="preserve">
+    <value>Đang tải xuống phiên bản {0}…</value>
+  </data>
+  <data name="UpdatesFailed" xml:space="preserve">
+    <value>Không thể cập nhật: {0}</value>
+  </data>
+  <data name="UpdatesOff" xml:space="preserve">
+    <value>Cập nhật tự động đang tắt</value>
+  </data>
+  <data name="UpdatesOnlyReleaseBuilds" xml:space="preserve">
+    <value>Chỉ các bản phát hành chính thức mới tự cập nhật</value>
+  </data>
+  <data name="UpdatesReady" xml:space="preserve">
+    <value>Phiên bản {0} đã được cài đặt và sẽ chạy vào lần tới {1} khởi động</value>
+  </data>
+  <data name="UpdatesTimeout" xml:space="preserve">
+    <value>GitHub không phản hồi kịp thời</value>
+  </data>
+  <data name="UpdatesTurnedOffByVariable" xml:space="preserve">
+    <value>Cập nhật đã bị tắt ({0})</value>
+  </data>
+  <data name="UpdatesUnsupported" xml:space="preserve">
+    <value>Bản sao này không thể tự cập nhật</value>
+  </data>
+  <data name="UpdatesUpToDate" xml:space="preserve">
+    <value>Đã cập nhật (kiểm tra lúc {0})</value>
+  </data>
+  <data name="WhyItMatched" xml:space="preserve">
+    <value>Lý do khớp</value>
+  </data>
+  <data name="WhyItMatchedClosestPassage" xml:space="preserve">
+    <value>LÝ DO KHỚP · ĐOẠN GẦN NHẤT</value>
+  </data>
+</root>

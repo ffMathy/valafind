@@ -102,7 +102,7 @@
                          Text="{Binding Status.ShortStateText}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                          VerticalAlignment="Center" />
             </DockPanel>
-            <Grid ColumnDefinitions="30,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
+            <Grid ColumnDefinitions="Auto,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
                   TextElement.FontSize="11.5" TextElement.Foreground="{DynamicResource VfSubtleBrush}">
               <TextBlock Text="{x:Static l:Strings.IndexCpu}" VerticalAlignment="Center" />
               <c:MeterBar Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Height="4" Radius="2"
