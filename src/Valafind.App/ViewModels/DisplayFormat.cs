@@ -191,6 +191,21 @@ internal static class DisplayFormat
         raw.Length == 1 ? raw.ToUpperInvariant() : char.ToUpperInvariant(raw[0]) + raw[1..];
 
     /// <summary>Upper-case extension without the dot ("PDF"), or "FILE".</summary>
+    /// <summary>Inserts a zero-width space after each '_', '-' and '.' (never at the end) as line-break opportunities.</summary>
+    public static string WithBreakOpportunities(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return string.Empty;
+        var sb = new System.Text.StringBuilder(name.Length + 8);
+        for (var i = 0; i < name.Length; i++)
+        {
+            sb.Append(name[i]);
+            if (name[i] is '_' or '-' or '.' && i < name.Length - 1)
+                sb.Append('\u200B');
+        }
+        return sb.ToString();
+    }
+
     public static string ExtensionLabel(string path)
     {
         var ext = Path.GetExtension(path);

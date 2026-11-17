@@ -85,8 +85,70 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
                 view.SetSurface(LauncherSurface.Blurred);
                 Assert.Equal(new Avalonia.Thickness(0), card.Margin);
 
+                // Mica is a blurred surface too (edge to edge, no shadow margin).
+                view.SetSurface(LauncherSurface.Mica);
+                Assert.Equal(new Avalonia.Thickness(0), card.Margin);
+                Assert.True(view.Classes.Contains("blurred") && view.Classes.Contains("mica"));
+
                 view.SetSurface(LauncherSurface.Floating);
                 Assert.NotEqual(0, card.Margin.Left);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, TestContext.Current.CancellationToken);
+
+    [Fact]
+    public Task WindowsCardIsTheMicaMaterialAndStripsBecomeLayers() =>
+        fixture.Session.Dispatch(() =>
+        {
+            // Under Mica the card must not paint over the material (it did at ~93% opacity), and the strips use
+            // translucent Fluent layer fills; they used to set Background locally, which no surface style could change.
+            var view = LauncherWindow.CreateView(UiFlavor.Windows);
+            view.DataContext = DesignData.Create(UiFlavor.Windows);
+            var window = new Window { Content = view };
+            try
+            {
+                window.Show();
+                var card = view.FindControl<Border>("Card")!;
+                var pane = view.FindControl<Border>("DetailsPane")!;
+
+                view.SetSurface(LauncherSurface.Floating);
+                var opaqueCard = Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(card.Background).Color;
+                var floatingStrip = Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(pane.Background).Color;
+                Assert.Equal(255, opaqueCard.A);
+
+                view.SetSurface(LauncherSurface.Mica);
+                Assert.Equal(Avalonia.Media.Colors.Transparent, Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(card.Background).Color);
+                var micaStrip = Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(pane.Background).Color;
+                Assert.NotEqual(floatingStrip, micaStrip);
+                Assert.True(micaStrip.A < 255, "Mica layers are translucent");
+            }
+            finally
+            {
+                window.Close();
+            }
+        }, TestContext.Current.CancellationToken);
+
+    [Fact]
+    public Task LinuxDetailsPaneFollowsSelectionAndTabHidesIt() =>
+        fixture.Session.Dispatch(() =>
+        {
+            var vm = DesignData.Create(UiFlavor.Linux);
+            var view = LauncherWindow.CreateView(UiFlavor.Linux);
+            view.DataContext = vm;
+            var window = new Window { Content = view };
+            try
+            {
+                window.Show();
+                vm.MoveDownCommand.Execute(null);
+                var pane = view.FindControl<Border>("DetailsPane")!;
+                Assert.True(pane.IsVisible);
+                Assert.Same(vm.Results[1], ((Control)pane.Child!).DataContext);
+
+                vm.TogglePreviewCommand.Execute(null);
+                Assert.False(pane.IsVisible);
             }
             finally
             {
