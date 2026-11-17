@@ -458,10 +458,11 @@
               TextElement.FontSize="12"
               TextElement.Foreground="{DynamicResource WinFooterTextBrush}">
         <DockPanel>
-          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" ToolTip.Tip="Nothing leaves this computer">
-            <c:StrokeIcon Data="{StaticResource VfIconShield}" Width="14" Height="14" StrokeThickness="1.8"
-                          Foreground="{DynamicResource WinTrustBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="On-device · EmbeddingGemma" Foreground="{DynamicResource WinTrustBrush}" VerticalAlignment="Center" />
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Background="Transparent"
+                      IsVisible="{Binding Status.IsUpToDate}" ToolTip.Tip="{Binding Status.UpToDateDetail}">
+            <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="13" Height="13" StrokeThickness="2.4"
+                          Foreground="{DynamicResource VfGoodBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="Up to date" VerticalAlignment="Center" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="14">
             <StackPanel Orientation="Horizontal" Spacing="4">

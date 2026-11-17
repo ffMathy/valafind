@@ -1,0 +1,51 @@
+name: Website
+
+# Publishes site/ (plus the README screenshots) to GitHub Pages.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "docs/screenshots/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble
+        run: |
+          mkdir -p _site/screenshots
+          cp -R site/. _site/
+          cp docs/screenshots/*.png _site/screenshots/
+          # Every image the page references must exist.
+          grep -o 'screenshots/[a-z0-9-]*\.png' _site/index.html | sort -u | while read -r f; do
+            test -f "_site/$f" || { echo "missing $f"; exit 1; }
+          done
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

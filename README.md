@@ -3,30 +3,28 @@
 **Find files by what they mean.** Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>, ask in your own words, and get the
 file, even when it is written in another language and named `scan_0042.pdf`. Everything runs on your computer.
 
-<p align="center">
-  <img src="docs/screenshots/macos-launcher.png" width="760" alt="macOS: asking 'where did we negotiate the deposit?' finds the landlord's e-mail and highlights the sentence that answers it">
-</p>
+<table>
+  <tr>
+    <th>Windows</th>
+    <th>macOS</th>
+    <th>Linux</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/windows-launcher.png" alt="Windows: results on the left, the selected file's details and why it matched on the right"></td>
+    <td><img src="docs/screenshots/macos-launcher.png" alt="macOS floating bar: results grouped by kind, the top match previewed with the sentence that answers the question"></td>
+    <td><img src="docs/screenshots/linux-launcher.png" alt="Linux GNOME-style dialog: results with highlighted passages and the selected file's details"></td>
+  </tr>
+</table>
 
 <p align="center"><sub>An English question finds a Danish lease and the landlord's e-mail. The highlighted sentence shows <i>why</i> it matched.</sub></p>
 
-## At home on every desktop
-
-<p align="center">
-  <img src="docs/screenshots/windows-launcher.png" width="860" alt="Windows: results on the left; on the right a details pane with location, type, size, semantic match and the sentence that explains it">
-  <br><sub>Windows: results on the left, the selected file on the right.</sub>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/linux-launcher.png" width="860" alt="Linux GNOME-style dialog: results, details of the selected file and the index status">
-  <br><sub>Linux (GNOME style): the selected file's details on the right, index progress below.</sub>
-</p>
-
 ## Stays out of your way
 
-<img src="docs/screenshots/indexing-paused.png" width="560" alt="Indexing paused while the system is busy: CPU at 100%, 41 of 608 files done, Index Now button">
+<img src="docs/screenshots/indexing-paused.png" width="560" alt="Indexing paused while the system is busy: CPU at 100%, 29 of 608 files done, Index Now button">
 
 Indexing pauses whenever the CPU or disk is busy and picks up again when they're idle. Files you use often are indexed
-first (Phase 1), then the rest of your files (Phase 2).
+first (Phase 1), then the rest of your files (Phase 2). The progress panel only appears while indexing is under way;
+once everything is indexed, the launcher just shows a small ✓ *Up to date*.
 
 <img src="docs/screenshots/settings.png" width="420" alt="Settings: global shortcut, indexed folders, CPU and disk limits, pause on battery">
 

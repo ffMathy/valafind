@@ -354,13 +354,11 @@
               <TextBlock Text="{Binding HotkeyLabel}" FontWeight="Medium" Foreground="{DynamicResource VfTextBrush}" />
             </Border>
           </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="7">
-            <c:StrokeIcon Data="{StaticResource VfIconLock}" Width="12" Height="12" StrokeThickness="2.2"
-                          Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Center" />
-            <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="330">
-              <Run Text="On-device · EmbeddingGemma — nothing leaves this Mac" />
-            </TextBlock>
-            
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Background="Transparent"
+                      IsVisible="{Binding Status.IsUpToDate}" ToolTip.Tip="{Binding Status.UpToDateDetail}">
+            <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="13" Height="13" StrokeThickness="2.4"
+                          Foreground="{DynamicResource VfGoodBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="Up to date" VerticalAlignment="Center" />
           </StackPanel>
         </DockPanel>
       </Border>

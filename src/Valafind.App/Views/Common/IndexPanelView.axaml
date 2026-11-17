@@ -42,7 +42,9 @@
     </Style>
   </UserControl.Styles>
 
-  <StackPanel Spacing="8">
+  <!-- Only while indexing is in progress (or paused / waiting for the model); an up-to-date index is shown as a small
+       check in the launcher's footer instead. -->
+  <StackPanel Spacing="8" IsVisible="{Binding !Status.IsUpToDate}">
     <DockPanel Margin="4,0">
       <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
                  Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />

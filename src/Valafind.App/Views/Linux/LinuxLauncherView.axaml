@@ -334,11 +334,11 @@
             <TextBlock><Run Text="Ctrl+↵" FontWeight="Bold" /><Run Text=" show in Files" /></TextBlock>
             <TextBlock><Run Text="Tab" FontWeight="Bold" /><Run Text=" preview" /></TextBlock>
           </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-            <c:StrokeIcon Data="{StaticResource VfIconLock}" Width="14" Height="14" StrokeThickness="2"
-                          Foreground="{DynamicResource GnomeMetaBrush}" VerticalAlignment="Center" />
-            <TextBlock Text="On-device · EmbeddingGemma — nothing leaves this computer" FontWeight="SemiBold"
-                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Background="Transparent"
+                      IsVisible="{Binding Status.IsUpToDate}" ToolTip.Tip="{Binding Status.UpToDateDetail}">
+            <c:StrokeIcon Data="{StaticResource VfIconCheck}" Width="13" Height="13" StrokeThickness="2.4"
+                          Foreground="{DynamicResource VfGoodBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="Up to date" VerticalAlignment="Center" />
           </StackPanel>
         </DockPanel>
       </Border>
@@ -391,7 +391,9 @@
           </Border>
 
           <!-- Details of the selected file (Tab hides it) -->
-          <Border x:Name="DetailsPane" Grid.Column="1" Width="360" Classes="boxed" Padding="18,16"
+          <!-- Only next to results (not beside the hint / no-results / model messages); Tab hides it. -->
+          <Panel Grid.Column="1" IsVisible="{Binding IsResultsVisible}">
+          <Border x:Name="DetailsPane" Width="360" Classes="boxed" Padding="18,16"
                   IsVisible="{Binding IsPreviewVisible}">
             <DockPanel DataContext="{Binding SelectedResult}" x:DataType="vm:ResultItemViewModel"
                        IsVisible="{Binding $parent[views:LauncherViewBase].((vm:LauncherViewModel)DataContext).HasSelection}">
@@ -443,6 +445,7 @@
               </Border>
             </DockPanel>
           </Border>
+          </Panel>
         </Grid>
 
         <!-- Index progress (shared with the Windows and macOS launchers; the paused banner above has the button) -->
