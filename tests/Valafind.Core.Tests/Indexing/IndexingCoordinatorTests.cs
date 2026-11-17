@@ -15,6 +15,7 @@ public class IndexingCoordinatorTests
         IdlePoll = TimeSpan.FromMilliseconds(200),
         ModelBackoffUnit = TimeSpan.FromMilliseconds(1),
         Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+        Pace = new IndexingPace(maxConcurrency: 1, processorCount: 1), // one file at a time: these tests check order
     };
 
     private static IndexingCoordinator Create(IFileDiscovery discovery, FakeStore store, FakeModel? model, FakeMonitor? monitor = null,
@@ -103,6 +104,25 @@ public class IndexingCoordinatorTests
         Assert.Equal("fake/4", store.GetMeta(IndexingCoordinator.MetaModelId));
         // Coalescing may drop intermediate states, but the trailing event always carries the final one.
         await WaitFor(() => { lock (statuses) return statuses.Count > 0 && statuses[^1].State == IndexingState.UpToDate; }, "final status event");
+    }
+
+    [Fact]
+    public async Task IndexesSeveralFilesAtOnceWhenThePaceAllows()
+    {
+        using var tree = new TempTree();
+        var files = Enumerable.Range(0, 12).Select(i => tree.File($"doc{i}.txt", "text " + i)).ToList();
+        var store = new FakeStore();
+        var reader = new FakeReader { Delay = TimeSpan.FromMilliseconds(150) };
+        var tuning = Tuning with { Pace = new IndexingPace(maxConcurrency: 4, processorCount: 4, initialEffort: 4) };
+        await using var coordinator = new IndexingCoordinator(new FakeDiscovery([tree.Root], [], files), reader, new FakeChunker(),
+            new FakeModel(), store, new FakeMonitor(), new ValafindSettings(), NullLogger<IndexingCoordinator>.Instance, null, tuning);
+
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => coordinator.Status.State == IndexingState.UpToDate, "up to date");
+
+        Assert.All(files, f => Assert.True(store.Contains(f)));
+        Assert.Equal(12, coordinator.Status.AllDone);
+        Assert.InRange(reader.PeakConcurrentReads, 2, 4);
     }
 
     [Fact]

@@ -45,13 +45,17 @@ public interface IIndexedEntrySource
 /// Drives indexing: Phase 1 (frequently / recently used files), Phase 2 (everything under the roots, discovered
 /// lazily on a producer thread), then incremental updates from file-system watchers. All work runs on dedicated
 /// low-priority threads and only while the <see cref="ThrottleGate"/> is open. Unchanged files are skipped by
-/// (size, mtime) fingerprint, so restarts are cheap. The caller owns (and opens) the store, model and monitor.
+/// (size, mtime) fingerprint on the dispatcher thread, so restarts are cheap; changed files are extracted, embedded and
+/// stored on up to <see cref="IndexingPace.MaxConcurrency"/> worker threads at once, as many as the gate's
+/// <see cref="ThrottleGate.Pace"/> allows (it keeps whole-machine CPU just under the user's limit). The caller owns (and
+/// opens) the store, model and monitor.
 /// </summary>
 /// <remarks>
 /// <para>Files are always indexed by kind, cheapest and most searched first: documents (everything that is not a
 /// picture, audio or video), then pictures, then audio, then video (<see cref="IndexOrder"/>). Phase 1 indexes the
 /// frequently used documents; Phase 2 indexes the remaining documents while it walks the disk and keeps the media it
 /// finds for afterwards, then indexes pictures, audio and video in that order (frequently used ones first within each).
+/// Files of one kind are indexed in parallel; the next kind starts only when every file of the previous one is done.
 /// Changes reported by the file watchers during these passes follow the same rule: a new photo waits until the
 /// documents are done.</para>
 /// <para>With an <see cref="IMediaEmbeddingModel"/> and an <see cref="IMediaDecoder"/>, media are embedded by content
@@ -111,9 +115,15 @@ public sealed class IndexingCoordinator : IIndexingService
     private IndexPhase _phase = IndexPhase.Frequent;
     private long _frequentDone, _frequentTotal, _allDone, _allTotal;
     private volatile bool _discoveryComplete;
-    private string? _currentFile;
+    private volatile string? _currentFile;
     private int _consecutiveModelFailures;
-    private bool _mediaReleased = true;
+    private volatile bool _mediaReleased = true;
+
+    // Files are indexed on _workers (as many at once as the gate's pace allows); the dispatcher (worker thread) only
+    // walks, checks fingerprints and keeps the kind order. Audio and video decoding stays one at a time: the platform
+    // decoders hold large buffers and some are not known to be safe to use concurrently.
+    private readonly IndexingWorkers _workers;
+    private readonly Lock _avDecodeLock = new();
 
     // Kind order (IndexOrder): the rank the running pass has reached; files of a higher rank found meanwhile wait in
     // _deferred. NotOrdering when no pass is running (watcher changes are then handled as they come).
@@ -180,9 +190,10 @@ public sealed class IndexingCoordinator : IIndexingService
         _deferred = new DeferredFiles(_pathComparer);
         _pending = new PendingChanges(_time, tuning.Debounce, _pathComparer, path => FindRoot(path), tuning.PendingCapacity);
         _lastRootRescan = new Dictionary<string, DateTimeOffset>(_pathComparer);
-        _gate = new ThrottleGate(monitor, () => tuning.Throttle ?? ThrottleOptions.From(settings), _time);
+        _gate = new ThrottleGate(monitor, () => tuning.Throttle ?? ThrottleOptions.From(settings), _time, tuning.Pace);
         _gate.SetUserPaused(settings.UserPaused);
         _gate.Changed += (_, _) => Publish();
+        _workers = new IndexingWorkers(_gate.Pace);
         _statusTimer = _time.CreateTimer(_ => RaiseDeferred(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         if (model is null)
             _status = IndexStatus.Initial with { State = IndexingState.ModelUnavailable };
@@ -402,10 +413,13 @@ public sealed class IndexingCoordinator : IIndexingService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 DrainPending(cancellationToken);
-                ProcessFile(path, IndexPhase.Frequent, cancellationToken);
-                Interlocked.Increment(ref _frequentDone);
-                Publish();
+                Dispatch(path, IndexPhase.Frequent, cancellationToken, () =>
+                {
+                    Interlocked.Increment(ref _frequentDone);
+                    Publish();
+                });
             }
+            _workers.WaitIdle(cancellationToken);
         }
         finally
         {
@@ -509,6 +523,16 @@ public sealed class IndexingCoordinator : IIndexingService
             }
         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
+        void CountDone()
+        {
+            Interlocked.Increment(ref done);
+            if (visible)
+            {
+                Interlocked.Increment(ref _allDone);
+                Publish();
+            }
+        }
+
         // Documents as they are found; pictures, audio and video afterwards, in that order (IndexOrder). Files the
         // watchers deferred before this pass started stay queued.
         _stage = IndexOrder.Documents;
@@ -529,15 +553,11 @@ public sealed class IndexingCoordinator : IIndexingService
                             continue;
                         }
 
-                        ProcessFile(path, entryPhase, cancellationToken);
-                        done++;
-                        if (visible)
-                        {
-                            Interlocked.Increment(ref _allDone);
-                            Publish();
-                        }
+                        Dispatch(path, entryPhase, cancellationToken, CountDone);
                     }
                 }
+                // Every document before the first picture.
+                _workers.WaitIdle(cancellationToken);
             }
             finally
             {
@@ -560,16 +580,10 @@ public sealed class IndexingCoordinator : IIndexingService
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     DrainPending(cancellationToken);
-                    ProcessFile(path, phase, cancellationToken);
-                    if (phase != entryPhase)
-                        continue; // a watcher change, not part of the walk's count
-                    done++;
-                    if (visible)
-                    {
-                        Interlocked.Increment(ref _allDone);
-                        Publish();
-                    }
+                    // A watcher change is not part of the walk's count.
+                    Dispatch(path, phase, cancellationToken, phase == entryPhase ? CountDone : null);
                 }
+                _workers.WaitIdle(cancellationToken);
             }
         }
         finally
@@ -583,7 +597,7 @@ public sealed class IndexingCoordinator : IIndexingService
         if (!visible)
         {
             Interlocked.Exchange(ref _allTotal, total);
-            Interlocked.Exchange(ref _allDone, done);
+            Interlocked.Exchange(ref _allDone, Interlocked.Read(ref done));
             _discoveryComplete = true;
             Publish();
         }
@@ -776,6 +790,8 @@ public sealed class IndexingCoordinator : IIndexingService
             return;
         // Same order as the passes: deletes and rescans first, then documents, pictures, audio, video.
         due = due.OrderBy(c => c.Kind is ChangeKind.Delete or ChangeKind.Rescan ? -1 : IndexOrder.Rank(c.Path)).ToList();
+        // Files of the running pass finish first: a delete must not race an upsert of the same path on a worker.
+        _workers.WaitIdle(cancellationToken);
         var previous = _activity;
         _gate.SetIdle(false);
         SetActivity(Activity.Working);
@@ -795,6 +811,7 @@ public sealed class IndexingCoordinator : IIndexingService
                 IndexingLog.ChangeFailed(_logger, e, change.Kind, change.Path);
             }
         }
+        _workers.WaitIdle(cancellationToken);
         if (previous != Activity.Working)
             SetActivity(previous);
     }
@@ -843,7 +860,7 @@ public sealed class IndexingCoordinator : IIndexingService
         if (rank > _stage)
             _deferred.Add(rank, path, IndexPhase.Incremental);
         else
-            ProcessFile(path, IndexPhase.Incremental, cancellationToken);
+            Dispatch(path, IndexPhase.Incremental, cancellationToken);
     }
 
     private void RemovePath(string path)
@@ -873,11 +890,13 @@ public sealed class IndexingCoordinator : IIndexingService
             if (IndexOrder.Rank(file) > IndexOrder.Documents)
                 media.Add(file); // after the documents of this directory
             else
-                ProcessFile(file, IndexPhase.Incremental, cancellationToken);
+                Dispatch(file, IndexPhase.Incremental, cancellationToken);
         }
+        _workers.WaitIdle(cancellationToken);
 
         foreach (var file in media.OrderBy(IndexOrder.Rank))
             ProcessOrDefer(file, cancellationToken);
+        _workers.WaitIdle(cancellationToken);
     }
 
     /// <summary>Walk for third-party <see cref="IFileDiscovery"/> implementations: breadth-first, no links, honouring IsExcluded.</summary>
@@ -920,11 +939,46 @@ public sealed class IndexingCoordinator : IIndexingService
 
     // ------------------------------------------------------------------ per-file pipeline
 
-    /// <summary>Indexes one file if it changed since it was last indexed. Never throws except for cancellation.</summary>
+    /// <summary>What <see cref="Prepare"/> found out about a file that needs (re-)indexing.</summary>
+    private sealed record PreparedFile(string Path, long Size, DateTimeOffset Modified, FileFingerprint? Fingerprint);
+
+    /// <summary>Indexes one file on this thread if it changed since it was last indexed. Never throws except for
+    /// cancellation.</summary>
     /// <returns>True when the file is (now) up to date in the index.</returns>
     internal bool ProcessFile(string path, IndexPhase phase, CancellationToken cancellationToken)
     {
-        SetCurrentFile(path);
+        var prepared = Prepare(path, out var upToDate);
+        return prepared is null ? upToDate : Index(prepared, phase, cancellationToken);
+    }
+
+    /// <summary>Checks <paramref name="path"/> on this (the dispatcher) thread, which is cheap: a stat and a fingerprint
+    /// lookup. Only a file that needs work goes to a worker, so a walk over unchanged files does not occupy (or count
+    /// towards the pace of) the workers. <paramref name="onDone"/> runs once the file is handled, on either thread.</summary>
+    private void Dispatch(string path, IndexPhase phase, CancellationToken cancellationToken, Action? onDone = null)
+    {
+        if (Prepare(path, out _) is not { } prepared)
+        {
+            onDone?.Invoke();
+            return;
+        }
+        _workers.Run(() =>
+        {
+            try
+            {
+                Index(prepared, phase, cancellationToken);
+            }
+            finally
+            {
+                onDone?.Invoke();
+            }
+        }, cancellationToken);
+    }
+
+    /// <summary>Stat and fingerprint check. Returns null when nothing is left to do (<paramref name="upToDate"/> tells
+    /// whether the file is in the index): unchanged, vanished, empty or unreadable metadata.</summary>
+    private PreparedFile? Prepare(string path, out bool upToDate)
+    {
+        upToDate = false;
         long size;
         DateTimeOffset modified;
         try
@@ -933,7 +987,7 @@ public sealed class IndexingCoordinator : IIndexingService
             if (!info.Exists)
             {
                 TryStore(() => _store.RemoveFile(path), "remove");
-                return false;
+                return null;
             }
             size = info.Length;
             modified = new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero);
@@ -941,7 +995,7 @@ public sealed class IndexingCoordinator : IIndexingService
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
             IndexingLog.StatFailed(_logger, e, path);
-            return false;
+            return null;
         }
 
         FileFingerprint? fingerprint = null;
@@ -970,17 +1024,29 @@ public sealed class IndexingCoordinator : IIndexingService
         {
             if (fingerprint is not null)
                 TryStore(() => _store.RemoveFile(path), "remove");
-            return false;
+            return null;
         }
         // A case-only rename (Windows, macOS) keeps size and mtime: re-index so the stored path and the name that is
         // part of every embedding follow the new spelling.
         var renamed = storedPath is not null && IsDifferentSpelling(storedPath, path);
         if (fingerprint is not null && !renamed && IsUnchanged(fingerprint, size, modified))
-            return true;
+        {
+            upToDate = true;
+            return null;
+        }
+        return new PreparedFile(path, size, modified, fingerprint);
+    }
 
+    /// <summary>Extracts, embeds and stores a file <see cref="Prepare"/> found changed. Runs on a worker thread
+    /// (or inline from <see cref="ProcessFile"/>); waits for its turn first. Never throws except for cancellation.</summary>
+    private bool Index(PreparedFile file, IndexPhase phase, CancellationToken cancellationToken)
+    {
+        var (path, size, modified, fingerprint) = file;
         WaitForTurn(cancellationToken);
+        SetCurrentFile(path);
 
         ExtractedText? extracted;
+        var readStarted = _time.GetTimestamp();
         try
         {
             extracted = _reader.ReadAsync(path, cancellationToken).GetAwaiter().GetResult();
@@ -994,6 +1060,7 @@ public sealed class IndexingCoordinator : IIndexingService
             IndexingLog.ReadFailed(_logger, e, path);
             extracted = null;
         }
+        Rest(_time.GetElapsedTime(readStarted), cancellationToken);
 
         var kind = extracted?.Kind ?? FileKinds.Classify(path);
         if (extracted is null && kind == FileKind.Other)
@@ -1137,7 +1204,7 @@ public sealed class IndexingCoordinator : IIndexingService
                 case FileKind.Image when capabilities.HasFlag(MediaCapabilities.Image):
                 {
                     WaitForTurn(cancellationToken);
-                    var image = decoder.DecodeImageAsync(path, _tuning.ImageMaxSide, cancellationToken).GetAwaiter().GetResult();
+                    var image = Paced(() => decoder.DecodeImageAsync(path, _tuning.ImageMaxSide, cancellationToken).GetAwaiter().GetResult(), cancellationToken);
                     if (image is not null)
                         records.Add(MediaRecord(EmbedMediaPart(() => model.EmbedImage(image, cancellationToken), path, cancellationToken), 0, 0));
                     break;
@@ -1149,7 +1216,11 @@ public sealed class IndexingCoordinator : IIndexingService
                     if (capabilities.HasFlag(MediaCapabilities.Video))
                     {
                         WaitForTurn(cancellationToken);
-                        var frames = decoder.DecodeVideoAsync(path, _tuning.MaxVideoFrames, _tuning.VideoMaxSide, cancellationToken).GetAwaiter().GetResult();
+                        var frames = Paced(() =>
+                        {
+                            lock (_avDecodeLock)
+                                return decoder.DecodeVideoAsync(path, _tuning.MaxVideoFrames, _tuning.VideoMaxSide, cancellationToken).GetAwaiter().GetResult();
+                        }, cancellationToken);
                         if (frames is { Frames.Count: > 0 })
                             records.Add(MediaRecord(EmbedMediaPart(() => model.EmbedVideo(frames.Frames, cancellationToken), path, cancellationToken), 0, (int)frames.Duration.TotalSeconds));
                     }
@@ -1174,7 +1245,11 @@ public sealed class IndexingCoordinator : IIndexingService
         void AddClips(int maxClips)
         {
             WaitForTurn(cancellationToken);
-            var clips = decoder.DecodeAudioAsync(path, maxClips, cancellationToken).GetAwaiter().GetResult();
+            var clips = Paced(() =>
+            {
+                lock (_avDecodeLock)
+                    return decoder.DecodeAudioAsync(path, maxClips, cancellationToken).GetAwaiter().GetResult();
+            }, cancellationToken);
             foreach (var clip in clips ?? [])
             {
                 WaitForTurn(cancellationToken);
@@ -1194,7 +1269,7 @@ public sealed class IndexingCoordinator : IIndexingService
         try
         {
             _mediaReleased = false;
-            var vector = embed();
+            var vector = Paced(embed, cancellationToken);
             return vector.Length == _model!.Dimensions ? vector : [];
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -1231,10 +1306,10 @@ public sealed class IndexingCoordinator : IIndexingService
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var vectors = _model!.EmbedDocuments(batch, cancellationToken);
+                var vectors = Paced(() => _model!.EmbedDocuments(batch, cancellationToken), cancellationToken);
                 if (vectors.Count != batch.Count)
                     throw new InvalidOperationException($"Model returned {vectors.Count} vectors for {batch.Count} inputs");
-                _consecutiveModelFailures = 0;
+                Volatile.Write(ref _consecutiveModelFailures, 0);
                 return vectors;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -1243,7 +1318,7 @@ public sealed class IndexingCoordinator : IIndexingService
             }
             catch (Exception e)
             {
-                var failures = ++_consecutiveModelFailures;
+                var failures = Interlocked.Increment(ref _consecutiveModelFailures);
                 if (failures == 1 || failures % 20 == 0)
                     IndexingLog.EmbedFailedWarning(_logger, e, path, failures);
                 else
@@ -1256,6 +1331,30 @@ public sealed class IndexingCoordinator : IIndexingService
                     return null;
             }
         }
+    }
+
+    /// <summary>Runs one CPU-heavy step, then rests as long as the pace's duty cycle asks (see <see cref="IndexingPace"/>).
+    /// The rest also follows a failed step.</summary>
+    private T Paced<T>(Func<T> step, CancellationToken cancellationToken)
+    {
+        var started = _time.GetTimestamp();
+        try
+        {
+            return step();
+        }
+        finally
+        {
+            if (!cancellationToken.IsCancellationRequested)
+                Rest(_time.GetElapsedTime(started), cancellationToken);
+        }
+    }
+
+    /// <summary>Sleeps for the duty-cycle rest after <paramref name="busy"/> of work (none at full pace).</summary>
+    private void Rest(TimeSpan busy, CancellationToken cancellationToken)
+    {
+        var rest = _gate.Pace.RestAfter(busy);
+        if (rest > TimeSpan.Zero && cancellationToken.WaitHandle.WaitOne(rest))
+            cancellationToken.ThrowIfCancellationRequested();
     }
 
     private void WaitForGate(CancellationToken cancellationToken)
@@ -1619,6 +1718,7 @@ public sealed class IndexingCoordinator : IIndexingService
             }
         }
 
+        _workers.Dispose();
         _gate.Dispose();
         await _statusTimer.DisposeAsync().ConfigureAwait(false);
         _pendingSignal.Dispose();
@@ -1658,6 +1758,9 @@ internal sealed record CoordinatorTuning(
 
     /// <summary>Video frames are decoded at most this large.</summary>
     public int VideoMaxSide { get; init; } = 1280;
+
+    /// <summary>The pace controller (null: one sized for this machine, see <see cref="IndexingPace.DefaultMaxConcurrency"/>).</summary>
+    public IndexingPace? Pace { get; init; }
 
     /// <summary>Batch size 2: a model batch cannot be cancelled once started, and two chunks take about a second on
     /// a laptop CPU, which bounds how long a query can wait behind indexing.</summary>

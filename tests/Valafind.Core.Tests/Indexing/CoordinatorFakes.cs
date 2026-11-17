@@ -128,12 +128,26 @@ internal sealed class FakeReader : IDocumentReader
 {
     public TimeSpan Delay { get; set; }
     public int Reads;
+    private int _active;
+    public int PeakConcurrentReads;
 
     public async Task<ExtractedText?> ReadAsync(string path, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref Reads);
-        if (Delay > TimeSpan.Zero)
-            await Task.Delay(Delay, cancellationToken);
+        var active = Interlocked.Increment(ref _active);
+        int peak;
+        while ((peak = Volatile.Read(ref PeakConcurrentReads)) < active && Interlocked.CompareExchange(ref PeakConcurrentReads, active, peak) != peak)
+        {
+        }
+        try
+        {
+            if (Delay > TimeSpan.Zero)
+                await Task.Delay(Delay, cancellationToken);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _active);
+        }
         var kind = FileKinds.Classify(path);
         if (kind == FileKind.Text)
             return new ExtractedText(await File.ReadAllTextAsync(path, cancellationToken), FileKind.Text);

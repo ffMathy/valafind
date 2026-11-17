@@ -307,3 +307,75 @@ public class PressureMathTests
         Assert.Equal(expected, PressureMath.IsBusy(new PressureSample(DateTimeOffset.UtcNow, cpu, disk, null, false),
             new ThrottleOptions(30, 25, TimeSpan.Zero, true)));
 }
+
+public class ThrottleGatePaceTests
+{
+    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(2);
+
+    private sealed class Rig : IDisposable
+    {
+        public readonly ManualTimeProvider Time = new();
+        public readonly FakeMonitor Monitor = new();
+        public readonly FakeOwnUsage Own = new();
+        public readonly IndexingPace Pace = new(maxConcurrency: 8, processorCount: 8);
+        public readonly ThrottleGate Gate;
+
+        public Rig()
+        {
+            Gate = new ThrottleGate(Monitor, () => new ThrottleOptions(30, 25, TimeSpan.Zero, true), Time, Own, 8, Pace);
+            Pace.ReportInFlight(8); // plenty of work
+        }
+
+        public void Step(double machineCpu, double ownCpu = 0)
+        {
+            Monitor.Cpu = machineCpu;
+            Time.Advance(Interval);
+            Own.Cpu += TimeSpan.FromSeconds(Interval.TotalSeconds * 8 * ownCpu / 100);
+            Gate.Tick();
+        }
+
+        public void Dispose() => Gate.Dispose();
+    }
+
+    [Fact]
+    public void Speeds_up_while_open_and_the_machine_has_room()
+    {
+        using var rig = new Rig();
+        rig.Step(5);
+        Assert.True(rig.Gate.IsOpen);
+        var before = rig.Pace.Effort;
+        for (var i = 0; i < 5; i++)
+            rig.Step(10, ownCpu: 5);
+        Assert.True(rig.Pace.Effort > before, $"effort {rig.Pace.Effort} did not rise from {before}");
+        Assert.Equal(27, rig.Pace.TargetPercent, 6);
+    }
+
+    [Fact]
+    public void Holds_while_paused_or_idle()
+    {
+        using var rig = new Rig();
+        rig.Step(5);
+        rig.Gate.SetUserPaused(true);
+        var before = rig.Pace.Effort;
+        for (var i = 0; i < 5; i++)
+            rig.Step(1);
+        Assert.Equal(before, rig.Pace.Effort);
+
+        rig.Gate.SetUserPaused(false);
+        rig.Gate.SetIdle(true);
+        for (var i = 0; i < 5; i++)
+            rig.Step(1);
+        Assert.Equal(before, rig.Pace.Effort);
+    }
+
+    [Fact]
+    public void Index_now_keeps_at_least_one_full_worker_however_busy_the_machine()
+    {
+        using var rig = new Rig();
+        rig.Gate.OverrideUntil = rig.Time.GetUtcNow() + TimeSpan.FromHours(1);
+        for (var i = 0; i < 20; i++)
+            rig.Step(90, ownCpu: 10);
+        Assert.True(rig.Gate.IsOpen);
+        Assert.True(rig.Pace.Effort >= 1);
+    }
+}

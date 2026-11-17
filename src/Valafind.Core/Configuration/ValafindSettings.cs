@@ -16,7 +16,8 @@ public sealed class ValafindSettings
     /// <summary>Extra absolute paths or directory names to skip (in addition to built-in excludes).</summary>
     public List<string> Excludes { get; set; } = [];
 
-    /// <summary>Index only while whole-machine CPU stays below this (percent).</summary>
+    /// <summary>Whole-machine CPU budget (percent). Indexing speeds up or slows down to keep total CPU just under it
+    /// (<see cref="Indexing.IndexingPace"/>), and pauses while other programs alone use more.</summary>
     public double MaxCpuPercent { get; set; } = 30;
 
     /// <summary>Index only while disk busy time stays below this (percent).</summary>

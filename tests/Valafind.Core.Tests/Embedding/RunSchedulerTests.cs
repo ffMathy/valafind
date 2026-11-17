@@ -19,7 +19,7 @@ public sealed class RunSchedulerTests
         // A waiter is woken by Exit at the same moment another thread cancels its token. The cancel callback takes
         // the scheduler's lock; the waiter must not block on that callback while holding the lock.
         const int Iterations = 3000;
-        var scheduler = new EmbeddingGemmaModel.RunScheduler();
+        var scheduler = new EmbeddingGemmaModel.RunScheduler(maxBackgroundRuns: 1); // a second document run must wait
         var failure = (Exception?)null;
         var worker = new Thread(() =>
         {
@@ -111,5 +111,58 @@ public sealed class RunSchedulerTests
         await entered.WaitAsync(Hang, TestContext.Current.CancellationToken);
         Assert.False(scheduler.IsBackgroundRunActive);
         scheduler.Exit(null);
+    }
+}
+
+public sealed class ConcurrentRunSchedulerTests
+{
+    private static readonly TimeSpan Hang = TimeSpan.FromSeconds(20);
+
+    [Fact]
+    public async Task Document_runs_overlap_and_a_query_preempts_all_of_them()
+    {
+        var scheduler = new EmbeddingGemmaModel.RunScheduler();
+        using var a = new RunOptions();
+        using var b = new RunOptions();
+        var first = new EmbeddingGemmaModel.ActiveRun(a);
+        var second = new EmbeddingGemmaModel.ActiveRun(b);
+        scheduler.EnterBackground(first, CancellationToken.None);
+        scheduler.EnterBackground(second, CancellationToken.None); // does not wait for the first
+        Assert.Equal(2, scheduler.BackgroundRuns);
+
+        var query = Task.Run(() => scheduler.EnterInteractive(CancellationToken.None), TestContext.Current.CancellationToken);
+        var deadline = DateTime.UtcNow.Add(Hang);
+        while (!(first.Preempted && a.Terminate && second.Preempted && b.Terminate) && DateTime.UtcNow < deadline)
+            Thread.Sleep(1);
+        Assert.True(a.Terminate && b.Terminate, "both document runs must be terminated");
+
+        // A new document run waits behind the pending query.
+        using var c = new RunOptions();
+        var third = Task.Run(() => scheduler.EnterBackground(new EmbeddingGemmaModel.ActiveRun(c), CancellationToken.None), TestContext.Current.CancellationToken);
+        scheduler.Exit(first);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+        Assert.False(query.IsCompleted, "the query waits until every terminated run has left");
+        scheduler.Exit(second);
+        await query.WaitAsync(Hang, TestContext.Current.CancellationToken);
+        Assert.False(third.IsCompleted, "document runs wait while the query runs");
+        scheduler.Exit(null);
+        await third.WaitAsync(Hang, TestContext.Current.CancellationToken);
+        Assert.Equal(1, scheduler.BackgroundRuns);
+    }
+
+    [Fact]
+    public void Respects_the_cap_on_overlapping_document_runs()
+    {
+        var scheduler = new EmbeddingGemmaModel.RunScheduler(maxBackgroundRuns: 2);
+        using var a = new RunOptions();
+        using var b = new RunOptions();
+        using var c = new RunOptions();
+        var first = new EmbeddingGemmaModel.ActiveRun(a);
+        scheduler.EnterBackground(first, CancellationToken.None);
+        scheduler.EnterBackground(new EmbeddingGemmaModel.ActiveRun(b), CancellationToken.None);
+        var third = Task.Run(() => scheduler.EnterBackground(new EmbeddingGemmaModel.ActiveRun(c), CancellationToken.None), TestContext.Current.CancellationToken);
+        Assert.False(third.Wait(100, TestContext.Current.CancellationToken));
+        scheduler.Exit(first);
+        Assert.True(third.Wait(Hang, TestContext.Current.CancellationToken));
     }
 }
