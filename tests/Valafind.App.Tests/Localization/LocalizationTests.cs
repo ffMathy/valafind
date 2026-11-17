@@ -25,9 +25,9 @@ public sealed partial class LocalizationTests
             .ToDictionary(e => (string)e.Key, e => (string)e.Value!);
 
     [Fact]
-    public void ShipsTwentyLanguagesWithUniqueCodes()
+    public void ShipsTwentyOneLanguagesWithUniqueCodes()
     {
-        Assert.Equal(20, Loc.Languages.Count);
+        Assert.Equal(21, Loc.Languages.Count);
         Assert.Equal(Loc.Languages.Count, Loc.Languages.Select(l => l.Code).Distinct(StringComparer.OrdinalIgnoreCase).Count());
         Assert.Equal("en", Loc.Languages[0].Code);
     }

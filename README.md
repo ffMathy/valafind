@@ -147,9 +147,9 @@ first.
 <details>
 <summary><b>Languages</b></summary>
 
-Valafind speaks 20 languages: English, Chinese (Simplified), Hindi, Spanish, Arabic, French, Bengali, Portuguese,
-Russian, Indonesian, Urdu, German, Japanese, Marathi, Vietnamese, Telugu, Hausa, Turkish, Tamil and Korean. It follows
-your operating system's language; pick another one under **Settings → General → Language** (applies at the next start).
+Valafind speaks 21 languages: English, Chinese (Simplified), Hindi, Spanish, Arabic, French, Bengali, Portuguese,
+Russian, Indonesian, Urdu, German, Japanese, Marathi, Vietnamese, Telugu, Hausa, Turkish, Tamil, Korean and Danish.
+It follows your operating system's language; pick another one under **Settings → General → Language** (applies at the next start).
 Arabic and Urdu use a right-to-left layout.
 
 Searching works across languages regardless of the UI language: EmbeddingGemma matches meaning, not words.
