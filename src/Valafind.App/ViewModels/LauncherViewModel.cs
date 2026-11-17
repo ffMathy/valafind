@@ -111,7 +111,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
 
     /// <summary>The search text.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasQuery))]
+    [NotifyPropertyChangedFor(nameof(HasQuery), nameof(IsSearchActive))]
     public partial string Query { get; set; } = string.Empty;
 
     /// <summary>True when the query is not blank.</summary>
@@ -383,7 +383,12 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
 
     /// <summary>True while the launcher window is on screen (set by the window; the host makes indexing yield).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSearchActive))]
     public partial bool IsLauncherVisible { get; set; }
+
+    /// <summary>True while the user is searching: the launcher is on screen with a query typed. The host makes indexing
+    /// yield only then, so the index panel (shown while the query is empty) keeps counting live.</summary>
+    public bool IsSearchActive => IsLauncherVisible && HasQuery;
 
     /// <summary>Sets the hotkey shown in the UI and any registration error.</summary>
     public void SetHotkey(string chord, string? error)

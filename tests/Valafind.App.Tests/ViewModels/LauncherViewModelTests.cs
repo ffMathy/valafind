@@ -40,6 +40,22 @@ public sealed class LauncherViewModelTests
     }
 
     [Fact]
+    public void SearchIsActiveOnlyWhileTheLauncherShowsAQuery()
+    {
+        using var vm = Create();
+        var changes = new List<string?>();
+        vm.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+
+        vm.IsLauncherVisible = true;
+        Assert.False(vm.IsSearchActive); // empty query: the index panel is shown and must keep counting
+        vm.Query = "lease";
+        Assert.True(vm.IsSearchActive);
+        vm.IsLauncherVisible = false;
+        Assert.False(vm.IsSearchActive);
+        Assert.Equal(3, changes.Count(c => c == nameof(LauncherViewModel.IsSearchActive)));
+    }
+
+    [Fact]
     public void ModelMissingShowsFetchInstructions()
     {
         using var vm = Create(UiFlavor.Windows);
