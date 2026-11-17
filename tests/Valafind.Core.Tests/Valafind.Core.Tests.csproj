@@ -14,5 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- A tiny stand-in for the model that release builds embed in Valafind.Model (see BundledModelTests). -->
+    <EmbeddedResource Include="Fixtures\BundledModel\**" LogicalName="ValafindModel/%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" />
   </ItemGroup>
 </Project>

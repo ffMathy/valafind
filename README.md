@@ -32,36 +32,41 @@ first (Phase 1), then the rest of your files (Phase 2).
 
 ## Nothing leaves your computer
 
-<img src="docs/screenshots/first-run.png" width="560" alt="First run: the model is not installed; the screen shows the exact command to install it and notices it automatically">
-
-The [EmbeddingGemma](https://ai.google.dev/gemma/docs/embeddinggemma) model runs locally. Valafind makes no network
-requests. You download the model once, and Valafind notices it without a restart:
-
-```bash
-tools/fetch-model.sh
-```
-
-On Windows:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\fetch-model.ps1
-```
+The [EmbeddingGemma](https://ai.google.dev/gemma/docs/embeddinggemma) model runs locally and is built into the app, so
+there is nothing else to download. Valafind makes no network requests.
 
 ## Get it
 
-Download a build for your platform from the [CI artifacts](https://github.com/ffMathy/valafind/actions/workflows/ci.yml) (`valafind-win-x64`,
-`valafind-osx-arm64`, `valafind-linux-x64`, …), run it, and install the model as shown above. Valafind sits in the tray
-(menu bar on macOS) until you press the shortcut.
+Download the file for your platform from the [latest release](https://github.com/ffMathy/valafind/releases/latest). It is
+a single executable with the model inside. Every merge to `main` publishes a new release.
+
+| Platform | File |
+|---|---|
+| Windows (x64 / Arm64) | `valafind-win-x64.exe`, `valafind-win-arm64.exe` |
+| macOS (Apple silicon / Intel) | `valafind-osx-arm64.app.zip`, `valafind-osx-x64.app.zip` (`Valafind.app`), or the bare `valafind-osx-*` executable |
+| Linux (x64 / Arm64) | `valafind-linux-x64`, `valafind-linux-arm64` (`chmod +x` it first) |
+
+Run it, and Valafind sits in the tray (menu bar on macOS) until you press the shortcut. On first start it unpacks the
+model (~310 MB) into its data folder, which takes a second or two. `SHA256SUMS.txt` in each release lists the checksums.
 
 <details>
 <summary><b>Build from source</b></summary>
 
+Download the model once (on Windows: `tools\fetch-model.ps1`), then publish with it built in:
+
 ```bash
-dotnet publish src/Valafind.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o publish
+tools/fetch-model.sh "$PWD/.model/embeddinggemma-300m"
+dotnet publish src/Valafind.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true \
+  -p:ValafindModelDir="$PWD/.model/embeddinggemma-300m" -o publish
 ```
 
 Runtimes: `win-x64`, `win-arm64`, `osx-arm64`, `osx-x64`, `linux-x64`, `linux-arm64`. For a macOS app bundle, run
 `packaging/macos/make-app-bundle.sh publish dist`.
+
+Leave out `-p:ValafindModelDir` for a smaller build without the model. It ships the `tools/fetch-model.*` scripts next
+to the executable and, on first run, shows the command that installs the model; it notices the model without a restart.
+
+<img src="docs/screenshots/first-run.png" width="560" alt="First run of a build without the model: the screen shows the exact command to install it and notices it automatically">
 </details>
 
 <details>
@@ -103,7 +108,7 @@ index fully. That is why your everyday files go first.
 | macOS | `~/Library/Application Support/Valafind` |
 | Linux | `${XDG_DATA_HOME:-~/.local/share}/valafind` |
 
-That folder holds `settings.json`, `index.db`, `models/` and `logs/`. The folder and its files are readable only by you,
+That folder holds `settings.json`, `index.db`, `models/` (the unpacked model) and `logs/`. The folder and its files are readable only by you,
 because the index holds excerpts of your files. Delete `index.db` to rebuild the index, or set `VALAFIND_DATA_DIR` to
 use a different folder.
 </details>
@@ -129,10 +134,13 @@ VALAFIND_TEST_MODEL_DIR=~/.local/share/valafind/models/embeddinggemma-300m dotne
 - `VALAFIND_UI=windows|mac|linux` switches the launcher design.
 - `VALAFIND_SCREENSHOT_DIR=<dir>` makes `tests/Valafind.App.Tests` render the launchers headlessly.
 - The code is in `src/Valafind.Core`: `Embedding`, `Extraction`, `Storage`, `Search`, `Indexing` and `Platform`. The
-  Avalonia app is in `src/Valafind.App`.
+  Avalonia app is in `src/Valafind.App`; `src/Valafind.Model` embeds the model files when built with
+  `-p:ValafindModelDir=…`.
 </details>
 
 ---
 
-<sub>EmbeddingGemma is provided by Google under the [Gemma Terms of Use](https://ai.google.dev/gemma/terms). Valafind does
-not redistribute the model weights.</sub>
+<sub>Release binaries contain the unmodified EmbeddingGemma weights. Gemma is provided under and subject to the
+[Gemma Terms of Use](https://ai.google.dev/gemma/terms) and the
+[Gemma Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy); each release includes this notice as
+`NOTICE-Gemma.txt`.</sub>

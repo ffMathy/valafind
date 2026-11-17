@@ -8,10 +8,13 @@ obj/
 TestResults/
 artifacts/
 publish/
-# Model weights are large and fetched with tools/fetch-model.*; never commit them.
+# Model weights are large and fetched with tools/fetch-model.* (release builds embed them); never commit them.
 models/
+.model/
 *.onnx
 *.onnx_data
 
 # Temporary cross-module compile stubs used during isolated module development; never commit.
 **/_Pending*Stub*.cs
+# ...except the tiny fake model files the BundledModel tests embed.
+!tests/Valafind.Core.Tests/Fixtures/BundledModel/**

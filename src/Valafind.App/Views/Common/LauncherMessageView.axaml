@@ -132,8 +132,10 @@
         <TextBlock Classes="title" Text="EmbeddingGemma could not be loaded" VerticalAlignment="Center" />
       </StackPanel>
       <TextBlock Classes="body" Text="{Binding ModelErrorText}" />
-      <TextBlock Classes="body" Text="The model files are probably incomplete. Download them again with:" />
-      <Border Classes="code">
+      <TextBlock Classes="body" IsVisible="{Binding IsModelBundled}"
+                 Text="The built-in model could not be unpacked or loaded. Free up disk space if needed, then click Check again to unpack it again." />
+      <TextBlock Classes="body" IsVisible="{Binding IsModelDownloadable}" Text="The model files are probably incomplete. Download them again with:" />
+      <Border Classes="code" IsVisible="{Binding IsModelDownloadable}">
         <DockPanel>
           <Button Classes="vf copy" DockPanel.Dock="Right" ToolTip.Tip="Copy command"
                   Command="{Binding CopyTextCommand}" CommandParameter="{Binding RepairCommandText}">

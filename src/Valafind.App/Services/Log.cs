@@ -74,4 +74,10 @@ internal static partial class Log
 
     [LoggerMessage(23, LogLevel.Warning, "Shutdown did not finish within {TimeoutMs} ms")]
     public static partial void ShutdownTimedOut(ILogger logger, long timeoutMs);
+
+    [LoggerMessage(24, LogLevel.Information, "Unpacked {Count} built-in model file(s) to {Directory}")]
+    public static partial void BundledModelInstalled(ILogger logger, int count, string directory);
+
+    [LoggerMessage(25, LogLevel.Error, "Could not unpack the built-in model to {Directory}")]
+    public static partial void BundledModelInstallFailed(ILogger logger, string directory, Exception exception);
 }

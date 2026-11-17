@@ -9,11 +9,28 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <!-- A true single file: native libraries (ONNX Runtime, Skia, HarfBuzz, SQLite, ANGLE) go into the bundle too and
+         are unpacked by the .NET host on first start. No bundle compression: it would have to inflate the ~310 MB
+         model into memory on every start. -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <!-- Native packages also ship build-time files that the bundler leaves next to the executable: debug symbols
+       (libSkiaSharp.pdb, libHarfBuzzSharp.pdb) and ONNX Runtime import libraries (onnxruntime*.lib) on Windows. None are
+       needed at run time (managed symbols are embedded), so keep them out of single-file publishes. -->
+  <Target Name="ValafindDropBuildTimeNativeFiles" AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(PublishSingleFile)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(Extension)' == '.pdb' or '%(Extension)' == '.lib'" />
+    </ItemGroup>
+  </Target>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- The one-time model download scripts ship next to the executable (<app>/tools/…), so the "model not installed"
+  <ItemGroup Condition="'$(ValafindModelDir)' == ''">
+    <!-- Builds without a bundled model (ValafindModelDir unset, see src/Valafind.Model) need a one-time download.
+         The model download scripts ship next to the executable (<app>/tools/…), so the "model not installed"
          screen can show a command with an absolute path that works in the installed layout. Kept out of the
          single-file bundle on purpose: the user runs them directly. -->
     <Content Include="..\..\tools\fetch-model.sh" Link="tools\fetch-model.sh">
@@ -39,6 +56,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Valafind.Core\Valafind.Core.csproj" />
+    <ProjectReference Include="..\Valafind.Model\Valafind.Model.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Valafind.App.Tests" />

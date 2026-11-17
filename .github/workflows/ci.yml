@@ -2,11 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
 
 permissions:
   contents: read
+
+env:
+  # Release builds are numbered by workflow run; the same number is the app version and the release tag (v0.1.<n>).
+  VALAFIND_VERSION: 0.1.${{ github.run_number }}
 
 jobs:
   build-test:
@@ -52,6 +56,7 @@ jobs:
         with:
           path: .model
           key: embeddinggemma-300m-q8-v1
+          enableCrossOsArchive: true
       - name: Fetch model
         run: |
           if [ ! -f "$VALAFIND_TEST_MODEL_DIR/onnx/model_quantized.onnx_data" ]; then
@@ -61,55 +66,121 @@ jobs:
         run: dotnet test --project tests/Valafind.Core.Tests --configuration Release -- --filter-namespace "Valafind.Core.Tests.Embedding" --filter-namespace "Valafind.Core.Tests.EndToEnd"
 
   publish:
+    # One self-contained, single-file executable per platform with the EmbeddingGemma model embedded, so a download
+    # is all a user needs. macOS additionally gets the same executable wrapped in a zipped Valafind.app.
     name: Publish (${{ matrix.rid }})
     needs: build-test
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, rid: win-x64 }
-          - { os: windows-latest, rid: win-arm64 }
-          - { os: macos-latest, rid: osx-arm64 }
-          - { os: macos-latest, rid: osx-x64 }
-          - { os: ubuntu-latest, rid: linux-x64 }
-          - { os: ubuntu-latest, rid: linux-arm64 }
+          - { os: windows-latest, rid: win-x64, exe: Valafind.exe }
+          - { os: windows-latest, rid: win-arm64, exe: Valafind.exe }
+          - { os: macos-latest, rid: osx-arm64, exe: Valafind }
+          - { os: macos-latest, rid: osx-x64, exe: Valafind }
+          - { os: ubuntu-latest, rid: linux-x64, exe: Valafind }
+          - { os: ubuntu-latest, rid: linux-arm64, exe: Valafind }
     runs-on: ${{ matrix.os }}
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
+      # Relative for the bash fetch script (Git Bash on Windows), absolute for MSBuild.
+      MODEL_DIR: .model/embeddinggemma-300m
+      MODEL_DIR_ABS: ${{ github.workspace }}/.model/embeddinggemma-300m
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      - name: Publish
-        shell: bash
-        run: dotnet publish src/Valafind.App -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o publish/${{ matrix.rid }}
-      - name: Check model download scripts are shipped
+      - uses: actions/cache@v4
+        with:
+          path: .model
+          key: embeddinggemma-300m-q8-v1
+          enableCrossOsArchive: true
+      - name: Fetch model
         shell: bash
         run: |
-          test -f publish/${{ matrix.rid }}/tools/fetch-model.sh
-          test -f publish/${{ matrix.rid }}/tools/fetch-model.ps1
+          if [ ! -f "$MODEL_DIR/onnx/model_quantized.onnx_data" ]; then
+            bash tools/fetch-model.sh "$MODEL_DIR"
+          fi
+      - name: Publish
+        shell: bash
+        run: >
+          dotnet publish src/Valafind.App -c Release -r ${{ matrix.rid }} --self-contained true
+          -p:PublishSingleFile=true -p:ValafindModelDir="$MODEL_DIR_ABS"
+          -p:Version=$VALAFIND_VERSION
+          -o publish/${{ matrix.rid }}
+      - name: Check the output is a single file with the model inside
+        shell: bash
+        run: |
+          ls -la publish/${{ matrix.rid }}
+          count=$(find publish/${{ matrix.rid }} -mindepth 1 | wc -l)
+          if [ "$count" -ne 1 ] || [ ! -f "publish/${{ matrix.rid }}/${{ matrix.exe }}" ]; then
+            echo "::error::Expected exactly one file (${{ matrix.exe }}) in the publish folder, found $count entries."
+            exit 1
+          fi
+          size=$(wc -c < "publish/${{ matrix.rid }}/${{ matrix.exe }}")
+          if [ "$size" -lt 300000000 ]; then
+            echo "::error::Executable is only $size bytes; the ~310 MB model is not bundled."
+            exit 1
+          fi
+      - name: Stage executable
+        shell: bash
+        run: |
+          mkdir -p dist
+          ext=""; case "${{ matrix.exe }}" in *.exe) ext=".exe" ;; esac
+          cp "publish/${{ matrix.rid }}/${{ matrix.exe }}" "dist/valafind-${{ matrix.rid }}$ext"
       - name: Package macOS app bundle
         if: runner.os == 'macOS'
         run: |
-          packaging/macos/make-app-bundle.sh publish/${{ matrix.rid }} bundle/${{ matrix.rid }}
+          packaging/macos/make-app-bundle.sh publish/${{ matrix.rid }} bundle/${{ matrix.rid }} "$VALAFIND_VERSION"
           plutil -lint bundle/${{ matrix.rid }}/Valafind.app/Contents/Info.plist
-          mkdir -p dist && ditto -c -k --keepParent bundle/${{ matrix.rid }}/Valafind.app dist/valafind-${{ matrix.rid }}.zip
-      - name: Package Linux / Windows folder
-        if: runner.os != 'macOS'
-        shell: bash
-        run: |
-          mkdir -p dist/${{ matrix.rid }}
-          cp -R publish/${{ matrix.rid }}/. dist/${{ matrix.rid }}/
-          if [ "${{ runner.os }}" = "Linux" ]; then
-            cp packaging/linux/app.valafind.Valafind.desktop dist/${{ matrix.rid }}/
-            cp src/Valafind.App/Assets/valafind.png dist/${{ matrix.rid }}/valafind.png
-          fi
+          ditto -c -k --keepParent bundle/${{ matrix.rid }}/Valafind.app dist/valafind-${{ matrix.rid }}.app.zip
       - uses: actions/upload-artifact@v4
         with:
           name: valafind-${{ matrix.rid }}
-          path: |
-            dist/valafind-${{ matrix.rid }}.zip
-            dist/${{ matrix.rid }}
-          if-no-files-found: ignore
+          path: dist/*
+          if-no-files-found: error
+          # Already-packed binaries; recompressing ~500 MB per platform only costs time.
+          compression-level: 0
+          retention-days: 14
+
+  release:
+    # Every merge to the default branch becomes a GitHub release with the binaries attached.
+    name: GitHub release
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: [publish, model-parity]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: packaging/NOTICE-Gemma.txt
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: valafind-*
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: |
+          ls -la
+          # The Gemma Terms of Use (section 3.1) require this notice to accompany redistributed weights.
+          cp ../packaging/NOTICE-Gemma.txt .
+          sha256sum valafind-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$VALAFIND_VERSION"
+          gh release create "$tag" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Valafind $VALAFIND_VERSION" \
+            --generate-notes
