@@ -99,7 +99,7 @@
         <TextBlock Classes="title" Text="EmbeddingGemma model not installed" VerticalAlignment="Center" />
       </StackPanel>
       <TextBlock Classes="body"
-                 Text="Valafind never downloads anything by itself. Install the model once by running this command in a terminal:" />
+                 Text="This build of Valafind comes without the model and does not download it by itself. Install it once by running this command in a terminal:" />
       <Border Classes="code">
         <DockPanel>
           <Button Classes="vf copy" DockPanel.Dock="Right" ToolTip.Tip="Copy command"
