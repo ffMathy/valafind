@@ -262,7 +262,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (PickFolderAsync is null)
             return;
-        var path = await PickFolderAsync("Choose the EmbeddingGemma model folder").ConfigureAwait(true);
+        var path = await PickFolderAsync("Choose the EmbeddingGemma 2 model folder").ConfigureAwait(true);
         if (!string.IsNullOrWhiteSpace(path))
             ModelDirectory = path;
     }
@@ -366,7 +366,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         public static DesignHost Instance { get; } = new();
         public string? DetectModel(string? configuredDirectory) => null;
-        public string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, "embeddinggemma-300m");
+        public string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, "embeddinggemma-2");
         public string AppDirectory => AppContext.BaseDirectory;
         public string LogDirectory => AppPaths.LogDirectory;
         public void OpenLogFolder() { }

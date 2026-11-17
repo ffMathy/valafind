@@ -3,8 +3,8 @@ namespace Valafind.Core.Embedding;
 /// <summary>Configuration for <see cref="EmbeddingGemmaModel"/>.</summary>
 public sealed class EmbeddingOptions
 {
-    /// <summary>Largest token count (prompt and special tokens included) EmbeddingGemma accepts.</summary>
-    public const int HardMaxTokens = 2048;
+    /// <summary>Largest token count (prompt and special tokens included) EmbeddingGemma 2 accepts.</summary>
+    public const int HardMaxTokens = 8192;
 
     /// <summary>Directory holding the tokenizer (<c>tokenizer.json</c> and/or <c>tokenizer.model</c>) and the ONNX
     /// model. Usually the result of <see cref="ModelLocator.Find"/>.</summary>
@@ -28,6 +28,19 @@ public sealed class EmbeddingOptions
     /// <summary>Documents per inference call in <see cref="EmbeddingGemmaModel.EmbedDocuments"/>.</summary>
     public int BatchSize { get; set; } = 8;
 
+    /// <summary>Use the vision and audio encoders when they are installed. False: text only.</summary>
+    public bool EnableMedia { get; set; } = true;
+
+    /// <summary>Vision soft tokens per picture: 70, 140, 280 (the model's default), 560 or 1120. More tokens see more
+    /// detail but cost proportionally more CPU (≈ 1.4 s, 2.8 s and 6.4 s per picture on two cores for 70/140/280). 140
+    /// keeps indexing a photo library practical in the background.</summary>
+    public int ImageSoftTokens { get; set; } = 140;
+
+    /// <summary>Vision soft tokens per video frame (the model's default is 140).</summary>
+    public int VideoFrameSoftTokens { get; set; } = 70;
+
+    /// <summary>Frames per video (sampled at one per second, then thinned out evenly; the model's default is 32).</summary>
+    public int MaxVideoFrames { get; set; } = 8;
     internal const string DefaultModelFile = "onnx/model_quantized.onnx";
 
     internal static readonly int[] SupportedDimensions = [768, 512, 256, 128];
@@ -48,5 +61,11 @@ public sealed class EmbeddingOptions
             throw new ArgumentOutOfRangeException(nameof(IntraOpThreads), IntraOpThreads, "IntraOpThreads must be >= 0 (0 = runtime default).");
         if (BatchSize < 1)
             throw new ArgumentOutOfRangeException(nameof(BatchSize), BatchSize, "BatchSize must be >= 1.");
+        if (Array.IndexOf(Media.VisionPreprocessor.SupportedSoftTokens, ImageSoftTokens) < 0)
+            throw new ArgumentOutOfRangeException(nameof(ImageSoftTokens), ImageSoftTokens, "ImageSoftTokens must be 70, 140, 280, 560 or 1120.");
+        if (Array.IndexOf(Media.VisionPreprocessor.SupportedSoftTokens, VideoFrameSoftTokens) < 0)
+            throw new ArgumentOutOfRangeException(nameof(VideoFrameSoftTokens), VideoFrameSoftTokens, "VideoFrameSoftTokens must be 70, 140, 280, 560 or 1120.");
+        if (MaxVideoFrames is < 1 or > 32)
+            throw new ArgumentOutOfRangeException(nameof(MaxVideoFrames), MaxVideoFrames, "MaxVideoFrames must be between 1 and 32.");
     }
 }

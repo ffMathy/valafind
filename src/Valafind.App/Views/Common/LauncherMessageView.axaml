@@ -85,7 +85,7 @@
 
     <!-- Model loading -->
     <StackPanel Spacing="10" IsVisible="{Binding IsModelLoadingVisible}">
-      <TextBlock Classes="title" Text="Loading EmbeddingGemma…" />
+      <TextBlock Classes="title" Text="Loading EmbeddingGemma 2…" />
       <ProgressBar IsIndeterminate="True" Height="3" MinHeight="3" Width="180" HorizontalAlignment="Left"
                    Foreground="{DynamicResource VfAccentBrush}" Background="{DynamicResource VfTrackBrush}" />
       <TextBlock Classes="body" Text="The on-device model takes a few seconds to start. Your search runs as soon as it is ready." />
@@ -96,7 +96,7 @@
       <StackPanel Orientation="Horizontal" Spacing="8">
         <c:StrokeIcon Data="{StaticResource VfIconWarning}" Width="18" Height="18" StrokeThickness="2"
                       Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
-        <TextBlock Classes="title" Text="EmbeddingGemma model not installed" VerticalAlignment="Center" />
+        <TextBlock Classes="title" Text="EmbeddingGemma 2 model not installed" VerticalAlignment="Center" />
       </StackPanel>
       <TextBlock Classes="body"
                  Text="This build of Valafind comes without the model and does not download it by itself. Install it once by running this command in a terminal:" />
@@ -129,7 +129,7 @@
       <StackPanel Orientation="Horizontal" Spacing="8">
         <c:StrokeIcon Data="{StaticResource VfIconWarning}" Width="18" Height="18" StrokeThickness="2"
                       Foreground="{DynamicResource VfWarningBrush}" VerticalAlignment="Center" />
-        <TextBlock Classes="title" Text="EmbeddingGemma could not be loaded" VerticalAlignment="Center" />
+        <TextBlock Classes="title" Text="EmbeddingGemma 2 could not be loaded" VerticalAlignment="Center" />
       </StackPanel>
       <TextBlock Classes="body" Text="{Binding ModelErrorText}" />
       <TextBlock Classes="body" IsVisible="{Binding IsModelBundled}"

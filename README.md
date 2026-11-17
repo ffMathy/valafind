@@ -25,15 +25,18 @@ file, even when it is written in another language and named `scan_0042.pdf`. Eve
 <img src="docs/screenshots/indexing-paused.png" width="560" alt="Indexing paused while the system is busy: CPU at 100%, 29 of 608 files done, Index Now button">
 
 Indexing pauses whenever the CPU or disk is busy and picks up again when they're idle. Files you use often are indexed
-first (Phase 1), then the rest of your files (Phase 2). The progress panel only appears while indexing is under way;
-once everything is indexed, the launcher just shows a small ✓ *Up to date*.
+first (Phase 1), then the rest of your files (Phase 2). Within that, Valafind always goes **documents → pictures → audio →
+video**: everything you write and read is searchable before it starts on your photo library, and the slow video work
+comes last. The progress panel only appears while indexing is under way; once everything is indexed, the launcher just
+shows a small ✓ *Up to date*.
 
 <img src="docs/screenshots/settings.png" width="420" alt="Settings: global shortcut, indexed folders, CPU and disk limits, pause on battery">
 
 ## Nothing leaves your computer
 
-The [EmbeddingGemma](https://ai.google.dev/gemma/docs/embeddinggemma) model runs locally and is built into the app, so
-there is nothing else to download. Your files, the index and your searches never leave your computer. The only network
+The [EmbeddingGemma 2](https://huggingface.co/google/embeddinggemma-2) model runs locally and is built into the app, so
+there is nothing else to download. It puts text, pictures, audio and video in one space, so *"a red car in the snow"*
+finds the photo and *"the meeting where we talked about the budget"* finds the voice memo. Your files, the index and your searches never leave your computer. The only network
 request Valafind makes is checking GitHub for a newer release every few hours (see below); turn that off in Settings.
 
 ## Get it
@@ -48,8 +51,8 @@ a single executable with the model inside. Every merge to `main` publishes a new
 | Linux (x64 / Arm64) | `valafind-linux-x64`, `valafind-linux-arm64` (`chmod +x` it first) |
 
 Run it, and Valafind installs itself for your user (no administrator rights), sets itself to start at login and sits in
-the tray (menu bar on macOS) until you press the shortcut. On first start it unpacks the model (~310 MB) into its data
-folder, which takes a second or two. `SHA256SUMS.txt` in each release lists the checksums.
+the tray (menu bar on macOS) until you press the shortcut. On first start it unpacks the model (~850 MB) into its data
+folder, which takes a few seconds. `SHA256SUMS.txt` in each release lists the checksums.
 
 <details>
 <summary><b>Installing, updating and uninstalling</b></summary>
@@ -65,6 +68,9 @@ is downloaded, checked against its published SHA-256 and put in place of the run
 it once the launcher and Settings are closed. Turn this off in Settings, or set `VALAFIND_NO_UPDATE=1`; **Check for
 updates** in the tray menu and Settings checks right away.
 
+The update that moved Valafind from EmbeddingGemma-300m (text only) to EmbeddingGemma 2 builds the index again from
+scratch, because the two models' vectors are not comparable. It removes the old model folder (`models/embeddinggemma-300m`).
+
 Start it with `--no-install` (or set `VALAFIND_NO_INSTALL=1`) to run a copy where it is. Uninstall it from Apps or
 Control Panel on Windows, or run it with `--uninstall` anywhere; your settings and index stay in the data folder.
 </details>
@@ -75,9 +81,9 @@ Control Panel on Windows, or run it with `--uninstall` anywhere; your settings a
 Download the model once (on Windows: `tools\fetch-model.ps1`), then publish with it built in:
 
 ```bash
-tools/fetch-model.sh "$PWD/.model/embeddinggemma-300m"
+tools/fetch-model.sh "$PWD/.model/embeddinggemma-2"
 dotnet publish src/Valafind.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true \
-  -p:ValafindModelDir="$PWD/.model/embeddinggemma-300m" -o publish
+  -p:ValafindModelDir="$PWD/.model/embeddinggemma-2" -o publish
 ```
 
 Runtimes: `win-x64`, `win-arm64`, `osx-arm64`, `osx-x64`, `linux-x64`, `linux-arm64`. For a macOS app bundle, run
@@ -112,14 +118,24 @@ The desktop recognizes the app through the desktop entry the installer writes.
 <details>
 <summary><b>What gets indexed</b></summary>
 
-- **Content:** text, Markdown, code, HTML/JSON/XML/YAML, PDF, Word/Excel/PowerPoint, OpenDocument, EPUB, RTF, e-mail
-  (`.eml`, `.mbox`) and Jupyter notebooks. Each document contributes up to its first ~32,000 characters.
-- **Name only:** images (no OCR), audio, video, archives, legacy `.doc`/`.xls`/`.ppt`/`.msg`, and iWork files.
+- **Text:** text, Markdown, code, HTML/JSON/XML/YAML, PDF, Word/Excel/PowerPoint, OpenDocument, EPUB, RTF, e-mail
+  (`.eml`, `.mbox`) and Jupyter notebooks, embedded by their text. Each document contributes up to its first ~32,000
+  characters.
+- **Pictures** (PNG, JPEG, GIF, BMP, WebP; HEIC/HEIF and TIFF on macOS): what they show, including text in them.
+- **Audio** (WAV everywhere; MP3, AAC/M4A, FLAC, … through the system's codecs): what is said or heard, as up to four
+  30-second clips, spread over the file when it is longer than two minutes.
+- **Video**: eight frames spread over the video, plus up to two 30-second clips of its sound.
+- **Name only:** archives, legacy `.doc`/`.xls`/`.ppt`/`.msg`, iWork files, and media no decoder can read.
 - **Skipped:** hidden and app-data folders, `node_modules`, `.git`, build output, caches, the Trash, and cloud
   placeholders that would trigger a download.
 
-Embedding one chunk takes about half a second on two CPU threads, so a large home folder takes days of *idle* time to
-index fully. That is why your everyday files go first.
+Pictures, audio and video are also findable by their names. Audio and video use Media Foundation on Windows and
+AVFoundation on macOS. On Linux they need `ffmpeg` (`sudo apt install ffmpeg`, `sudo dnf install ffmpeg`, …); without
+it, audio other than WAV and video are indexed by name only.
+
+Embedding one text chunk takes about half a second on two CPU threads, a picture about three seconds, a minute of audio
+about ten and a video about twenty, so a large home folder takes days of *idle* time to index fully. That is why your
+everyday files and your documents go first.
 </details>
 
 <details>
@@ -147,11 +163,11 @@ dotnet build Valafind.slnx
 dotnet test --solution Valafind.slnx
 ```
 
-Tests that need the real model, such as tokenizer and embedding parity and end-to-end search, run when you point them at
-a model folder:
+Tests that need the real model, such as tokenizer and embedding parity (text, pictures, audio and video against
+`tools/make-embedding-reference.py`) and end-to-end search, run when you point them at a model folder:
 
 ```bash
-VALAFIND_TEST_MODEL_DIR=~/.local/share/valafind/models/embeddinggemma-300m dotnet test --solution Valafind.slnx
+VALAFIND_TEST_MODEL_DIR=~/.local/share/valafind/models/embeddinggemma-2 dotnet test --solution Valafind.slnx
 ```
 
 - `VALAFIND_UI=windows|mac|linux` switches the launcher design.
@@ -163,7 +179,7 @@ VALAFIND_TEST_MODEL_DIR=~/.local/share/valafind/models/embeddinggemma-300m dotne
 
 ---
 
-<sub>Release binaries contain the unmodified EmbeddingGemma weights. Gemma is provided under and subject to the
-[Gemma Terms of Use](https://ai.google.dev/gemma/terms) and the
-[Gemma Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy); each release includes this notice as
+<sub>Release binaries contain the EmbeddingGemma 2 weights (8-bit ONNX export by onnx-community) by Google DeepMind,
+licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0); use must also follow the
+[Gemma Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy). Each release includes this notice as
 `NOTICE-Gemma.txt`.</sub>

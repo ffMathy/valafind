@@ -9,6 +9,8 @@
     <PackageReference Include="PdfPig" />
     <PackageReference Include="DocumentFormat.OpenXml" />
     <PackageReference Include="MimeKit" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>

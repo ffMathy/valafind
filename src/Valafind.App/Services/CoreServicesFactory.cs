@@ -54,7 +54,8 @@ internal static class CoreServicesFactory
     /// Unpacks the model embedded in release builds into <see cref="DefaultModelDirectory"/> (first start, or after the
     /// files there were damaged). Skipped when nothing is bundled or when another valid model is in use (Settings,
     /// <c>VALAFIND_MODEL_DIR</c>, a copy next to the app), so no disk space goes to an unused copy. Slow on first start
-    /// (~310 MB written): call off the UI thread. Returns the number of files written.
+    /// (~850 MB written): call off the UI thread. Returns the number of files written. Also removes the previous
+    /// model (EmbeddingGemma-300m) that earlier versions unpacked next to it: it is never loaded again.
     /// </summary>
     public static int InstallBundledModel(string? configuredDirectory, CancellationToken cancellationToken)
     {
@@ -65,10 +66,27 @@ internal static class CoreServicesFactory
         if (found is not null && !string.Equals(Path.GetFullPath(found), Path.GetFullPath(DefaultModelDirectory),
                 OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
             return 0;
-        return BundledModel.EnsureInstalled(assembly, DefaultModelDirectory, cancellationToken);
+        var written = BundledModel.EnsureInstalled(assembly, DefaultModelDirectory, cancellationToken);
+        RemoveLegacyModel();
+        return written;
     }
 
-    /// <summary>Finds the installed EmbeddingGemma model directory, honouring the configured override.</summary>
+    /// <summary>Deletes <c>models/embeddinggemma-300m</c> in the data folder (only that folder, never a user-chosen one).</summary>
+    internal static void RemoveLegacyModel()
+    {
+        var legacy = Path.Combine(AppPaths.ModelsDirectory, ModelLocator.LegacyModelFolderName);
+        try
+        {
+            if (Directory.Exists(legacy))
+                Directory.Delete(legacy, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // In use or locked: tried again on the next start.
+        }
+    }
+
+    /// <summary>Finds the installed EmbeddingGemma 2 model directory, honouring the configured override.</summary>
     public static string? LocateModel(string? configuredDirectory) => ModelLocator.Find(configuredDirectory);
 
     /// <summary>
@@ -136,8 +154,9 @@ internal static class CoreServicesFactory
             ISearchService search = new SearchService(model, store);
             monitor = SystemPressureMonitor.Create();
             IFileDiscovery discovery = new UserFileDiscovery(settings);
+            IMediaDecoder mediaDecoder = new Valafind.Core.Extraction.Media.MediaDecoder(loggerFactory.CreateLogger<IMediaDecoder>());
             IIndexingService indexing = new IndexingCoordinator(discovery, reader, chunker, model, store, monitor, settings,
-                loggerFactory.CreateLogger<IndexingCoordinator>(), null);
+                loggerFactory.CreateLogger<IndexingCoordinator>(), null, mediaDecoder);
 
             return new CoreServices(model, store, search, indexing, monitor);
         }

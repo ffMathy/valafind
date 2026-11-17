@@ -11,6 +11,13 @@ namespace Valafind.Core.Tests.Search;
 
 public sealed class SearchServiceTests : IDisposable
 {
+    // The hashing test model scores lower than EmbeddingGemma 2: explain thresholds that suit it.
+    private const float HashingResultScore = 0.30f;
+    private const float HashingSentenceScore = 0.25f;
+
+    private static SearchService Service(IEmbeddingModel model, IIndexStore store) =>
+        new(model, store, HashingResultScore, HashingSentenceScore);
+
     private readonly TempDatabase _db = new();
     private readonly HashingEmbeddingModel _model = new();
 
@@ -25,7 +32,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task Empty_query_returns_nothing_without_embedding(string query)
     {
         var store = new FixedStore(Hit(P("/a/b.txt"), 0.9f, "text"));
-        var service = new SearchService(_model, store);
+        var service = Service(_model, store);
         Assert.Empty(await service.SearchAsync(query, SearchFilter.None, 10, Ct));
         Assert.Equal(0, _model.QueryCalls);
         Assert.Equal(0, store.Searches);
@@ -48,7 +55,7 @@ public sealed class SearchServiceTests : IDisposable
                 [new ChunkRecord(0, 0, text.Length, text, _model.Embed(text))]);
         }
 
-        var service = new SearchService(_model, store);
+        var service = Service(_model, store);
         var results = await service.SearchAsync("  marketing budget  ", SearchFilter.None, 3, Ct);
 
         Assert.NotEmpty(results);
@@ -81,7 +88,7 @@ public sealed class SearchServiceTests : IDisposable
         var hits = Enumerable.Range(0, 8)
             .Select(i => Hit(P($"/d/file{i}.txt"), 0.9f - i * 0.01f, $"First sentence about apples {i}. Second sentence about pears {i}! Third one?"))
             .ToArray();
-        var service = new SearchService(_model, new FixedStore(hits));
+        var service = Service(_model, new FixedStore(hits));
 
         var results = await service.SearchAsync("pears", SearchFilter.None, 8, Ct);
 
@@ -100,7 +107,7 @@ public sealed class SearchServiceTests : IDisposable
         var hits = Enumerable.Range(0, 8)
             .Select(i => Hit(P($"/d/file{i}.txt"), 0.9f - i * 0.01f, $"First sentence about apples {i}. Second sentence about pears {i}! Third one?"))
             .ToArray();
-        var service = new SearchService(_model, new FixedStore(hits));
+        var service = Service(_model, new FixedStore(hits));
         var results = await service.SearchAsync("pears", SearchFilter.None, 8, Ct);
 
         var explained = await service.ExplainAsync("pears", results, Ct);
@@ -124,7 +131,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task Explain_embeds_at_most_four_lexically_preselected_sentences_per_result()
     {
         var sentences = Enumerable.Range(0, 12).Select(i => i is 2 or 9 ? $"Line {i} has the budget." : $"Line {i} filler.");
-        var service = new SearchService(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, string.Join(' ', sentences))));
+        var service = Service(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, string.Join(' ', sentences))));
         var results = await service.SearchAsync("budget", SearchFilter.None, 5, Ct);
 
         await service.ExplainAsync("budget", results, Ct);
@@ -138,7 +145,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Explain_returns_input_unchanged_when_the_model_fails()
     {
-        var service = new SearchService(_model, new FixedStore(
+        var service = Service(_model, new FixedStore(
             Hit(P("/d/a.txt"), 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard."),
             Hit(P("/d/b.txt"), 0.7f, "Other text. More text.")));
         var results = await service.SearchAsync("invoice filing", SearchFilter.None, 5, Ct);
@@ -158,7 +165,7 @@ public sealed class SearchServiceTests : IDisposable
     {
         // ExplainAsync runs while the user looks at results: it must not queue behind an indexing batch.
         using var model = new InteractiveModel(_model);
-        var service = new SearchService(model, new FixedStore(
+        var service = Service(model, new FixedStore(
             Hit(P("/d/a.txt"), 0.8f, "Nothing here. The invoices were filed late. Invoicing is hard.")));
         // The hashing test model only relates identical words, so the query reuses the sentence's words.
         var results = await service.SearchAsync("invoices filed late", SearchFilter.None, 5, Ct);
@@ -176,7 +183,7 @@ public sealed class SearchServiceTests : IDisposable
     {
         // Chunk text keeps line breaks; without them the headers and the first sentence fused into one "sentence".
         const string mail = "Subject: Re: Depositum\nFrom: Henrik Larsen\nTo: Alex\nDate: 2024-02-21\nHi Alex, we can accept two months of deposit instead of three.";
-        var service = new SearchService(_model, new FixedStore(Hit(P("/m/re.eml"), 0.8f, mail)));
+        var service = Service(_model, new FixedStore(Hit(P("/m/re.eml"), 0.8f, mail)));
         var results = await service.SearchAsync("accept two months of deposit instead of three", SearchFilter.None, 5, Ct);
         var explained = await service.ExplainAsync("accept two months of deposit instead of three", results, Ct);
 
@@ -189,9 +196,9 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Explain_invents_no_reason_for_weak_results_or_unrelated_sentences()
     {
-        var service = new SearchService(_model, new FixedStore(
+        var service = Service(_model, new FixedStore(
             Hit(P("/d/strong.txt"), 0.8f, "Unrelated opener here. Quarterly budget review notes. Another thing entirely."),
-            Hit(P("/d/weak.txt"), SearchService.MinExplainResultScore - 0.05f, "Some words. Quarterly budget review notes. More words.")));
+            Hit(P("/d/weak.txt"), HashingResultScore - 0.05f, "Some words. Quarterly budget review notes. More words.")));
         var results = await service.SearchAsync("quarterly budget review", SearchFilter.None, 5, Ct);
         var explained = await service.ExplainAsync("quarterly budget review", results, Ct);
 
@@ -203,7 +210,7 @@ public sealed class SearchServiceTests : IDisposable
         Assert.Equal(weakBefore.Highlights, explained.Single(r => r.Path.EndsWith("weak.txt", StringComparison.Ordinal)).Highlights);
 
         // No sentence reaches the similarity bar: lexical highlights are kept rather than picking a random sentence.
-        var none = new SearchService(_model, new FixedStore(Hit(P("/d/x.txt"), 0.8f, "Alpha beta gamma. Delta epsilon zeta. Eta theta iota.")));
+        var none = Service(_model, new FixedStore(Hit(P("/d/x.txt"), 0.8f, "Alpha beta gamma. Delta epsilon zeta. Eta theta iota.")));
         var r2 = await none.SearchAsync("quarterly budget review", SearchFilter.None, 5, Ct);
         Assert.Equal(r2[0].Highlights, (await none.ExplainAsync("quarterly budget review", r2, Ct))[0].Highlights);
     }
@@ -211,7 +218,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Explain_honours_cancellation()
     {
-        var service = new SearchService(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, "One. Two budget lines. Three.")));
+        var service = Service(_model, new FixedStore(Hit(P("/d/a.txt"), 0.8f, "One. Two budget lines. Three.")));
         var results = await service.SearchAsync("budget", SearchFilter.None, 5, Ct);
         using var cts = new CancellationTokenSource();
         using var entered = new ManualResetEventSlim();
@@ -230,7 +237,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Explain_without_text_or_with_single_sentences_does_no_model_work()
     {
-        var service = new SearchService(_model, new FixedStore(
+        var service = Service(_model, new FixedStore(
             Hit(P("/pics/beach.jpg"), 0.9f, "", FileKind.Image),
             Hit(P("/d/one.txt"), 0.8f, "Just one budget sentence")));
         var results = await service.SearchAsync("budget", SearchFilter.None, 5, Ct);
@@ -243,7 +250,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Name_only_files_have_empty_snippet_and_highlights()
     {
-        var service = new SearchService(_model, new FixedStore(Hit(P("/pics/holiday beach.jpg"), 0.6f, "", FileKind.Image)));
+        var service = Service(_model, new FixedStore(Hit(P("/pics/holiday beach.jpg"), 0.6f, "", FileKind.Image)));
         var result = Assert.Single(await service.SearchAsync("beach", SearchFilter.None, 5, Ct));
         Assert.Equal("", result.Snippet);
         Assert.Empty(result.Highlights);
@@ -254,7 +261,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task File_name_match_boosts_and_resorts()
     {
-        var service = new SearchService(_model, new FixedStore(
+        var service = Service(_model, new FixedStore(
             Hit(P("/d/notes.txt"), 0.50f, "Some text."),
             Hit(P("/d/Budget-2024.xlsx"), 0.48f, "Other text.", FileKind.Spreadsheet)));
         var results = await service.SearchAsync("budgets", SearchFilter.None, 5, Ct);
@@ -266,7 +273,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Boost_never_pushes_score_above_one()
     {
-        var service = new SearchService(_model, new FixedStore(Hit(P("/d/budget.txt"), 0.99f, "x")));
+        var service = Service(_model, new FixedStore(Hit(P("/d/budget.txt"), 0.99f, "x")));
         var result = Assert.Single(await service.SearchAsync("budget", SearchFilter.None, 5, Ct));
         Assert.Equal(1f, result.Score);
     }
@@ -274,7 +281,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task File_name_boost_ignores_stopwords_and_substrings()
     {
-        var service = new SearchService(_model, new FixedStore(
+        var service = Service(_model, new FixedStore(
             Hit(P("/d/incident-2024-11.pdf"), 0.50f, "Postmortem.", FileKind.Pdf),
             Hit(P("/d/Brother HL-L2350 manual.pdf"), 0.48f, "Printer.", FileKind.Pdf),
             Hit(P("/d/Mother's day.jpg"), 0.47f, "", FileKind.Image),
@@ -300,7 +307,7 @@ public sealed class SearchServiceTests : IDisposable
     [InlineData("lejekontrakt", "/d/lejekontrakten.pdf")]
     public async Task File_name_boost_matches_whole_name_tokens(string query, string path)
     {
-        var service = new SearchService(_model, new FixedStore(
+        var service = Service(_model, new FixedStore(
             Hit(P("/d/zzz.txt"), 0.50f, "x"),
             Hit(P(path), 0.48f, "y")));
         var results = await service.SearchAsync(query, SearchFilter.None, 5, Ct);
@@ -316,7 +323,7 @@ public sealed class SearchServiceTests : IDisposable
     [InlineData("report", "/d/notes.report")]
     public async Task File_name_boost_does_not_fire_inside_tokens_or_on_the_extension(string query, string path)
     {
-        var service = new SearchService(_model, new FixedStore(Hit(P(path), 0.48f, "y")));
+        var service = Service(_model, new FixedStore(Hit(P(path), 0.48f, "y")));
         var result = Assert.Single(await service.SearchAsync(query, SearchFilter.None, 5, Ct));
         Assert.Equal(0.48f, result.Score);
     }
@@ -324,7 +331,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task File_name_match_just_below_top_k_is_promoted()
     {
-        var service = new SearchService(_model, new FixedStore(
+        var service = Service(_model, new FixedStore(
             Hit(P("/d/a.txt"), 0.50f, "x"),
             Hit(P("/d/b.txt"), 0.49f, "x"),
             Hit(P("/d/budget.xlsx"), 0.48f, "x", FileKind.Spreadsheet)));
@@ -335,7 +342,7 @@ public sealed class SearchServiceTests : IDisposable
     [Fact]
     public async Task Already_cancelled_token_throws_before_embedding()
     {
-        var service = new SearchService(_model, new FixedStore(Hit(P("/a"), 1, "x")));
+        var service = Service(_model, new FixedStore(Hit(P("/a"), 1, "x")));
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.SearchAsync("query", SearchFilter.None, 5, cts.Token));
@@ -353,7 +360,7 @@ public sealed class SearchServiceTests : IDisposable
             ct.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
         };
         var store = new FixedStore(Hit(P("/a"), 1, "x"));
-        var service = new SearchService(_model, store);
+        var service = Service(_model, store);
 
         var task = service.SearchAsync("query", SearchFilter.None, 5, cts.Token);
         Assert.True(entered.Wait(TimeSpan.FromSeconds(5), Ct));
@@ -369,7 +376,7 @@ public sealed class SearchServiceTests : IDisposable
         // The model finishes normally, but the keystroke that cancels arrives just before it returns.
         var store = new FixedStore(Hit(P("/a"), 1, "x"));
         var model = new NonThrowingQueryModel(_model, () => cts.Cancel());
-        var service = new SearchService(model, store);
+        var service = Service(model, store);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.SearchAsync("query", SearchFilter.None, 5, cts.Token));
         Assert.Equal(0, store.Searches);
@@ -396,7 +403,7 @@ public sealed class SearchServiceTests : IDisposable
 
         foreach (var query in new[] { "budget report", "café straße", "日本語", "😀 alpha", "zzz" })
         {
-            var service = new SearchService(_model, new FixedStore([.. hits]));
+            var service = Service(_model, new FixedStore([.. hits]));
             var results = await service.SearchAsync(query, SearchFilter.None, hits.Count, Ct);
             Assert.Equal(hits.Count, results.Count);
             foreach (var r in results)

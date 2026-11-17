@@ -25,11 +25,14 @@ public sealed class SearchService : ISearchService
     /// <summary>Snippet sentences per result embedded by <see cref="ExplainAsync"/>.</summary>
     internal const int ExplainSentencesPerResult = 4;
 
-    /// <summary>Results scoring below this are not explained: for a weak match the "closest sentence" is just noise.</summary>
-    internal const float MinExplainResultScore = 0.30f;
+    /// <summary>Results scoring below this are not explained: for a weak match the "closest sentence" is just noise.
+    /// Calibrated for EmbeddingGemma 2, whose cosine scores sit high: unrelated text scores about 0.50–0.67 against a
+    /// query, related text 0.72 and up.</summary>
+    internal const float MinExplainResultScore = 0.70f;
 
-    /// <summary>A sentence is highlighted only when its own similarity to the query reaches this.</summary>
-    internal const float MinExplainSentenceScore = 0.25f;
+    /// <summary>A sentence is highlighted only when its own similarity to the query reaches this (short sentences score
+    /// a little higher than whole chunks, unrelated ones up to about 0.65).</summary>
+    internal const float MinExplainSentenceScore = 0.65f;
 
     /// <summary>Added to the score when a query term matches the file name (see <see cref="NameMatches"/>).</summary>
     internal const float FileNameBoost = 0.03f;
@@ -46,12 +49,23 @@ public sealed class SearchService : ISearchService
 
     /// <summary>Creates a search service over <paramref name="store"/> using <paramref name="model"/> for embeddings.</summary>
     public SearchService(IEmbeddingModel model, IIndexStore store)
+        : this(model, store, MinExplainResultScore, MinExplainSentenceScore)
+    {
+    }
+
+    /// <summary>With explain thresholds for a model whose scores are distributed differently (tests use a hashing model).</summary>
+    internal SearchService(IEmbeddingModel model, IIndexStore store, float minExplainResultScore, float minExplainSentenceScore)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(store);
         _model = model;
         _store = store;
+        _minExplainResultScore = minExplainResultScore;
+        _minExplainSentenceScore = minExplainSentenceScore;
     }
+
+    private readonly float _minExplainResultScore;
+    private readonly float _minExplainSentenceScore;
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<SearchResult>> SearchAsync(string query, SearchFilter filter, int topK, CancellationToken cancellationToken)
@@ -117,7 +131,7 @@ public sealed class SearchService : ISearchService
         for (var i = 0; i < Math.Min(ExplainCount, results.Count); i++)
         {
             var snippet = results[i]?.Snippet;
-            if (string.IsNullOrWhiteSpace(snippet) || results[i].Score < MinExplainResultScore)
+            if (string.IsNullOrWhiteSpace(snippet) || results[i].Score < _minExplainResultScore)
                 continue;
             var sentences = SnippetSentences(snippet, stems, lastPrefix);
             if (sentences.Count < 2)
@@ -167,7 +181,7 @@ public sealed class SearchService : ISearchService
                 return results; // Inconsistent model output: do not trust any of it.
             var (result, span) = owners[k];
             var score = VectorMath.Dot(queryVector, v);
-            if (score >= MinExplainSentenceScore && score > bestScore[result])
+            if (score >= _minExplainSentenceScore && score > bestScore[result])
             {
                 bestScore[result] = score;
                 best[result] = span;
