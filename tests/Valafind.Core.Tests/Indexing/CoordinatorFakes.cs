@@ -65,6 +65,12 @@ internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, 
                 Files.Values.Count(f => f.Entry.Phase == IndexPhase.Frequent), Files.Values.Count(f => f.Entry.Phase == IndexPhase.All));
     }
 
+    public IReadOnlyDictionary<FileKind, long> GetFileCountsByKind()
+    {
+        lock (_lock)
+            return Files.Values.GroupBy(f => f.Entry.Kind).ToDictionary(g => g.Key, g => (long)g.Count());
+    }
+
     public string? GetMeta(string key) => Meta.TryGetValue(key, out var v) ? v : null;
 
     public void SetMeta(string key, string value) => Meta[key] = value;

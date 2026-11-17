@@ -50,6 +50,8 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
     private long _fileCount;
     private long _frequentCount;
     private long _allCount;
+    private readonly long[] _kindCounts = new long[KindSlots];
+    private const int KindSlots = (int)FileKind.Archive + 1;
     private volatile bool _disposed;
 
     /// <summary>Creates a store backed by the SQLite database at <paramref name="databasePath"/> (created on <see cref="Open"/>).</summary>
@@ -255,13 +257,15 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
     private void LoadCounts(SqliteConnection db)
     {
         long files = 0, frequent = 0, all = 0;
+        var kinds = new long[KindSlots];
         using var cmd = db.CreateCommand();
-        cmd.CommandText = "SELECT phase, COUNT(*) FROM files GROUP BY phase;";
+        cmd.CommandText = "SELECT phase, kind, COUNT(*) FROM files GROUP BY phase, kind;";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {
             var phase = (IndexPhase)reader.GetInt32(0);
-            var count = reader.GetInt64(1);
+            var count = reader.GetInt64(2);
+            kinds[KindSlot((FileKind)reader.GetInt32(1))] += count;
             files += count;
             if (phase == IndexPhase.Frequent)
                 frequent += count;
@@ -271,7 +275,11 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         Volatile.Write(ref _fileCount, files);
         Volatile.Write(ref _frequentCount, frequent);
         Volatile.Write(ref _allCount, all);
+        for (var i = 0; i < KindSlots; i++)
+            Volatile.Write(ref _kindCounts[i], kinds[i]);
     }
+
+    private static int KindSlot(FileKind kind) => (uint)kind < KindSlots ? (int)kind : (int)FileKind.Other;
 
     private static QuantizedVectorIndex LoadIndex(SqliteConnection db, int dimensions)
     {
@@ -422,12 +430,13 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
 
             long fileId;
             IndexPhase? previousPhase = null;
+            var previousKind = FileKind.Other;
             using (var tx = db.BeginTransaction())
             {
                 using (var find = db.CreateCommand())
                 {
                     find.Transaction = tx;
-                    find.CommandText = "SELECT id, phase FROM files WHERE path_key = $key;";
+                    find.CommandText = "SELECT id, phase, kind FROM files WHERE path_key = $key;";
                     find.Parameters.AddWithValue("$key", key);
                     using var reader = find.ExecuteReader();
                     fileId = 0;
@@ -435,6 +444,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                     {
                         fileId = reader.GetInt64(0);
                         previousPhase = (IndexPhase)reader.GetInt32(1);
+                        previousKind = (FileKind)reader.GetInt32(2);
                     }
                 }
 
@@ -494,8 +504,8 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 tx.Commit();
             }
 
-            AdjustCounts(previousPhase, -1);
-            AdjustCounts(file.Phase, +1);
+            AdjustCounts(previousPhase, previousKind, -1);
+            AdjustCounts(file.Phase, file.Kind, +1);
 
             // The matrix keeps the chunk order of the database (ORDER BY idx) so a reload is identical.
             var order = Enumerable.Range(0, chunks.Count).OrderBy(i => chunks[i].Index).ToArray();
@@ -514,17 +524,17 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         lock (_writeGate)
         {
             var db = RequireWriter();
-            var removed = new List<(long Id, IndexPhase Phase)>();
+            var removed = new List<(long Id, IndexPhase Phase, FileKind Kind)>();
             using (var tx = db.BeginTransaction())
             {
                 using (var find = db.CreateCommand())
                 {
                     find.Transaction = tx;
-                    find.CommandText = "SELECT id, phase FROM files WHERE path_key = $key;";
+                    find.CommandText = "SELECT id, phase, kind FROM files WHERE path_key = $key;";
                     find.Parameters.AddWithValue("$key", key);
                     using var reader = find.ExecuteReader();
                     while (reader.Read())
-                        removed.Add((reader.GetInt64(0), (IndexPhase)reader.GetInt32(1)));
+                        removed.Add((reader.GetInt64(0), (IndexPhase)reader.GetInt32(1), (FileKind)reader.GetInt32(2)));
                 }
                 DeleteFiles(db, tx, removed);
                 tx.Commit();
@@ -542,14 +552,14 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         lock (_writeGate)
         {
             var db = RequireWriter();
-            var removed = new List<(long Id, IndexPhase Phase)>();
+            var removed = new List<(long Id, IndexPhase Phase, FileKind Kind)>();
             using (var tx = db.BeginTransaction())
             {
                 using (var find = db.CreateCommand())
                 {
                     find.Transaction = tx;
                     find.CommandText = """
-                        SELECT id, phase FROM files
+                        SELECT id, phase, kind FROM files
                         WHERE path_key = $exact OR (path_key >= $lower AND path_key < $upper);
                         """;
                     find.Parameters.AddWithValue("$exact", exact);
@@ -557,7 +567,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                     find.Parameters.AddWithValue("$upper", upper);
                     using var reader = find.ExecuteReader();
                     while (reader.Read())
-                        removed.Add((reader.GetInt64(0), (IndexPhase)reader.GetInt32(1)));
+                        removed.Add((reader.GetInt64(0), (IndexPhase)reader.GetInt32(1), (FileKind)reader.GetInt32(2)));
                 }
                 DeleteFiles(db, tx, removed);
                 tx.Commit();
@@ -567,7 +577,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         }
     }
 
-    private static void DeleteFiles(SqliteConnection db, SqliteTransaction tx, List<(long Id, IndexPhase Phase)> files)
+    private static void DeleteFiles(SqliteConnection db, SqliteTransaction tx, List<(long Id, IndexPhase Phase, FileKind Kind)> files)
     {
         if (files.Count == 0)
             return;
@@ -576,7 +586,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         deleteFile.CommandText = "DELETE FROM files WHERE id = $id;";
         var pId = deleteFile.Parameters.Add("$id", SqliteType.Integer);
         deleteFile.Prepare();
-        foreach (var (id, _) in files)
+        foreach (var (id, _, _) in files)
         {
             DeleteChunks(db, tx, id);
             pId.Value = id;
@@ -593,24 +603,25 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         cmd.ExecuteNonQuery();
     }
 
-    private void ApplyRemoval(List<(long Id, IndexPhase Phase)> removed)
+    private void ApplyRemoval(List<(long Id, IndexPhase Phase, FileKind Kind)> removed)
     {
         if (removed.Count == 0)
             return;
-        foreach (var (_, phase) in removed)
-            AdjustCounts(phase, -1);
+        foreach (var (_, phase, kind) in removed)
+            AdjustCounts(phase, kind, -1);
         MutateIndex(index =>
         {
-            foreach (var (id, _) in removed)
+            foreach (var (id, _, _) in removed)
                 index.RemoveFile(id);
         });
     }
 
-    private void AdjustCounts(IndexPhase? phase, int delta)
+    private void AdjustCounts(IndexPhase? phase, FileKind kind, int delta)
     {
         if (phase is null)
             return;
         Interlocked.Add(ref _fileCount, delta);
+        Interlocked.Add(ref _kindCounts[KindSlot(kind)], delta);
         if (phase == IndexPhase.Frequent)
             Interlocked.Add(ref _frequentCount, delta);
         else if (phase == IndexPhase.All)
@@ -798,6 +809,19 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
             chunks,
             Interlocked.Read(ref _frequentCount),
             Interlocked.Read(ref _allCount));
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyDictionary<FileKind, long> GetFileCountsByKind()
+    {
+        var counts = new Dictionary<FileKind, long>();
+        for (var i = 0; i < KindSlots; i++)
+        {
+            var n = Interlocked.Read(ref _kindCounts[i]);
+            if (n > 0)
+                counts[(FileKind)i] = n;
+        }
+        return counts;
     }
 
     /// <inheritdoc />

@@ -76,11 +76,19 @@ public static class DesignData
 
     internal static IndexStatus BusyStatus { get; } = new(
         IndexingState.PausedSystemBusy, IndexPhase.All, 6214, 6214, 182_930, 446_120, true,
-        new PressureSample(Now, 78, 70, 92d * 1024 * 1024, false), null);
+        new PressureSample(Now, 78, 70, 92d * 1024 * 1024, false), null) { IndexedByKind = SampleKindCounts };
 
     internal static IndexStatus IdleStatus { get; } = new(
         IndexingState.Running, IndexPhase.All, 6214, 6214, 182_930, 446_120, true,
-        new PressureSample(Now, 14, 8, 4d * 1024 * 1024, false), null);
+        new PressureSample(Now, 14, 8, 4d * 1024 * 1024, false), null) { IndexedByKind = SampleKindCounts };
+
+    // Adds up to the 189,144 files indexed in the samples above (a getter: it runs before those initializers).
+    private static Dictionary<FileKind, long> SampleKindCounts => new()
+    {
+        [FileKind.Document] = 18_412, [FileKind.Text] = 9_870, [FileKind.Pdf] = 12_306, [FileKind.Spreadsheet] = 3_918,
+        [FileKind.Presentation] = 1_204, [FileKind.Mail] = 22_640, [FileKind.Code] = 71_382, [FileKind.Notebook] = 312,
+        [FileKind.Image] = 41_077, [FileKind.Audio] = 2_190, [FileKind.Video] = 833, [FileKind.Other] = 5_000,
+    };
 
     private static DateTimeOffset Date(int y, int m, int d, int h = 10, int min = 0) => new(y, m, d, h, min, 0, TimeSpan.Zero);
 
