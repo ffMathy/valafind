@@ -13,11 +13,12 @@ namespace Valafind.Core.Embedding;
 /// <remarks>
 /// <para>The tokenizer and inference session are loaded on first use (or by <see cref="EnsureLoaded"/>). Load
 /// failures are not cached, so a later call retries.</para>
-/// <para>Thread-safe: tokenisation runs concurrently, inference calls are serialised on one session with query
-/// priority. <see cref="EmbedQuery"/> never waits behind a document batch: when a query arrives while
-/// <see cref="EmbedDocuments"/> is running a batch, that ORT run is terminated (<see cref="RunOptions.Terminate"/>),
-/// the query runs, and the interrupted batch is re-run transparently (the document call just takes longer; its
-/// cancellation token is still honoured). Document batches also wait while any query is queued.
+/// <para>Thread-safe: tokenisation runs concurrently, and so do document batches from different threads (the indexer
+/// runs as many at once as its CPU budget allows). Queries have priority and run alone: <see cref="EmbedQuery"/>
+/// never waits behind a document batch: when a query arrives while <see cref="EmbedDocuments"/> calls are running
+/// batches, those ORT runs are terminated (<see cref="RunOptions.Terminate"/>), the query runs, and the interrupted
+/// batches are re-run transparently (the document calls just take longer; their cancellation tokens are still
+/// honoured). Document batches also wait while any query is queued.
 /// <see cref="EmbedDocumentsInteractive"/> (the search "explain" pass) gets the same priority as a query.</para>
 /// <para>ORT's intra-op worker threads are created by native code when the session is built; they are not managed
 /// threads, so their OS priority cannot be changed from C# (BackgroundPriority on the calling thread does not reach
@@ -612,67 +613,77 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
     }
 
     /// <summary>
-    /// Serialises inference on the single session with query priority: a query that arrives while a document
-    /// batch runs terminates that run and goes next; document batches wait while any query is pending.
+    /// Schedules inference on the shared sessions with query priority. Document (background) runs may overlap each
+    /// other, up to <c>maxBackgroundRuns</c>: ONNX Runtime's <c>Run</c> is thread-safe, and the indexer decides how many
+    /// it starts at once from the CPU budget. A query (interactive run) is exclusive: on arrival it terminates every
+    /// running document batch and goes next; document batches wait while any query or exclusive entry is pending.
     /// </summary>
-    internal sealed class RunScheduler
+    internal sealed class RunScheduler(int maxBackgroundRuns = int.MaxValue)
     {
         // Monitor (not System.Threading.Lock) because waiting needs Monitor.Wait/PulseAll.
         private readonly object _gate = new();
-        private bool _busy;
-        private int _pendingInteractive;
-        private ActiveRun? _background;
+        private readonly int _maxBackgroundRuns = Math.Max(1, maxBackgroundRuns);
+        private readonly List<ActiveRun> _background = [];
+        private bool _exclusive;
+        private int _pendingExclusive;
 
         public bool IsBackgroundRunActive
         {
             get
             {
                 lock (_gate)
-                    return _background is not null;
+                    return _background.Count > 0;
             }
         }
 
-        public void EnterInteractive(CancellationToken cancellationToken)
+        /// <summary>Document runs in flight (tests, diagnostics).</summary>
+        public int BackgroundRuns
         {
-            lock (_gate)
+            get
             {
-                _pendingInteractive++;
-                try
-                {
-                    if (_background is { } running)
-                    {
-                        running.Preempted = true;
-                        running.Options.Terminate = true;
-                    }
-                    WaitUntil(() => !_busy, cancellationToken);
-                    _busy = true;
-                }
-                finally
-                {
-                    _pendingInteractive--;
-                    if (_pendingInteractive == 0)
-                        Monitor.PulseAll(_gate);
-                }
+                lock (_gate)
+                    return _background.Count;
             }
         }
+
+        public void EnterInteractive(CancellationToken cancellationToken) => EnterExclusiveCore(preempt: true, cancellationToken);
 
         public void EnterBackground(ActiveRun run, CancellationToken cancellationToken)
         {
             lock (_gate)
             {
-                WaitUntil(() => !_busy && _pendingInteractive == 0, cancellationToken);
-                _busy = true;
-                _background = run;
+                WaitUntil(() => !_exclusive && _pendingExclusive == 0 && _background.Count < _maxBackgroundRuns, cancellationToken);
+                _background.Add(run);
             }
         }
 
-        /// <summary>Waits for the session to be idle (used by Dispose) and keeps it reserved.</summary>
-        public void EnterExclusive()
+        /// <summary>Waits for the sessions to be idle (used by Dispose) and keeps them reserved.</summary>
+        public void EnterExclusive() => EnterExclusiveCore(preempt: false, CancellationToken.None);
+
+        private void EnterExclusiveCore(bool preempt, CancellationToken cancellationToken)
         {
             lock (_gate)
             {
-                WaitUntil(() => !_busy, CancellationToken.None);
-                _busy = true;
+                _pendingExclusive++;
+                try
+                {
+                    if (preempt)
+                    {
+                        foreach (var running in _background)
+                        {
+                            running.Preempted = true;
+                            running.Options.Terminate = true;
+                        }
+                    }
+                    WaitUntil(() => !_exclusive && _background.Count == 0, cancellationToken);
+                    _exclusive = true;
+                }
+                finally
+                {
+                    _pendingExclusive--;
+                    if (_pendingExclusive == 0)
+                        Monitor.PulseAll(_gate);
+                }
             }
         }
 
@@ -680,9 +691,8 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
         {
             lock (_gate)
             {
-                if (run is not null && ReferenceEquals(_background, run))
-                    _background = null;
-                _busy = false;
+                if (run is null || !_background.Remove(run))
+                    _exclusive = false;
                 Monitor.PulseAll(_gate);
             }
         }

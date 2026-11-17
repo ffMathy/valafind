@@ -68,8 +68,15 @@ public class MediaIndexingTests
         await WaitFor(() => coordinator.Status.State == IndexingState.UpToDate, "up to date");
 
         var upserts = store.Snapshot().Where(l => l.Op == "upsert").Select(l => l.Path).ToList();
-        Assert.Equal([frequentNote, note, memo, photo, photo2, frequentSong, song, video], upserts);
-        // Phase 1 covered the frequent documents only; the frequent song came first among the audio files.
+        // Kinds never mix; within a kind, files may finish in any order (they are indexed in parallel), though the
+        // frequent song is started first among the audio files (see Deferred_files_keep_order_drop_duplicates_and_promote_frequent).
+        Assert.Equal(8, upserts.Count);
+        Assert.Equal(frequentNote, upserts[0]);
+        Assert.Equal(new[] { note, memo }.Order(), upserts[1..3].Order());
+        Assert.Equal(new[] { photo, photo2 }.Order(), upserts[3..5].Order());
+        Assert.Equal(new[] { frequentSong, song }.Order(), upserts[5..7].Order());
+        Assert.Equal(video, upserts[7]);
+        // Phase 1 covered the frequent documents only.
         Assert.Equal(1, coordinator.Status.FrequentTotal);
         Assert.Equal(8, coordinator.Status.AllDone);
         Assert.Equal(8, coordinator.Status.AllTotal);

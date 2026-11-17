@@ -17,6 +17,7 @@ public class IndexingCoordinatorReviewFixTests
         IdlePoll = TimeSpan.FromMilliseconds(200),
         ModelBackoffUnit = TimeSpan.FromMilliseconds(1),
         Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+        Pace = new IndexingPace(maxConcurrency: 1, processorCount: 1), // one file at a time: these tests check order
     };
 
     private static IndexingCoordinator Create(IFileDiscovery discovery, IIndexStore store, FakeModel? model,

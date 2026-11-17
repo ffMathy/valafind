@@ -24,7 +24,10 @@ file, even when it is written in another language and named `scan_0042.pdf`. Eve
 
 <img src="docs/screenshots/indexing-paused.png" width="560" alt="Indexing paused while the system is busy: CPU at 100%, 29 of 608 files done, Index Now button">
 
-Indexing pauses whenever the CPU or disk is busy and picks up again when they're idle. Files you use often are indexed
+Indexing uses the CPU your computer isn't using, up to the limit you set in Settings (30 % by default). It
+speeds up when the machine is quiet, works on several files at once on a multi-core machine, and eases off as other
+programs get busy. A feedback controller watches total CPU every two seconds and keeps it just under the limit.
+It pauses whenever other programs alone push the CPU or disk past the limit, and picks up again when they're idle. Files you use often are indexed
 first (Phase 1), then the rest of your files (Phase 2). Within that, Valafind always goes **documents → pictures → audio →
 video**: everything you write and read is searchable before it starts on your photo library, and the slow video work
 comes last. The progress panel only appears while indexing is under way; once everything is indexed, the launcher just
@@ -134,8 +137,9 @@ AVFoundation on macOS. On Linux they need `ffmpeg` (`sudo apt install ffmpeg`, `
 it, audio other than WAV and video are indexed by name only.
 
 Embedding one text chunk takes about half a second on two CPU threads, a picture about three seconds, a minute of audio
-about ten and a video about twenty, so a large home folder takes days of *idle* time to index fully. That is why your
-everyday files and your documents go first.
+about ten and a video about twenty. Valafind runs as many of these at once as your CPU limit leaves room for, but a large
+home folder can still take days of *idle* time to index fully. That is why your everyday files and your documents go
+first.
 </details>
 
 <details>

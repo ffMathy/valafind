@@ -4,7 +4,8 @@ using Valafind.Core.Platform;
 namespace Valafind.Core.Indexing;
 
 /// <summary>Thresholds for <see cref="ThrottleGate"/>.</summary>
-/// <param name="MaxCpuPercent">Indexing pauses when CPU used by other processes exceeds this.</param>
+/// <param name="MaxCpuPercent">Indexing pauses when CPU used by other processes exceeds this; while it runs, its pace
+/// is steered so whole-machine CPU stays just under it (<see cref="IndexingPace"/>).</param>
 /// <param name="MaxDiskBusyPercent">Indexing pauses when disk busy time (minus Valafind's estimated share) exceeds this.</param>
 /// <param name="CalmFor">Pressure must stay below the thresholds this long before the gate (re)opens.</param>
 /// <param name="PauseOnBattery">Close immediately when the machine runs on battery.</param>
@@ -47,6 +48,8 @@ public sealed record ThrottleOptions(
 /// the thresholds for <see cref="ThrottleOptions.CalmFor"/> and closes after two consecutive samples above them
 /// (immediately when switching to battery with <see cref="ThrottleOptions.PauseOnBattery"/>).
 /// A user pause always wins; <see cref="OverrideUntil"/> forces the gate open otherwise.
+/// The gate decides <i>whether</i> indexing runs; <see cref="Pace"/> decides <i>how fast</i>: every sample taken while the
+/// gate is open and the owner busy feeds a PID controller that steers whole-machine CPU towards the limit.
 /// While the owner reports it is idle (<see cref="SetIdle"/>) and nobody waits on the gate, sampling slows to
 /// <see cref="ThrottleOptions.EffectiveIdleSampleInterval"/> to save wake-ups; new work or a waiter wakes the loop
 /// for an immediate fresh sample.
@@ -81,7 +84,10 @@ public sealed class ThrottleGate : IDisposable
     private long _previousOwnTimestamp;
     private PressureSample? _lastSample;
     private PressureSample? _lastEffectiveSample;
+    private long? _previousPaceTimestamp;
+    private double? _lastOwnCpuPercent;
     private bool _disposed;
+    private readonly IndexingPace _pace;
 
     /// <summary>Creates a gate. Call <see cref="StartAsync"/> to begin sampling.</summary>
     /// <param name="monitor">System pressure source (not owned; not disposed by the gate).</param>
@@ -92,8 +98,13 @@ public sealed class ThrottleGate : IDisposable
     {
     }
 
+    internal ThrottleGate(ISystemPressureMonitor monitor, Func<ThrottleOptions> options, TimeProvider? time, IndexingPace? pace)
+        : this(monitor, options, time, new ProcessUsageProbe(), Environment.ProcessorCount, pace)
+    {
+    }
+
     internal ThrottleGate(ISystemPressureMonitor monitor, Func<ThrottleOptions> options, TimeProvider? time,
-        IOwnUsageProbe ownUsage, int processorCount)
+        IOwnUsageProbe ownUsage, int processorCount, IndexingPace? pace = null)
     {
         ArgumentNullException.ThrowIfNull(monitor);
         ArgumentNullException.ThrowIfNull(options);
@@ -102,7 +113,11 @@ public sealed class ThrottleGate : IDisposable
         _time = time ?? TimeProvider.System;
         _ownUsage = ownUsage;
         _processorCount = Math.Max(1, processorCount);
+        _pace = pace ?? new IndexingPace(IndexingPace.DefaultMaxConcurrency(_processorCount), _processorCount);
     }
+
+    /// <summary>How hard indexing works while the gate is open; steered towards the CPU limit on every sample.</summary>
+    public IndexingPace Pace => _pace;
 
     /// <summary>Current gate state: <see cref="IndexingState.Running"/>, <see cref="IndexingState.PausedSystemBusy"/>,
     /// <see cref="IndexingState.PausedOnBattery"/> or <see cref="IndexingState.PausedByUser"/>.</summary>
@@ -279,14 +294,60 @@ public sealed class ThrottleGate : IDisposable
     {
         var options = _options();
         var now = _time.GetUtcNow();
+        PaceStep step;
         lock (_lock)
         {
             if (_disposed)
                 return;
             EvaluateLocked(sample, own, timestamp, options, now);
             UpdateStateLocked(options, now);
+            step = PaceStepLocked(sample, timestamp, now);
+        }
+        // Outside the lock: the pace raises Changed, and its subscribers have locks of their own.
+        switch (step.Kind)
+        {
+            case PaceStepKind.Update:
+                _pace.Update(options.MaxCpuPercent, step.MachineCpuPercent, step.Elapsed, step.OwnCpuPercent);
+                if (step.Forced)
+                    _pace.EnsureAtLeast(1);
+                break;
+            case PaceStepKind.Hold:
+                _pace.Hold();
+                if (step.Forced)
+                    _pace.EnsureAtLeast(1);
+                break;
         }
         RaiseChanged();
+    }
+
+    private enum PaceStepKind
+    {
+        None,
+        Hold,
+        Update,
+    }
+
+    private readonly record struct PaceStep(PaceStepKind Kind, double MachineCpuPercent = 0, TimeSpan Elapsed = default,
+        bool Forced = false, double? OwnCpuPercent = null);
+
+    /// <summary>The pace controller only learns from samples taken while indexing actually ran: whole-machine CPU
+    /// (Valafind included) against the limit. Paused or idle stretches are skipped, not fed in as "lots of room".
+    /// While the user forces indexing on ("Index now") it keeps steering, but never below one full worker.</summary>
+    private PaceStep PaceStepLocked(PressureSample? sample, long timestamp, DateTimeOffset now)
+    {
+        if (sample is null)
+            return default;
+        var forced = !_userPaused && _overrideUntil is { } until && until > now;
+        if (_state != IndexingState.Running || _idle)
+        {
+            _previousPaceTimestamp = null;
+            return new PaceStep(PaceStepKind.Hold);
+        }
+        var previous = _previousPaceTimestamp;
+        _previousPaceTimestamp = timestamp;
+        if (previous is not { } since)
+            return new PaceStep(PaceStepKind.Hold, Forced: forced);
+        return new PaceStep(PaceStepKind.Update, sample.CpuPercent, _time.GetElapsedTime(since, timestamp), forced, _lastOwnCpuPercent);
     }
 
     private void EvaluateLocked(PressureSample? sample, OwnUsage? own, long timestamp, ThrottleOptions options, DateTimeOffset now)
@@ -303,6 +364,7 @@ public sealed class ThrottleGate : IDisposable
         {
             _consecutiveFailures = 0;
             _lastSample = sample;
+            _lastOwnCpuPercent = null;
             effective = sample;
             if (own is { } o && _previousOwn is { } prev)
             {
@@ -310,6 +372,7 @@ public sealed class ThrottleGate : IDisposable
                 var ownCpu = PressureMath.OwnCpuPercent(o.CpuTime - prev.CpuTime, wall, _processorCount);
                 long? ownBytes = o.IoBytes is { } a && prev.IoBytes is { } b ? Math.Max(0, a - b) : null;
                 effective = PressureMath.SubtractOwn(sample, ownCpu, ownBytes, wall);
+                _lastOwnCpuPercent = ownCpu;
             }
             if (own is not null)
             {
