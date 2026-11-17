@@ -57,6 +57,11 @@
       <Setter Property="Background" Value="{DynamicResource VfSettingsPageBrush}" />
     </Style>
 
+    <!-- Fluent buttons left-align their content; with a MinWidth (Cancel/Save) that leaves the label off-centre. -->
+    <Style Selector="Button">
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
     <!-- Section heading: accent icon + title, sitting just above its card. -->
     <Style Selector="StackPanel.heading">
       <Setter Property="Orientation" Value="Horizontal" />
