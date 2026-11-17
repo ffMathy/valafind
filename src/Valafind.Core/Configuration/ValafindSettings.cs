@@ -17,14 +17,12 @@ public sealed class ValafindSettings
     public List<string> Excludes { get; set; } = [];
 
     /// <summary>Whole-machine CPU budget (percent). Indexing speeds up or slows down to keep total CPU just under it
-    /// (<see cref="Indexing.IndexingPace"/>), and pauses while other programs alone use more.</summary>
+    /// (<see cref="Indexing.IndexingPace"/>); it never pauses for CPU, it only slows down.</summary>
     public double MaxCpuPercent { get; set; } = 30;
 
-    /// <summary>Index only while disk busy time stays below this (percent).</summary>
+    /// <summary>Disk busy-time budget (percent), steered like <see cref="MaxCpuPercent"/>: indexing slows down to keep
+    /// disk activity just under it and never pauses for it.</summary>
     public double MaxDiskBusyPercent { get; set; } = 25;
-
-    /// <summary>Pressure must stay below the thresholds this long before indexing (re)starts.</summary>
-    public int CalmSeconds { get; set; } = 15;
 
     public bool PauseOnBattery { get; set; } = true;
 

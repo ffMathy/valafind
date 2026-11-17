@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>Vælg mappen med EmbeddingGemma 2-modellen</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>Sættes automatisk på pause, når CPU overstiger {0}, eller diskaktiviteten er høj</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>Genoptages automatisk, når CPU og disk er inaktive</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Vis eller skjul Valafind</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>HVORFOR DEN MATCHEDE · NÆRMESTE PASSAGE</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>Sætter farten op eller ned for at holde CPU'en omkring {0} og disken omkring {1}</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>Fortsætter, når computeren sluttes til strøm</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>Mål {0}</value>
   </data>
 </root>

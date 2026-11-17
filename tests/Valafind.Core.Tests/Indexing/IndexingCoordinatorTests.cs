@@ -14,7 +14,7 @@ public class IndexingCoordinatorTests
         Debounce = TimeSpan.FromMilliseconds(100),
         IdlePoll = TimeSpan.FromMilliseconds(200),
         ModelBackoffUnit = TimeSpan.FromMilliseconds(1),
-        Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+        Throttle = new ThrottleOptions(30, 25, true, TimeSpan.FromMilliseconds(25)),
         Pace = new IndexingPace(maxConcurrency: 1, processorCount: 1), // one file at a time: these tests check order
     };
 
@@ -220,7 +220,7 @@ public class IndexingCoordinatorTests
     }
 
     [Fact]
-    public async Task ThrottlePauseStopsProgressAndResumeContinues()
+    public async Task BatteryPauseStopsProgressAndResumeContinues()
     {
         using var tree = new TempTree();
         var files = Enumerable.Range(0, 60).Select(i => tree.File($"f{i:D2}.txt", $"file {i}")).ToList();
@@ -232,8 +232,8 @@ public class IndexingCoordinatorTests
         await coordinator.StartAsync(ct);
         await WaitFor(() => coordinator.Status.AllDone >= 5, "some progress");
 
-        monitor.DiskBusy = 100; // another process hammers the disk
-        await WaitFor(() => coordinator.Status.State == IndexingState.PausedSystemBusy, "paused");
+        monitor.OnBattery = true; // unplugged (system load never pauses; only the user and the battery rule do)
+        await WaitFor(() => coordinator.Status.State == IndexingState.PausedOnBattery, "paused");
         // At most the file in flight when the gate closed may still complete.
         var pausedAt = store.Snapshot().Count;
         await WaitFor(() => (Volatile.Read(ref reader.Reads), store.Snapshot().Count) is var (reads, count) && reads == count && count >= pausedAt,
@@ -243,7 +243,7 @@ public class IndexingCoordinatorTests
         Assert.Equal(pausedAt, store.Snapshot().Count);
         Assert.True(pausedAt < files.Count);
 
-        monitor.DiskBusy = 5;
+        monitor.OnBattery = false;
         await WaitFor(() => coordinator.Status.State == IndexingState.UpToDate, "finished after resume");
         Assert.Equal(files.Count, store.Files.Count);
     }
@@ -264,10 +264,9 @@ public class IndexingCoordinatorTests
         await Task.Delay(300, ct);
         Assert.Empty(store.Snapshot());
 
-        monitor.Cpu = 0;
-        monitor.DiskBusy = 100; // system busy too…
+        monitor.OnBattery = true; // on battery too…
         coordinator.SetUserPaused(false);
-        await WaitFor(() => coordinator.Status.State == IndexingState.PausedSystemBusy, "system busy");
+        await WaitFor(() => coordinator.Status.State == IndexingState.PausedOnBattery, "on battery");
         coordinator.OverrideThrottle(TimeSpan.FromMinutes(5)); // …but the user said "resume now"
         await WaitFor(() => coordinator.Status.State == IndexingState.UpToDate, "done under override");
         Assert.Equal(files.Count, store.Files.Count);
@@ -337,10 +336,10 @@ public class IndexingCoordinatorTests
     {
         using var tree = new TempTree();
         var a = tree.File("a.txt");
-        var monitor = new FakeMonitor { DiskBusy = 100 };
+        var monitor = new FakeMonitor { OnBattery = true };
         var coordinator = Create(new FakeDiscovery([tree.Root], [a], [a]), new FakeStore(), new FakeModel(), monitor);
         await coordinator.StartAsync(TestContext.Current.CancellationToken);
-        await WaitFor(() => coordinator.Status.State == IndexingState.PausedSystemBusy, "paused");
+        await WaitFor(() => coordinator.Status.State == IndexingState.PausedOnBattery, "paused");
         var sw = Stopwatch.StartNew();
         await coordinator.DisposeAsync();
         Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5));

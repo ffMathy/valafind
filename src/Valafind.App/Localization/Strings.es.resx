@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>Elige la carpeta del modelo EmbeddingGemma 2</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>Se pausa automáticamente cuando la CPU supera el {0} o la actividad del disco es alta</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>Se reanuda automáticamente cuando la CPU y el disco están inactivos</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Mostrar u ocultar Valafind</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>POR QUÉ COINCIDE · PASAJE MÁS CERCANO</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>Acelera o frena para mantener la CPU cerca del {0} y el disco cerca del {1}</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>Se reanuda al conectar el equipo a la corriente</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>Objetivo {0}</value>
   </data>
 </root>

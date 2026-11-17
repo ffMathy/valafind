@@ -43,7 +43,7 @@ public class ThrottleGateTests
         public readonly ManualTimeProvider Time = new();
         public readonly FakeMonitor Monitor = new();
         public readonly FakeOwnUsage Own = new();
-        public ThrottleOptions Options = new(30, 25, TimeSpan.FromSeconds(10), true);
+        public ThrottleOptions Options = new(30, 25, true);
         public readonly ThrottleGate Gate;
 
         public Rig(int processors = 4)
@@ -63,65 +63,33 @@ public class ThrottleGateTests
     }
 
     [Fact]
-    public void StartsClosedAndOpensOnlyAfterCalmPeriod()
+    public void StartsOpen()
     {
         using var rig = new Rig();
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Gate.State);
-        rig.Gate.Tick(); // calm since t0
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Gate.State);
-        for (var i = 0; i < 4; i++)
-            Assert.Equal(IndexingState.PausedSystemBusy, rig.Step()); // 8 s calm
-        Assert.Equal(IndexingState.Running, rig.Step()); // 10 s calm
+        Assert.Equal(IndexingState.Running, rig.Gate.State);
+        Assert.True(rig.Gate.WaitUntilOpenAsync(TestContext.Current.CancellationToken).IsCompleted);
+        rig.Gate.Tick();
         Assert.True(rig.Gate.IsOpen);
     }
 
-    [Fact]
-    public void BusySampleResetsCalmPeriod()
+    [Theory]
+    [InlineData(100, null)]
+    [InlineData(5, 100.0)]
+    [InlineData(100, 100.0)]
+    public void System_load_never_pauses_indexing(double cpu, double? disk)
     {
+        // CPU and disk only steer the pace (IndexingPace); they never close the gate.
         using var rig = new Rig();
-        rig.Gate.Tick();
-        rig.Step();
-        rig.Step(); // 4 s calm
-        rig.Monitor.Cpu = 80;
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Step());
-        rig.Monitor.Cpu = 5;
-        for (var i = 0; i < 5; i++)
-            Assert.Equal(IndexingState.PausedSystemBusy, rig.Step()); // calm since this point: 0..8 s
-        Assert.Equal(IndexingState.Running, rig.Step());
-    }
-
-    [Fact]
-    public void ClosesAfterTwoConsecutiveBusySamples()
-    {
-        using var rig = new Rig { Options = new(30, 25, TimeSpan.Zero, true) };
-        rig.Gate.Tick();
-        Assert.Equal(IndexingState.Running, rig.Gate.State);
-
-        rig.Monitor.Cpu = 90;
-        Assert.Equal(IndexingState.Running, rig.Step()); // first busy sample tolerated
-        rig.Monitor.Cpu = 10;
-        Assert.Equal(IndexingState.Running, rig.Step()); // streak broken
-        rig.Monitor.Cpu = 90;
-        Assert.Equal(IndexingState.Running, rig.Step());
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Step());
-    }
-
-    [Fact]
-    public void DiskBusyCountsAsPressure()
-    {
-        using var rig = new Rig { Options = new(30, 25, TimeSpan.Zero, true) };
-        rig.Gate.Tick();
-        rig.Monitor.DiskBusy = 60;
-        rig.Step();
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Step());
-        rig.Monitor.DiskBusy = null; // unknown disk metrics never block
-        Assert.Equal(IndexingState.Running, rig.Step());
+        rig.Monitor.Cpu = cpu;
+        rig.Monitor.DiskBusy = disk;
+        for (var i = 0; i < 20; i++)
+            Assert.Equal(IndexingState.Running, rig.Step());
     }
 
     [Fact]
     public void BatteryClosesImmediatelyWhenConfigured()
     {
-        using var rig = new Rig { Options = new(30, 25, TimeSpan.Zero, true) };
+        using var rig = new Rig();
         rig.Gate.Tick();
         Assert.True(rig.Gate.IsOpen);
         rig.Monitor.OnBattery = true;
@@ -137,7 +105,7 @@ public class ThrottleGateTests
     [Fact]
     public void UserPauseWinsOverEverything()
     {
-        using var rig = new Rig { Options = new(30, 25, TimeSpan.Zero, true) };
+        using var rig = new Rig();
         rig.Gate.Tick();
         rig.Gate.SetUserPaused(true);
         Assert.Equal(IndexingState.PausedByUser, rig.Gate.State);
@@ -151,7 +119,6 @@ public class ThrottleGateTests
     public void OverrideForcesOpenUntilItExpires()
     {
         using var rig = new Rig();
-        rig.Monitor.Cpu = 95;
         rig.Monitor.OnBattery = true;
         rig.Gate.Tick();
         Assert.Equal(IndexingState.PausedOnBattery, rig.Gate.State);
@@ -162,59 +129,52 @@ public class ThrottleGateTests
         Assert.Equal(IndexingState.Running, rig.Step()); // t+4
         Assert.Equal(IndexingState.PausedOnBattery, rig.Step()); // t+6: expired
         rig.Monitor.OnBattery = false;
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Step());
+        Assert.Equal(IndexingState.Running, rig.Step());
     }
 
     [Fact]
-    public void OwnCpuIsSubtractedBeforeComparing()
+    public void OwnCpuIsSubtractedForTheEffectiveSample()
     {
-        using var rig = new Rig(processors: 4) { Options = new(30, 25, TimeSpan.Zero, true) };
+        using var rig = new Rig(processors: 4);
         rig.Monitor.Cpu = 50;
-        rig.Gate.Tick(); // establishes own-usage baseline; 50 % > 30 % → busy
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Gate.State);
+        rig.Gate.Tick(); // establishes own-usage baseline
 
         // We burnt 3.2 s CPU over 2 s wall on 4 cores = 40 % of the machine → others use 10 %.
         rig.Own.Cpu += TimeSpan.FromSeconds(3.2);
-        Assert.Equal(IndexingState.Running, rig.Step());
+        rig.Step();
         Assert.Equal(10, rig.Gate.LastEffectiveSample!.CpuPercent, 3);
         Assert.Equal(50, rig.Gate.LastSample!.CpuPercent, 3);
-
-        // Same machine load but we were idle → others really use 50 % (two busy samples close the gate).
-        Assert.Equal(IndexingState.Running, rig.Step());
-        Assert.Equal(IndexingState.PausedSystemBusy, rig.Step());
     }
 
     [Fact]
-    public void PersistentMonitorFailureEventuallyAssumesCalm()
+    public void A_failing_monitor_never_blocks()
     {
-        using var rig = new Rig { Options = new(30, 25, TimeSpan.Zero, true) };
+        using var rig = new Rig();
         rig.Monitor.Throw = true;
         rig.Gate.Tick();
-        for (var i = 0; i < 3; i++)
-            Assert.Equal(IndexingState.PausedSystemBusy, rig.Step());
-        Assert.Equal(IndexingState.Running, rig.Step());
+        for (var i = 0; i < 5; i++)
+            Assert.Equal(IndexingState.Running, rig.Step());
     }
 
     [Fact]
     public async Task WaitUntilOpenCompletesWhenGateOpens()
     {
-        using var rig = new Rig { Options = new(30, 25, TimeSpan.FromSeconds(4), true) };
+        using var rig = new Rig();
         var ct = TestContext.Current.CancellationToken;
-        var wait = rig.Gate.WaitUntilOpenAsync(ct);
+        rig.Monitor.OnBattery = true;
         rig.Gate.Tick();
-        rig.Step();
+        var wait = rig.Gate.WaitUntilOpenAsync(ct);
         Assert.False(wait.IsCompleted);
+        rig.Monitor.OnBattery = false;
         rig.Step();
         await wait.WaitAsync(TimeSpan.FromSeconds(5), ct);
         Assert.True(rig.Gate.WaitUntilOpenAsync(ct).IsCompleted);
 
         // Closing creates a fresh signal; waiting again blocks until reopened.
-        rig.Monitor.Cpu = 99;
-        rig.Step();
-        rig.Step();
+        rig.Gate.SetUserPaused(true);
         var second = rig.Gate.WaitUntilOpenAsync(ct);
         Assert.False(second.IsCompleted);
-        rig.Gate.OverrideUntil = rig.Time.GetUtcNow().AddMinutes(1);
+        rig.Gate.SetUserPaused(false);
         await second.WaitAsync(TimeSpan.FromSeconds(5), ct);
     }
 
@@ -222,6 +182,7 @@ public class ThrottleGateTests
     public async Task WaitUntilOpenHonoursCancellationAndDispose()
     {
         var rig = new Rig();
+        rig.Gate.SetUserPaused(true);
         using var cts = new CancellationTokenSource();
         var wait = rig.Gate.WaitUntilOpenAsync(cts.Token);
         cts.Cancel();
@@ -235,7 +196,7 @@ public class ThrottleGateTests
     [Fact]
     public void ChangedIsRaisedOnSamplesAndStateChanges()
     {
-        using var rig = new Rig { Options = new(30, 25, TimeSpan.Zero, true) };
+        using var rig = new Rig();
         var states = new List<IndexingState>();
         rig.Gate.Changed += (_, s) => states.Add(s);
         rig.Gate.Tick();
@@ -249,7 +210,7 @@ public class ThrottleGateTests
     {
         var monitor = new FakeMonitor();
         using var gate = new ThrottleGate(monitor,
-            () => new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(20)));
+            () => new ThrottleOptions(30, 25, true, TimeSpan.FromMilliseconds(20)));
         var ct = TestContext.Current.CancellationToken;
         await gate.StartAsync(ct);
         await gate.WaitUntilOpenAsync(ct).WaitAsync(TimeSpan.FromSeconds(10), ct);
@@ -297,15 +258,6 @@ public class PressureMathTests
         var e = PressureMath.SubtractOwn(s, 0, 15_000_000, TimeSpan.FromSeconds(2));
         Assert.Equal(80, e.DiskBusyPercent);
     }
-
-    [Theory]
-    [InlineData(31, null, true)]
-    [InlineData(30, null, false)]
-    [InlineData(10, 26.0, true)]
-    [InlineData(10, 25.0, false)]
-    public void IsBusy(double cpu, double? disk, bool expected) =>
-        Assert.Equal(expected, PressureMath.IsBusy(new PressureSample(DateTimeOffset.UtcNow, cpu, disk, null, false),
-            new ThrottleOptions(30, 25, TimeSpan.Zero, true)));
 }
 
 public class ThrottleGatePaceTests
@@ -322,7 +274,7 @@ public class ThrottleGatePaceTests
 
         public Rig()
         {
-            Gate = new ThrottleGate(Monitor, () => new ThrottleOptions(30, 25, TimeSpan.Zero, true), Time, Own, 8, Pace);
+            Gate = new ThrottleGate(Monitor, () => new ThrottleOptions(30, 25, true), Time, Own, 8, Pace);
             Pace.ReportInFlight(8); // plenty of work
         }
 

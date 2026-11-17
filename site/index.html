@@ -69,20 +69,21 @@
       </article>
       <article>
         <h2>Stays out of your way</h2>
-        <p>Indexing only runs while your CPU and disk are idle, at background priority, and steps aside the moment you
+        <p>Indexing uses the CPU and disk your computer isn't using, at background priority, and steps aside the moment you
           search. When everything is indexed, Valafind just shows a quiet ✓.</p>
       </article>
     </section>
 
     <section class="split">
       <figure>
-        <img src="screenshots/indexing-paused.png" width="1400" height="904" loading="lazy"
-             alt="Indexing paused while the system is busy: CPU at 100%, Phase 1 done, Phase 2 paused, Index Now button">
+        <img src="screenshots/indexing-pace.png" width="1020" height="142" loading="lazy"
+             alt="Index panel: Phase 1 done, Phase 2 at 41%, CPU and disk meters with a tick at the level indexing steers towards">
       </figure>
       <div>
-        <h2>Busy? It waits.</h2>
-        <p>Compiling, gaming, on a call: Valafind notices the load and pauses. It picks up again when the machine is quiet,
-          or right away if you press <em>Index Now</em>.</p>
+        <h2>Busy? It slows down.</h2>
+        <p>Compiling, gaming, on a call: Valafind measures the load every two seconds and turns its own speed up or down to
+          keep the whole machine just under your limits. Quiet machine, many files at once; busy machine, a trickle. The
+          tick on each meter shows the target.</p>
         <p>You choose the limits: maximum CPU and disk use, which folders to index, and whether to pause on battery.</p>
       </div>
     </section>

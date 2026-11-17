@@ -3,11 +3,10 @@ using Valafind.Core.Platform;
 
 namespace Valafind.Core.Indexing;
 
-/// <summary>Thresholds for <see cref="ThrottleGate"/>.</summary>
-/// <param name="MaxCpuPercent">Indexing pauses when CPU used by other processes exceeds this; while it runs, its pace
-/// is steered so whole-machine CPU stays just under it (<see cref="IndexingPace"/>).</param>
-/// <param name="MaxDiskBusyPercent">Indexing pauses when disk busy time (minus Valafind's estimated share) exceeds this.</param>
-/// <param name="CalmFor">Pressure must stay below the thresholds this long before the gate (re)opens.</param>
+/// <summary>Limits for <see cref="ThrottleGate"/> and its <see cref="IndexingPace"/>.</summary>
+/// <param name="MaxCpuPercent">Whole-machine CPU budget. It never pauses indexing: the pace is steered so CPU stays
+/// just under it, down to a trickle when other programs use it all.</param>
+/// <param name="MaxDiskBusyPercent">Whole-disk busy-time budget, steered the same way (when the platform reports it).</param>
 /// <param name="PauseOnBattery">Close immediately when the machine runs on battery.</param>
 /// <param name="SampleInterval">How often the gate samples system pressure. Null = 2 seconds.</param>
 /// <param name="IdleSampleInterval">Sampling interval while the indexer is idle and nobody waits on the gate.
@@ -15,7 +14,6 @@ namespace Valafind.Core.Indexing;
 public sealed record ThrottleOptions(
     double MaxCpuPercent,
     double MaxDiskBusyPercent,
-    TimeSpan CalmFor,
     bool PauseOnBattery,
     TimeSpan? SampleInterval = null,
     TimeSpan? IdleSampleInterval = null)
@@ -38,26 +36,22 @@ public sealed record ThrottleOptions(
 
     /// <summary>Builds options from user settings.</summary>
     public static ThrottleOptions From(Configuration.ValafindSettings settings) => new(
-        settings.MaxCpuPercent, settings.MaxDiskBusyPercent,
-        TimeSpan.FromSeconds(Math.Max(0, settings.CalmSeconds)), settings.PauseOnBattery);
+        settings.MaxCpuPercent, settings.MaxDiskBusyPercent, settings.PauseOnBattery);
 }
 
 /// <summary>
-/// Decides when background indexing may run. Samples <see cref="ISystemPressureMonitor"/> on its own loop,
-/// subtracts Valafind's own CPU and I/O, and applies hysteresis: the gate opens only after pressure stayed below
-/// the thresholds for <see cref="ThrottleOptions.CalmFor"/> and closes after two consecutive samples above them
-/// (immediately when switching to battery with <see cref="ThrottleOptions.PauseOnBattery"/>).
-/// A user pause always wins; <see cref="OverrideUntil"/> forces the gate open otherwise.
-/// The gate decides <i>whether</i> indexing runs; <see cref="Pace"/> decides <i>how fast</i>: every sample taken while the
-/// gate is open and the owner busy feeds a PID controller that steers whole-machine CPU towards the limit.
+/// Decides whether background indexing runs and feeds its <see cref="Pace"/>. Samples
+/// <see cref="ISystemPressureMonitor"/> on its own loop and works out Valafind's own share of CPU and disk.
+/// System load never pauses indexing: every sample taken while indexing runs feeds the pace's PID controllers, which
+/// slow indexing down (to a trickle at worst) to keep whole-machine CPU and disk activity just under their limits.
+/// The gate only closes when the user pauses, or on battery with <see cref="ThrottleOptions.PauseOnBattery"/>;
+/// <see cref="OverrideUntil"/> overrides the battery rule.
 /// While the owner reports it is idle (<see cref="SetIdle"/>) and nobody waits on the gate, sampling slows to
 /// <see cref="ThrottleOptions.EffectiveIdleSampleInterval"/> to save wake-ups; new work or a waiter wakes the loop
 /// for an immediate fresh sample.
 /// </summary>
 public sealed class ThrottleGate : IDisposable
 {
-    private const int BusySamplesToClose = 2;
-    private const int FailuresBeforeAssumingCalm = 5;
 
     private readonly ISystemPressureMonitor _monitor;
     private readonly Func<ThrottleOptions> _options;
@@ -67,25 +61,22 @@ public sealed class ThrottleGate : IDisposable
     private readonly Lock _lock = new();
     private readonly CancellationTokenSource _cts = new();
 
-    private TaskCompletionSource _openSignal = NewSignal();
+    private TaskCompletionSource _openSignal = NewOpenSignal();
     private TaskCompletionSource _wakeSignal = NewSignal();
     private bool _idle;
     private int _waiters;
     private Task? _loop;
-    private IndexingState _state = IndexingState.PausedSystemBusy;
+    private IndexingState _state = IndexingState.Running;
     private bool _userPaused;
     private DateTimeOffset? _overrideUntil;
-    private bool _systemOpen;
     private bool _onBattery;
-    private int _consecutiveBusy;
-    private int _consecutiveFailures;
-    private DateTimeOffset? _calmSince;
     private OwnUsage? _previousOwn;
     private long _previousOwnTimestamp;
     private PressureSample? _lastSample;
     private PressureSample? _lastEffectiveSample;
     private long? _previousPaceTimestamp;
     private double? _lastOwnCpuPercent;
+    private double? _lastOwnDiskBusyPercent;
     private bool _disposed;
     private readonly IndexingPace _pace;
 
@@ -299,7 +290,7 @@ public sealed class ThrottleGate : IDisposable
         {
             if (_disposed)
                 return;
-            EvaluateLocked(sample, own, timestamp, options, now);
+            EvaluateLocked(sample, own, timestamp);
             UpdateStateLocked(options, now);
             step = PaceStepLocked(sample, timestamp, now);
         }
@@ -307,7 +298,8 @@ public sealed class ThrottleGate : IDisposable
         switch (step.Kind)
         {
             case PaceStepKind.Update:
-                _pace.Update(options.MaxCpuPercent, step.MachineCpuPercent, step.Elapsed, step.OwnCpuPercent);
+                _pace.Update(step.Reading with { MaxCpuPercent = options.MaxCpuPercent, MaxDiskBusyPercent = options.MaxDiskBusyPercent },
+                    step.Elapsed);
                 if (step.Forced)
                     _pace.EnsureAtLeast(1);
                 break;
@@ -327,11 +319,11 @@ public sealed class ThrottleGate : IDisposable
         Update,
     }
 
-    private readonly record struct PaceStep(PaceStepKind Kind, double MachineCpuPercent = 0, TimeSpan Elapsed = default,
-        bool Forced = false, double? OwnCpuPercent = null);
+    private readonly record struct PaceStep(PaceStepKind Kind, PaceReading Reading = default, TimeSpan Elapsed = default,
+        bool Forced = false);
 
-    /// <summary>The pace controller only learns from samples taken while indexing actually ran: whole-machine CPU
-    /// (Valafind included) against the limit. Paused or idle stretches are skipped, not fed in as "lots of room".
+    /// <summary>The pace controllers only learn from samples taken while indexing actually ran: whole-machine CPU and
+    /// disk activity (Valafind included) against their limits. Paused or idle stretches are skipped, not fed in as "lots of room".
     /// While the user forces indexing on ("Index now") it keeps steering, but never below one full worker.</summary>
     private PaceStep PaceStepLocked(PressureSample? sample, long timestamp, DateTimeOffset now)
     {
@@ -347,62 +339,35 @@ public sealed class ThrottleGate : IDisposable
         _previousPaceTimestamp = timestamp;
         if (previous is not { } since)
             return new PaceStep(PaceStepKind.Hold, Forced: forced);
-        return new PaceStep(PaceStepKind.Update, sample.CpuPercent, _time.GetElapsedTime(since, timestamp), forced, _lastOwnCpuPercent);
+        var reading = new PaceReading(0, sample.CpuPercent, _lastOwnCpuPercent, 100, sample.DiskBusyPercent, _lastOwnDiskBusyPercent);
+        return new PaceStep(PaceStepKind.Update, reading, _time.GetElapsedTime(since, timestamp), forced);
     }
 
-    private void EvaluateLocked(PressureSample? sample, OwnUsage? own, long timestamp, ThrottleOptions options, DateTimeOffset now)
+    private void EvaluateLocked(PressureSample? sample, OwnUsage? own, long timestamp)
     {
-        PressureSample effective;
         if (sample is null)
+            return; // a failing monitor holds the pace where it is; it never stops indexing
+        _lastSample = sample;
+        _lastOwnCpuPercent = null;
+        _lastOwnDiskBusyPercent = null;
+        var effective = sample;
+        if (own is { } o && _previousOwn is { } prev)
         {
-            if (++_consecutiveFailures < FailuresBeforeAssumingCalm)
-                return;
-            // A monitor that keeps failing must not block indexing forever.
-            effective = new PressureSample(now, 0, null, null, false);
+            var wall = _time.GetElapsedTime(_previousOwnTimestamp, timestamp);
+            var ownCpu = PressureMath.OwnCpuPercent(o.CpuTime - prev.CpuTime, wall, _processorCount);
+            long? ownBytes = o.IoBytes is { } a && prev.IoBytes is { } b ? Math.Max(0, a - b) : null;
+            effective = PressureMath.SubtractOwn(sample, ownCpu, ownBytes, wall);
+            _lastOwnCpuPercent = ownCpu;
+            if (ownBytes is not null && sample.DiskBusyPercent is { } total && effective.DiskBusyPercent is { } others)
+                _lastOwnDiskBusyPercent = Math.Max(0, total - others);
         }
-        else
+        if (own is not null)
         {
-            _consecutiveFailures = 0;
-            _lastSample = sample;
-            _lastOwnCpuPercent = null;
-            effective = sample;
-            if (own is { } o && _previousOwn is { } prev)
-            {
-                var wall = _time.GetElapsedTime(_previousOwnTimestamp, timestamp);
-                var ownCpu = PressureMath.OwnCpuPercent(o.CpuTime - prev.CpuTime, wall, _processorCount);
-                long? ownBytes = o.IoBytes is { } a && prev.IoBytes is { } b ? Math.Max(0, a - b) : null;
-                effective = PressureMath.SubtractOwn(sample, ownCpu, ownBytes, wall);
-                _lastOwnCpuPercent = ownCpu;
-            }
-            if (own is not null)
-            {
-                _previousOwn = own;
-                _previousOwnTimestamp = timestamp;
-            }
+            _previousOwn = own;
+            _previousOwnTimestamp = timestamp;
         }
-
         _lastEffectiveSample = effective;
         _onBattery = effective.OnBattery;
-        if (PressureMath.IsBusy(effective, options))
-        {
-            _consecutiveBusy++;
-            _calmSince = null;
-        }
-        else
-        {
-            _consecutiveBusy = 0;
-            _calmSince ??= now;
-        }
-
-        if (_systemOpen)
-        {
-            if (_consecutiveBusy >= BusySamplesToClose)
-                _systemOpen = false;
-        }
-        else if (_calmSince is { } since && now - since >= options.CalmFor)
-        {
-            _systemOpen = true;
-        }
     }
 
     private void Reevaluate()
@@ -431,7 +396,7 @@ public sealed class ThrottleGate : IDisposable
         else if (_onBattery && options.PauseOnBattery)
             next = IndexingState.PausedOnBattery;
         else
-            next = _systemOpen ? IndexingState.Running : IndexingState.PausedSystemBusy;
+            next = IndexingState.Running;
 
         if (next == _state)
             return false;
@@ -460,6 +425,13 @@ public sealed class ThrottleGate : IDisposable
     }
 
     private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private static TaskCompletionSource NewOpenSignal()
+    {
+        var signal = NewSignal();
+        signal.TrySetResult();
+        return signal;
+    }
 
     /// <summary>Stops sampling. Pending <see cref="WaitUntilOpenAsync"/> calls are cancelled.</summary>
     public void Dispose()
@@ -513,8 +485,4 @@ internal static class PressureMath
         }
         return sample with { CpuPercent = cpu, DiskBusyPercent = busy, DiskBytesPerSecond = bytes };
     }
-
-    public static bool IsBusy(PressureSample effective, ThrottleOptions options) =>
-        effective.CpuPercent > options.MaxCpuPercent ||
-        (effective.DiskBusyPercent is { } disk && disk > options.MaxDiskBusyPercent);
 }

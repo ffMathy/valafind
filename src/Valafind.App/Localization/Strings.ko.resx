@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 모델 폴더 선택</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU가 {0}을(를) 넘거나 디스크 활동이 많으면 자동으로 일시 정지합니다</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU와 디스크가 유휴 상태가 되면 자동으로 재개합니다</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind 보기 또는 가리기</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>일치 이유 · 가장 가까운 구절</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPU는 {0}, 디스크는 {1} 근처를 유지하도록 속도를 조절합니다</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>컴퓨터를 전원에 연결하면 다시 시작합니다</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>목표 {0}</value>
   </data>
 </root>

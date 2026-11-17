@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 मॉडल फ़ोल्डर चुनें</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU के {0} से ऊपर जाने या डिस्क गतिविधि अधिक होने पर अपने-आप रुक जाता है</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU और डिस्क निष्क्रिय होने पर अपने-आप फिर शुरू होता है</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind दिखाएँ या छिपाएँ</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>मेल क्यों खाया · सबसे निकट अंश</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPU को {0} और डिस्क को {1} के आसपास रखने के लिए गति बढ़ाता या घटाता है</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>कंप्यूटर को चार्जर से जोड़ने पर फिर से शुरू होता है</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>लक्ष्य {0}</value>
   </data>
 </root>

@@ -36,7 +36,12 @@ public sealed class IndexStatusViewModelTests
         Assert.Equal("Indexing paused while the system is busy", vm.BannerTitle);
         Assert.Equal("41% of your files are searchable", vm.BannerDetail);
         Assert.Equal("Index Now", vm.ResumeActionText);
-        Assert.Equal("Resumes automatically when CPU and disk are idle", vm.PolicyText);
+        Assert.Equal("Speeds up or slows down to keep CPU near 30% and disk near 25%", vm.PolicyText);
+        // Target markers: a little under the limits (27 % CPU, 22.5 % disk busy time).
+        Assert.Equal(0.27, vm.CpuTargetFraction, 3);
+        Assert.Equal("Target 27%", vm.CpuTargetText);
+        Assert.Equal(0.225, vm.DiskTargetFraction, 3);
+        Assert.Equal("Target 22%", vm.DiskTargetText);
         Assert.Equal("Pause indexing", vm.PauseMenuText);
     }
 
@@ -56,7 +61,19 @@ public sealed class IndexStatusViewModelTests
         Assert.False(vm.IsDiskHigh);
         Assert.Equal("4 MB/s", vm.DiskText);
         Assert.True(vm.DiskFraction is > 0 and < 0.1);
-        Assert.Equal("Pauses automatically when CPU passes 30% or disk activity is high", vm.PolicyText);
+        Assert.Equal("Speeds up or slows down to keep CPU near 30% and disk near 25%", vm.PolicyText);
+        Assert.Equal(0.27, vm.CpuTargetFraction, 3);
+        Assert.True(double.IsNaN(vm.DiskTargetFraction), "no busy-time reading: the disk meter shows throughput, no target");
+        Assert.Equal(string.Empty, vm.DiskTargetText);
+    }
+
+    [Fact]
+    public void OnBatteryExplainsWhenItResumes()
+    {
+        var vm = new IndexStatusViewModel();
+        vm.Update(IndexStatus.Initial with { State = IndexingState.PausedOnBattery }, 30, 25);
+        Assert.Equal("Resumes when the computer is plugged in", vm.PolicyText);
+        Assert.True(double.IsNaN(vm.CpuTargetFraction), "no reading yet: no meters, no markers");
     }
 
     [Fact]

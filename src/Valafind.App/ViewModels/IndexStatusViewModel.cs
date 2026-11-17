@@ -1,6 +1,7 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Valafind.Core.Abstractions;
+using Valafind.Core.Indexing;
 using Valafind.App.Localization;
 
 namespace Valafind.App.ViewModels;
@@ -173,8 +174,22 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>"78%".</summary>
     [ObservableProperty] public partial string CpuText { get; private set; } = "—";
 
-    /// <summary>CPU above the user's indexing threshold.</summary>
+    /// <summary>CPU above the user's limit.</summary>
     [ObservableProperty] public partial bool IsCpuHigh { get; private set; }
+
+    /// <summary>Where the CPU meter's target marker sits, 0..1: the level indexing steers whole-machine CPU towards
+    /// (a little under the limit, <see cref="IndexingPace.TargetFor"/>). NaN hides it.</summary>
+    [ObservableProperty] public partial double CpuTargetFraction { get; private set; } = double.NaN;
+
+    /// <summary>"Target 27%" (tooltip of the CPU meter).</summary>
+    [ObservableProperty] public partial string CpuTargetText { get; private set; } = string.Empty;
+
+    /// <summary>The disk meter's target marker, 0..1; NaN (hidden) when the meter shows throughput rather than busy
+    /// time, since the target is a busy-time percentage.</summary>
+    [ObservableProperty] public partial double DiskTargetFraction { get; private set; } = double.NaN;
+
+    /// <summary>"Target 22%" (tooltip of the disk meter), empty without a marker.</summary>
+    [ObservableProperty] public partial string DiskTargetText { get; private set; } = string.Empty;
 
     /// <summary>Disk meter 0..1 (busy time when known, otherwise throughput scaled).</summary>
     [ObservableProperty] public partial double DiskFraction { get; private set; }
@@ -182,7 +197,7 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>"92 MB/s" or "35%".</summary>
     [ObservableProperty] public partial string DiskText { get; private set; } = "—";
 
-    /// <summary>Disk above the user's indexing threshold.</summary>
+    /// <summary>Disk above the user's limit.</summary>
     [ObservableProperty] public partial bool IsDiskHigh { get; private set; }
 
     /// <summary>Compact one-liner for the macOS footer: "Indexing while idle 41%".</summary>
@@ -263,6 +278,9 @@ public sealed partial class IndexStatusViewModel : ObservableObject
             CpuFraction = Math.Clamp(sample.CpuPercent / 100, 0, 1);
             CpuText = Math.Round(Math.Clamp(sample.CpuPercent, 0, 100)).ToString("0", inv) + "%";
             IsCpuHigh = sample.CpuPercent > maxCpuPercent;
+            var cpuTarget = IndexingPace.TargetFor(maxCpuPercent);
+            CpuTargetFraction = cpuTarget / 100;
+            CpuTargetText = Loc.Format(Strings.IndexTargetTooltip, DisplayFormat.Percent(cpuTarget / 100));
             if (sample.DiskBytesPerSecond is { } bps)
                 DiskText = DisplayFormat.Throughput(bps);
             else if (sample.DiskBusyPercent is { } busyText)
@@ -273,12 +291,18 @@ public sealed partial class IndexStatusViewModel : ObservableObject
                 ? Math.Clamp(busy / 100, 0, 1)
                 : sample.DiskBytesPerSecond is { } b ? Math.Clamp(b / DiskMeterFullScaleBytesPerSecond, 0, 1) : 0;
             IsDiskHigh = sample.DiskBusyPercent is { } db && db > maxDiskBusyPercent;
+            // The meter shows busy time when known (then the target applies), throughput otherwise.
+            var diskTarget = IndexingPace.TargetFor(maxDiskBusyPercent);
+            DiskTargetFraction = sample.DiskBusyPercent is not null ? diskTarget / 100 : double.NaN;
+            DiskTargetText = sample.DiskBusyPercent is not null ? Loc.Format(Strings.IndexTargetTooltip, DisplayFormat.Percent(diskTarget / 100)) : string.Empty;
         }
         else
         {
             CpuFraction = DiskFraction = 0;
             CpuText = DiskText = "—";
             IsCpuHigh = IsDiskHigh = false;
+            CpuTargetFraction = DiskTargetFraction = double.NaN;
+            CpuTargetText = DiskTargetText = string.Empty;
         }
 
         // State.
@@ -326,8 +350,9 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         };
         BannerDetail = Loc.Format(Strings.BannerSearchable, DisplayFormat.Percent(SearchableFraction));
         SetUserPaused(IsUserPaused);
-        PolicyText = status.State is IndexingState.PausedSystemBusy or IndexingState.PausedOnBattery
-            ? Strings.PolicyResumes
-            : Loc.Format(Strings.PolicyPauses, maxCpuPercent.ToString("0", CultureInfo.CurrentCulture) + "%");
+        // Load never pauses indexing; it only slows it down (IndexingPace). Only the battery rule (and the user) pause it.
+        PolicyText = status.State == IndexingState.PausedOnBattery
+            ? Strings.PolicyResumesOnPower
+            : Loc.Format(Strings.PolicyAdapts, DisplayFormat.Percent(maxCpuPercent / 100), DisplayFormat.Percent(maxDiskBusyPercent / 100));
     }
 }

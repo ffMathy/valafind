@@ -22,12 +22,14 @@ file, even when it is written in another language and named `scan_0042.pdf`. Eve
 
 ## Stays out of your way
 
-<img src="docs/screenshots/indexing-paused.png" width="560" alt="Indexing paused while the system is busy: CPU at 100%, 29 of 608 files done, Index Now button">
+<img src="docs/screenshots/indexing-pace.png" width="680" alt="Index panel: Phase 1 done, Phase 2 at 41%, CPU and disk meters with a tick at the level indexing steers towards">
 
-Indexing uses the CPU your computer isn't using, up to the limit you set in Settings (30 % by default). It
-speeds up when the machine is quiet, works on several files at once on a multi-core machine, and eases off as other
-programs get busy. A feedback controller watches total CPU every two seconds and keeps it just under the limit.
-It pauses whenever other programs alone push the CPU or disk past the limit, and picks up again when they're idle. Files you use often are indexed
+Indexing uses the CPU and disk your computer isn't using, up to the limits you set in Settings (30 % CPU and 25 % disk
+by default). It speeds up when the machine is quiet, works on several files at once on a multi-core machine, and slows
+down as other programs get busy. Two feedback (PID) controllers watch total CPU and disk activity every two seconds and
+keep both just under their limits; the tick on each meter in the index panel marks that target. It never pauses for
+load: when the machine is busy it slows to a trickle instead. Only you (or unplugging, if you turned on *pause on
+battery*) pause it. Files you use often are indexed
 first (Phase 1), then the rest of your files (Phase 2). Within that, Valafind always goes **documents → pictures → audio →
 video**: everything you write and read is searchable before it starts on your photo library, and the slow video work
 comes last. The progress panel only appears while indexing is under way; once everything is indexed, the launcher just

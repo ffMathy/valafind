@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>Choose the EmbeddingGemma 2 model folder</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>Pauses automatically when CPU passes {0} or disk activity is high</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>Resumes automatically when CPU and disk are idle</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Show or hide Valafind</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>WHY IT MATCHED · CLOSEST PASSAGE</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>Speeds up or slows down to keep CPU near {0} and disk near {1}</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>Resumes when the computer is plugged in</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>Target {0}</value>
   </data>
 </root>

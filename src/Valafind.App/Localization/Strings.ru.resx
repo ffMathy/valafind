@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>Выберите папку модели EmbeddingGemma 2</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>Приостанавливается автоматически, когда загрузка ЦП превышает {0} или диск сильно загружен</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>Возобновляется автоматически, когда ЦП и диск простаивают</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Показать или скрыть Valafind</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ПОЧЕМУ НАЙДЕНО · БЛИЖАЙШИЙ ФРАГМЕНТ</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>Ускоряется или замедляется, чтобы держать загрузку ЦП около {0}, а диска — около {1}</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>Возобновится, когда компьютер подключат к сети</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>Цель {0}</value>
   </data>
 </root>

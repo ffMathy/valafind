@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 మోడల్ ఫోల్డర్‌ను ఎంచుకోండి</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU {0} దాటినప్పుడు లేదా డిస్క్ కార్యకలాపం ఎక్కువగా ఉన్నప్పుడు ఆటోమేటిక్‌గా పాజ్ అవుతుంది</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU మరియు డిస్క్ ఖాళీగా ఉన్నప్పుడు ఆటోమేటిక్‌గా కొనసాగుతుంది</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind‌ను చూపించు లేదా దాచు</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ఎందుకు సరిపోలింది · అత్యంత దగ్గరి భాగం</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPUని {0} దగ్గర, డిస్క్‌ను {1} దగ్గర ఉంచడానికి వేగాన్ని పెంచుతుంది లేదా తగ్గిస్తుంది</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>కంప్యూటర్‌ను ఛార్జర్‌కు కలిపితే మళ్లీ మొదలవుతుంది</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>లక్ష్యం {0}</value>
   </data>
 </root>

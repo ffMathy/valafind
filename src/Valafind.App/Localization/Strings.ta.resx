@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU {0} ஐத் தாண்டினால் அல்லது வட்டுச் செயல்பாடு அதிகமாக இருந்தால் தானாக இடைநிறுத்தும்</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU மற்றும் வட்டு செயலற்று இருக்கும்போது தானாகத் தொடரும்</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind-ஐக் காட்டு அல்லது மறை</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ஏன் பொருந்தியது · மிக நெருக்கமான பகுதி</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPU-ஐ {0} அருகிலும் வட்டை {1} அருகிலும் வைக்க வேகத்தைக் கூட்டுகிறது அல்லது குறைக்கிறது</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>கணினியை மின்சாரத்தில் இணைத்ததும் மீண்டும் தொடங்கும்</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>இலக்கு {0}</value>
   </data>
 </root>

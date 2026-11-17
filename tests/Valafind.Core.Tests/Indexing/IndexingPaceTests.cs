@@ -190,6 +190,67 @@ public class IndexingPaceTests
     }
 
     [Fact]
+    public void The_disk_limit_takes_over_when_the_disk_is_the_bottleneck()
+    {
+        // 8 cores, CPU limit 30 % (target 27 %), disk limit 25 % (target 22.5 %). Each unit of effort costs 1 core
+        // and 15 % disk: the disk runs out first (at 1.5 effort), long before the CPU would (at ~2 effort).
+        const int processors = 8;
+        var pace = new IndexingPace(8, processors);
+        double effort = pace.Effort;
+        var disks = new List<double>();
+        for (var i = 0; i < 120; i++)
+        {
+            pace.ReportInFlight(pace.Concurrency);
+            var ownCpu = effort * 100 / processors;
+            var ownDisk = Math.Min(100, effort * 15);
+            disks.Add(ownDisk);
+            effort = pace.Effort;
+            pace.Update(new PaceReading(30, 2 + ownCpu, ownCpu, 25, ownDisk, ownDisk), Dt);
+        }
+        Assert.Equal(PaceLimit.Disk, pace.LimitedBy);
+        Assert.Equal(22.5, pace.DiskTargetPercent, 6);
+        Assert.All(disks.Skip(30), d => Assert.InRange(d, 19.5, 25.5));
+        Assert.InRange(pace.DiskPerEffort, 13.5, 16.5);
+    }
+
+    [Fact]
+    public void A_busy_disk_slows_indexing_to_a_trickle_but_never_stops_it()
+    {
+        var pace = new IndexingPace(8, 8, initialEffort: 4);
+        for (var i = 0; i < 60; i++)
+        {
+            pace.ReportInFlight(pace.Concurrency);
+            pace.Update(new PaceReading(30, 10, 5, 25, DiskBusyPercent: 100, OwnDiskBusyPercent: 1), Dt); // another program copies files
+        }
+        Assert.Equal(IndexingPace.MinEffort, pace.Effort, 6);
+        Assert.Equal(PaceLimit.Disk, pace.LimitedBy);
+
+        // The copy ends: the CPU controller was tracking, so indexing speeds up again without a jump.
+        var previous = pace.Effort;
+        for (var i = 0; i < 60; i++)
+        {
+            pace.ReportInFlight(pace.Concurrency);
+            var own = pace.Effort * 100 / 8;
+            pace.Update(new PaceReading(30, 2 + own, own, 25, 3, 1), Dt);
+            Assert.True(pace.Effort - previous < 1.5, "effort jumped");
+            previous = pace.Effort;
+        }
+        Assert.Equal(PaceLimit.Cpu, pace.LimitedBy);
+        Assert.True(pace.Effort > 1);
+    }
+
+    [Fact]
+    public void Without_disk_metrics_only_the_CPU_steers()
+    {
+        var pace = new IndexingPace(8, 8);
+        pace.ReportInFlight(1);
+        pace.Update(new PaceReading(30, 10, 8, 25, DiskBusyPercent: null), Dt);
+        Assert.Equal(PaceLimit.Cpu, pace.LimitedBy);
+        Assert.Equal(0, pace.DiskTargetPercent);
+        Assert.True(pace.Effort > 1);
+    }
+
+    [Fact]
     public void Backs_off_when_other_programs_start_using_the_CPU()
     {
         const int processors = 8;
@@ -223,6 +284,7 @@ public class IndexingWorkersTests
     public void Never_runs_more_items_at_once_than_the_pace_allows(int concurrency)
     {
         using var workers = new IndexingWorkers(PaceWithConcurrency(concurrency));
+        using var full = new ManualResetEventSlim();
         int running = 0, peak = 0;
         for (var i = 0; i < 40; i++)
         {
@@ -230,7 +292,9 @@ public class IndexingWorkersTests
             {
                 var now = Interlocked.Increment(ref running);
                 InterlockedMax(ref peak, now);
-                Thread.Sleep(5);
+                if (now >= concurrency)
+                    full.Set();
+                full.Wait(TimeSpan.FromSeconds(10)); // hold the first items until every slot is taken
                 Interlocked.Decrement(ref running);
             }, TestContext.Current.CancellationToken);
         }
