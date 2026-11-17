@@ -274,7 +274,7 @@
     <value>ফাইল পরিবর্তন হলেই Valafind নিজে থেকে মডেলটি আবার লোড করে, অথবা সেটিংসে অন্য মডেল ফোল্ডার বেছে নিন।</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma লোড করা যায়নি</value>
+    <value>EmbeddingGemma 2 লোড করা যায়নি</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>এটি এখানে ইনস্টল হয়:</value>
@@ -283,7 +283,7 @@
     <value>ডিভাইসের মডেলটি চালু হতে কয়েক সেকেন্ড সময় নেয়। প্রস্তুত হলেই আপনার অনুসন্ধান চলবে।</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma লোড হচ্ছে…</value>
+    <value>EmbeddingGemma 2 লোড হচ্ছে…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Valafind-এর এই বিল্ডে মডেলটি নেই এবং এটি নিজে থেকে তা ডাউনলোড করে না। টার্মিনালে এই কমান্ডটি চালিয়ে একবার ইনস্টল করুন:</value>
@@ -292,7 +292,7 @@
     <value>মডেলটি উপস্থিত হলেই Valafind নিজে থেকে তা শনাক্ত করে — রিস্টার্টের প্রয়োজন নেই। আগে থেকেই একটি কপি আছে? সেটিংসে এর ফোল্ডার বেছে নিন।</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma মডেল ইনস্টল করা নেই</value>
+    <value>EmbeddingGemma 2 মডেল ইনস্টল করা নেই</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>অন্তর্নির্মিত মডেলটি {0}-এ আনপ্যাক করা যায়নি: {1}</value>
@@ -337,7 +337,7 @@
     <value>ইনডেক্স করার জন্য একটি ফোল্ডার বেছে নিন</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma মডেল ফোল্ডার বেছে নিন</value>
+    <value>EmbeddingGemma 2 মডেল ফোল্ডার বেছে নিন</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU {0} ছাড়িয়ে গেলে বা ডিস্কের কার্যকলাপ বেশি হলে স্বয়ংক্রিয়ভাবে বিরতি নেয়</value>

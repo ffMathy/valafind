@@ -151,6 +151,7 @@ public sealed class ModelInstallHelpTests : IDisposable
         Assert.Null(CoreServicesFactory.SignatureOf(_dir));
 
         File.WriteAllText(Path.Combine(_dir, "tokenizer.json"), "{}");
+        File.WriteAllText(Path.Combine(_dir, "config.json"), """{"model_type": "embedding_gemma2"}""");
         File.WriteAllBytes(Path.Combine(onnx, "model_quantized.onnx"), new byte[1024]);
         // Small graph without its external weights yet (the fetch script downloads them last): not installed.
         Assert.Null(CoreServicesFactory.SignatureOf(_dir));

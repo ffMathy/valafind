@@ -274,7 +274,7 @@
     <value>فائلیں تبدیل ہوتے ہی Valafind ماڈل کو خود دوبارہ لوڈ کر لیتا ہے، یا ترتیبات میں کوئی اور ماڈل فولڈر منتخب کریں۔</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma لوڈ نہیں ہو سکا</value>
+    <value>EmbeddingGemma 2 لوڈ نہیں ہو سکا</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>یہ یہاں انسٹال ہوتا ہے:</value>
@@ -283,7 +283,7 @@
     <value>آلے پر چلنے والے ماڈل کو شروع ہونے میں چند سیکنڈ لگتے ہیں۔ تیار ہوتے ہی آپ کی تلاش چلے گی۔</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma لوڈ ہو رہا ہے…</value>
+    <value>EmbeddingGemma 2 لوڈ ہو رہا ہے…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Valafind کے اس بلڈ میں ماڈل شامل نہیں ہے اور یہ اسے خود ڈاؤن لوڈ نہیں کرتا۔ ٹرمینل میں یہ کمانڈ چلا کر اسے ایک بار انسٹال کریں:</value>
@@ -292,7 +292,7 @@
     <value>ماڈل موجود ہوتے ہی Valafind اسے خود پہچان لیتا ہے — دوبارہ شروع کرنے کی ضرورت نہیں۔ پہلے سے ایک کاپی موجود ہے؟ ترتیبات میں اس کا فولڈر منتخب کریں۔</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma ماڈل انسٹال نہیں ہے</value>
+    <value>EmbeddingGemma 2 ماڈل انسٹال نہیں ہے</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>اندرونی ماڈل کو {0} میں ان پیک نہیں کیا جا سکا: {1}</value>
@@ -337,7 +337,7 @@
     <value>انڈیکس کرنے کے لیے فولڈر منتخب کریں</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma ماڈل فولڈر منتخب کریں</value>
+    <value>EmbeddingGemma 2 ماڈل فولڈر منتخب کریں</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU کے {0} سے بڑھنے یا ڈسک کی سرگرمی زیادہ ہونے پر خود بخود رک جاتی ہے</value>

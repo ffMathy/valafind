@@ -50,9 +50,9 @@ public static class DesignData
         var vm = new LauncherViewModel(flavor, new ValafindSettings(), new FixedTime(Now), static a => a(), null, AppDirectory(flavor));
         vm.SetModelMissing(flavor switch
         {
-            UiFlavor.Windows => @"C:\Users\mathi\AppData\Local\Valafind\models\embeddinggemma-300m",
-            UiFlavor.Mac => "/Users/mathias/Library/Application Support/Valafind/models/embeddinggemma-300m",
-            _ => "/home/mathias/.local/share/valafind/models/embeddinggemma-300m",
+            UiFlavor.Windows => @"C:\Users\mathi\AppData\Local\Valafind\models\embeddinggemma-2",
+            UiFlavor.Mac => "/Users/mathias/Library/Application Support/Valafind/models/embeddinggemma-2",
+            _ => "/home/mathias/.local/share/valafind/models/embeddinggemma-2",
         });
         vm.UpdateStatus(IndexStatus.Initial with { State = IndexingState.ModelUnavailable });
         return vm;

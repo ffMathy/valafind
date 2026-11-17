@@ -38,7 +38,7 @@ public sealed class BundledModelTests : IDisposable
     public void Lists_embedded_files_with_forward_slash_paths()
     {
         var files = BundledModel.Files(Bundle).Select(f => f.RelativePath).ToArray();
-        Assert.Equal(["onnx/model_quantized.onnx", "onnx/model_quantized.onnx_data", "tokenizer.json"], files);
+        Assert.Equal(["config.json", "onnx/model_quantized.onnx", "onnx/model_quantized.onnx_data", "tokenizer.json"], files);
         Assert.True(BundledModel.IsBundled(Bundle));
     }
 
@@ -54,7 +54,7 @@ public sealed class BundledModelTests : IDisposable
     [Fact]
     public void Unpacks_into_a_valid_model_folder()
     {
-        Assert.Equal(3, BundledModel.EnsureInstalled(Bundle, Target));
+        Assert.Equal(4, BundledModel.EnsureInstalled(Bundle, Target));
 
         foreach (var (relative, _) in BundledModel.Files(Bundle))
             Assert.Equal(File.ReadAllBytes(Fixture(relative)), File.ReadAllBytes(Installed(relative)));

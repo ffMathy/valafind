@@ -274,7 +274,7 @@
     <value>Valafind memuat ulang model secara otomatis setelah file berubah, atau pilih folder model lain di Pengaturan.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma tidak dapat dimuat</value>
+    <value>EmbeddingGemma 2 tidak dapat dimuat</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>Dipasang ke:</value>
@@ -283,7 +283,7 @@
     <value>Model di perangkat butuh beberapa detik untuk dimulai. Pencarian Anda berjalan begitu model siap.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>Memuat EmbeddingGemma…</value>
+    <value>Memuat EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Build Valafind ini tidak menyertakan model dan tidak mengunduhnya sendiri. Pasang sekali dengan menjalankan perintah ini di terminal:</value>
@@ -292,7 +292,7 @@
     <value>Valafind mendeteksi model secara otomatis begitu tersedia — tanpa perlu memulai ulang. Sudah punya salinannya? Pilih foldernya di Pengaturan.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>Model EmbeddingGemma belum terpasang</value>
+    <value>Model EmbeddingGemma 2 belum terpasang</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Tidak dapat mengekstrak model bawaan ke {0}: {1}</value>
@@ -337,7 +337,7 @@
     <value>Pilih folder untuk diindeks</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>Pilih folder model EmbeddingGemma</value>
+    <value>Pilih folder model EmbeddingGemma 2</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>Dijeda otomatis saat CPU melebihi {0} atau aktivitas disk tinggi</value>

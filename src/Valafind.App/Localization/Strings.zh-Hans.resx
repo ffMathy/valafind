@@ -274,7 +274,7 @@
     <value>文件更改后，Valafind 会自动重新加载模型；你也可以在设置中选择其他模型文件夹。</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>无法加载 EmbeddingGemma</value>
+    <value>无法加载 EmbeddingGemma 2</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>安装位置：</value>
@@ -283,7 +283,7 @@
     <value>本地模型需要几秒钟启动。准备就绪后会立即执行搜索。</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>正在加载 EmbeddingGemma…</value>
+    <value>正在加载 EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>此版本的 Valafind 不含模型，也不会自行下载。请在终端中运行以下命令安装一次：</value>
@@ -292,7 +292,7 @@
     <value>模型就位后，Valafind 会自动识别，无需重新启动。已有副本？请在设置中选择其文件夹。</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>未安装 EmbeddingGemma 模型</value>
+    <value>未安装 EmbeddingGemma 2 模型</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>无法将内置模型解压到 {0}：{1}</value>
@@ -337,7 +337,7 @@
     <value>选择要索引的文件夹</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>选择 EmbeddingGemma 模型文件夹</value>
+    <value>选择 EmbeddingGemma 2 模型文件夹</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU 超过 {0} 或磁盘活动较高时自动暂停</value>

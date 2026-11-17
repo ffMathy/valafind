@@ -274,7 +274,7 @@
     <value>Valafind sẽ tự tải lại mô hình khi các tệp thay đổi, hoặc bạn có thể chọn thư mục mô hình khác trong Cài đặt.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>Không thể tải EmbeddingGemma</value>
+    <value>Không thể tải EmbeddingGemma 2</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>Mô hình được cài vào:</value>
@@ -283,7 +283,7 @@
     <value>Mô hình trên thiết bị cần vài giây để khởi động. Tìm kiếm của bạn sẽ chạy ngay khi mô hình sẵn sàng.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>Đang tải EmbeddingGemma…</value>
+    <value>Đang tải EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Bản dựng Valafind này không kèm mô hình và sẽ không tự tải xuống. Hãy cài đặt một lần bằng cách chạy lệnh sau trong cửa sổ dòng lệnh:</value>
@@ -292,7 +292,7 @@
     <value>Valafind tự nhận ra mô hình ngay khi mô hình có mặt — không cần khởi động lại. Đã có bản sao? Hãy chọn thư mục của nó trong Cài đặt.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>Chưa cài đặt mô hình EmbeddingGemma</value>
+    <value>Chưa cài đặt mô hình EmbeddingGemma 2</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Không thể giải nén mô hình tích hợp vào {0}: {1}</value>
@@ -337,7 +337,7 @@
     <value>Chọn thư mục để lập chỉ mục</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>Chọn thư mục mô hình EmbeddingGemma</value>
+    <value>Chọn thư mục mô hình EmbeddingGemma 2</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>Tự động tạm dừng khi CPU vượt quá {0} hoặc ổ đĩa hoạt động nhiều</value>

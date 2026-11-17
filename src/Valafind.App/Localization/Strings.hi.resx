@@ -274,7 +274,7 @@
     <value>फ़ाइलें बदलते ही Valafind मॉडल को अपने-आप फिर से लोड कर लेता है, या सेटिंग्स में कोई दूसरा मॉडल फ़ोल्डर चुनें।</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma लोड नहीं हो सका</value>
+    <value>EmbeddingGemma 2 लोड नहीं हो सका</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>यह यहाँ इंस्टॉल होता है:</value>
@@ -283,7 +283,7 @@
     <value>डिवाइस पर चलने वाले मॉडल को शुरू होने में कुछ सेकंड लगते हैं। तैयार होते ही आपकी खोज चलेगी।</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma लोड हो रहा है…</value>
+    <value>EmbeddingGemma 2 लोड हो रहा है…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Valafind के इस बिल्ड में मॉडल शामिल नहीं है और यह उसे अपने-आप डाउनलोड नहीं करता। टर्मिनल में यह कमांड चलाकर इसे एक बार इंस्टॉल करें:</value>
@@ -292,7 +292,7 @@
     <value>मॉडल के मौजूद होते ही Valafind उसे अपने-आप पहचान लेता है — रीस्टार्ट की ज़रूरत नहीं। पहले से एक प्रति है? सेटिंग्स में उसका फ़ोल्डर चुनें।</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma मॉडल इंस्टॉल नहीं है</value>
+    <value>EmbeddingGemma 2 मॉडल इंस्टॉल नहीं है</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>अंतर्निहित मॉडल को {0} में अनपैक नहीं किया जा सका: {1}</value>
@@ -337,7 +337,7 @@
     <value>अनुक्रमित करने के लिए फ़ोल्डर चुनें</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma मॉडल फ़ोल्डर चुनें</value>
+    <value>EmbeddingGemma 2 मॉडल फ़ोल्डर चुनें</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU के {0} से ऊपर जाने या डिस्क गतिविधि अधिक होने पर अपने-आप रुक जाता है</value>

@@ -274,7 +274,7 @@
     <value>ファイルが変更されると Valafind が自動的にモデルを再読み込みします。または、設定で別のモデルフォルダを選択してください。</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma を読み込めませんでした</value>
+    <value>EmbeddingGemma 2 を読み込めませんでした</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>インストール先：</value>
@@ -283,7 +283,7 @@
     <value>オンデバイスモデルの起動には数秒かかります。準備ができ次第、検索を実行します。</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma を読み込み中…</value>
+    <value>EmbeddingGemma 2 を読み込み中…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>このビルドの Valafind にはモデルが含まれておらず、自動ではダウンロードしません。ターミナルで次のコマンドを一度実行してインストールしてください：</value>
@@ -292,7 +292,7 @@
     <value>モデルが配置されると Valafind が自動的に検出します。再起動は不要です。すでにコピーをお持ちの場合は、設定でそのフォルダを選択してください。</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma モデルがインストールされていません</value>
+    <value>EmbeddingGemma 2 モデルがインストールされていません</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>内蔵モデルを {0} に展開できませんでした：{1}</value>
@@ -337,7 +337,7 @@
     <value>インデックスを作成するフォルダを選択</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma モデルフォルダを選択</value>
+    <value>EmbeddingGemma 2 モデルフォルダを選択</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU が {0} を超えるか、ディスクの使用率が高いと自動的に一時停止します</value>

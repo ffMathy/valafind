@@ -274,7 +274,7 @@
     <value>Valafind lädt das Modell selbstständig neu, sobald sich die Dateien ändern. Alternativ in den Einstellungen einen anderen Modellordner wählen.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma konnte nicht geladen werden</value>
+    <value>EmbeddingGemma 2 konnte nicht geladen werden</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>Installationsort:</value>
@@ -283,7 +283,7 @@
     <value>Das lokale Modell braucht einige Sekunden zum Starten. Die Suche läuft, sobald es bereit ist.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma wird geladen …</value>
+    <value>EmbeddingGemma 2 wird geladen …</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Diese Version von Valafind enthält das Modell nicht und lädt es nicht selbst herunter. Einmalig installieren, indem dieser Befehl in einem Terminal ausgeführt wird:</value>
@@ -292,7 +292,7 @@
     <value>Valafind erkennt das Modell selbstständig, sobald es vorhanden ist – kein Neustart nötig. Bereits eine Kopie vorhanden? Deren Ordner in den Einstellungen auswählen.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma-Modell nicht installiert</value>
+    <value>EmbeddingGemma 2-Modell nicht installiert</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Das integrierte Modell konnte nicht nach {0} entpackt werden: {1}</value>
@@ -337,7 +337,7 @@
     <value>Ordner zum Indizieren auswählen</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>Ordner des EmbeddingGemma-Modells auswählen</value>
+    <value>Ordner des EmbeddingGemma 2-Modells auswählen</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>Pausiert automatisch, wenn die CPU-Last {0} übersteigt oder der Datenträger stark ausgelastet ist</value>

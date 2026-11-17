@@ -78,7 +78,7 @@ public sealed class EmbeddingUnitTests
 
     [Theory]
     [InlineData(10)]
-    [InlineData(2049)]
+    [InlineData(8193)]
     public void Options_reject_out_of_range_token_budgets(int maxTokens)
     {
         var options = new EmbeddingOptions { ModelDirectory = "/nonexistent", MaxTokens = maxTokens };

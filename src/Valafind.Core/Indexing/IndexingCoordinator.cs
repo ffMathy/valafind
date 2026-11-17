@@ -47,6 +47,17 @@ public interface IIndexedEntrySource
 /// low-priority threads and only while the <see cref="ThrottleGate"/> is open. Unchanged files are skipped by
 /// (size, mtime) fingerprint, so restarts are cheap. The caller owns (and opens) the store, model and monitor.
 /// </summary>
+/// <remarks>
+/// <para>Files are always indexed by kind, cheapest and most searched first: documents (everything that is not a
+/// picture, audio or video), then pictures, then audio, then video (<see cref="IndexOrder"/>). Phase 1 indexes the
+/// frequently used documents; Phase 2 indexes the remaining documents while it walks the disk and keeps the media it
+/// finds for afterwards, then indexes pictures, audio and video in that order (frequently used ones first within each).
+/// Changes reported by the file watchers during these passes follow the same rule: a new photo waits until the
+/// documents are done.</para>
+/// <para>With an <see cref="IMediaEmbeddingModel"/> and an <see cref="IMediaDecoder"/>, media are embedded by content
+/// (a picture as one vector, audio as up to four 30-second clips, a video as its frames plus up to two clips of its
+/// sound) next to a vector of the file's name; without them they are indexed by name only.</para>
+/// </remarks>
 public sealed class IndexingCoordinator : IIndexingService
 {
     internal const string MetaPhase1Complete = "phase1_complete";
@@ -70,6 +81,8 @@ public sealed class IndexingCoordinator : IIndexingService
     private readonly IDocumentReader _reader;
     private readonly ITextChunker _chunker;
     private readonly IEmbeddingModel? _model;
+    private readonly IMediaEmbeddingModel? _mediaModel;
+    private readonly IMediaDecoder? _mediaDecoder;
     private readonly IIndexStore _store;
     private readonly ILogger<IndexingCoordinator> _logger;
     private readonly TimeProvider _time;
@@ -100,6 +113,14 @@ public sealed class IndexingCoordinator : IIndexingService
     private volatile bool _discoveryComplete;
     private string? _currentFile;
     private int _consecutiveModelFailures;
+    private bool _mediaReleased = true;
+
+    // Kind order (IndexOrder): the rank the running pass has reached; files of a higher rank found meanwhile wait in
+    // _deferred. NotOrdering when no pass is running (watcher changes are then handled as they come).
+    private const int NotOrdering = int.MaxValue;
+    private volatile int _stage = NotOrdering;
+    private readonly DeferredFiles _deferred;
+    private HashSet<string>? _frequentMedia;
     private bool _sweepUnsupportedLogged;
     private int _watchLimitLogged;
 
@@ -124,16 +145,18 @@ public sealed class IndexingCoordinator : IIndexingService
     /// <param name="settings">Thresholds, roots and pause state; thresholds are re-read live.</param>
     /// <param name="logger">Logger.</param>
     /// <param name="time">Clock; defaults to <see cref="TimeProvider.System"/>.</param>
+    /// <param name="mediaDecoder">Decodes pictures, audio and video when <paramref name="model"/> can embed them; null:
+    /// media are indexed by name only.</param>
     public IndexingCoordinator(IFileDiscovery discovery, IDocumentReader reader, ITextChunker chunker, IEmbeddingModel? model,
         IIndexStore store, ISystemPressureMonitor monitor, ValafindSettings settings, ILogger<IndexingCoordinator> logger,
-        TimeProvider? time = null)
-        : this(discovery, reader, chunker, model, store, monitor, settings, logger, time, CoordinatorTuning.Default)
+        TimeProvider? time = null, IMediaDecoder? mediaDecoder = null)
+        : this(discovery, reader, chunker, model, store, monitor, settings, logger, time, CoordinatorTuning.Default, mediaDecoder)
     {
     }
 
     internal IndexingCoordinator(IFileDiscovery discovery, IDocumentReader reader, ITextChunker chunker, IEmbeddingModel? model,
         IIndexStore store, ISystemPressureMonitor monitor, ValafindSettings settings, ILogger<IndexingCoordinator> logger,
-        TimeProvider? time, CoordinatorTuning tuning)
+        TimeProvider? time, CoordinatorTuning tuning, IMediaDecoder? mediaDecoder = null)
     {
         ArgumentNullException.ThrowIfNull(discovery);
         ArgumentNullException.ThrowIfNull(reader);
@@ -146,12 +169,15 @@ public sealed class IndexingCoordinator : IIndexingService
         _reader = reader;
         _chunker = chunker;
         _model = model;
+        _mediaModel = model as IMediaEmbeddingModel;
+        _mediaDecoder = mediaDecoder;
         _store = store;
         _logger = logger;
         _time = time ?? TimeProvider.System;
         _tuning = tuning;
         _settings = settings;
         _pathComparer = OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        _deferred = new DeferredFiles(_pathComparer);
         _pending = new PendingChanges(_time, tuning.Debounce, _pathComparer, path => FindRoot(path), tuning.PendingCapacity);
         _lastRootRescan = new Dictionary<string, DateTimeOffset>(_pathComparer);
         _gate = new ThrottleGate(monitor, () => tuning.Throttle ?? ThrottleOptions.From(settings), _time);
@@ -361,17 +387,29 @@ public sealed class IndexingCoordinator : IIndexingService
             frequent = [];
         }
 
+        // Documents only: frequently used pictures, audio and video come right after the documents of Phase 2 (first
+        // within their kind), so no media is embedded before every document is.
+        _frequentMedia = new HashSet<string>(frequent.Where(p => IndexOrder.Rank(p) > IndexOrder.Documents), _pathComparer);
+        frequent = frequent.Where(p => IndexOrder.Rank(p) == IndexOrder.Documents).ToList();
         Interlocked.Exchange(ref _frequentTotal, frequent.Count);
         Interlocked.Exchange(ref _frequentDone, 0);
         IndexingLog.Phase1Started(_logger, frequent.Count);
         Publish();
-        foreach (var path in frequent)
+        _stage = IndexOrder.Documents;
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            DrainPending(cancellationToken);
-            ProcessFile(path, IndexPhase.Frequent, cancellationToken);
-            Interlocked.Increment(ref _frequentDone);
-            Publish();
+            foreach (var path in frequent)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                DrainPending(cancellationToken);
+                ProcessFile(path, IndexPhase.Frequent, cancellationToken);
+                Interlocked.Increment(ref _frequentDone);
+                Publish();
+            }
+        }
+        finally
+        {
+            _stage = NotOrdering;
         }
 
         TrySetMeta(MetaPhase1Count, frequent.Count.ToString(CultureInfo.InvariantCulture));
@@ -471,15 +509,60 @@ public sealed class IndexingCoordinator : IIndexingService
             }
         }, cancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
+        // Documents as they are found; pictures, audio and video afterwards, in that order (IndexOrder). Files the
+        // watchers deferred before this pass started stay queued.
+        _stage = IndexOrder.Documents;
         try
         {
-            while (channel.Reader.WaitToReadAsync(cancellationToken).AsTask().GetAwaiter().GetResult())
+            try
             {
-                while (channel.Reader.TryRead(out var path))
+                while (channel.Reader.WaitToReadAsync(cancellationToken).AsTask().GetAwaiter().GetResult())
+                {
+                    while (channel.Reader.TryRead(out var path))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        DrainPending(cancellationToken);
+                        var rank = IndexOrder.Rank(path);
+                        if (rank > IndexOrder.Documents)
+                        {
+                            _deferred.Add(rank, path, entryPhase);
+                            continue;
+                        }
+
+                        ProcessFile(path, entryPhase, cancellationToken);
+                        done++;
+                        if (visible)
+                        {
+                            Interlocked.Increment(ref _allDone);
+                            Publish();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                try
+                {
+                    producer.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+
+            for (var rank = IndexOrder.Images; rank <= IndexOrder.Videos; rank++)
+            {
+                _stage = rank;
+                // Frequently used files first within their kind; files the watchers add meanwhile join the end.
+                _deferred.PromoteFirst(rank, _frequentMedia);
+                while (_deferred.TryTake(rank, out var path, out var phase))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     DrainPending(cancellationToken);
-                    ProcessFile(path, entryPhase, cancellationToken);
+                    ProcessFile(path, phase, cancellationToken);
+                    if (phase != entryPhase)
+                        continue; // a watcher change, not part of the walk's count
                     done++;
                     if (visible)
                     {
@@ -491,14 +574,9 @@ public sealed class IndexingCoordinator : IIndexingService
         }
         finally
         {
-            try
-            {
-                producer.GetAwaiter().GetResult();
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            _stage = NotOrdering;
         }
+        _frequentMedia = null;
         cancellationToken.ThrowIfCancellationRequested();
 
         var total = Interlocked.Read(ref walked);
@@ -670,6 +748,7 @@ public sealed class IndexingCoordinator : IIndexingService
             {
                 SetActivity(Activity.Idle);
                 _gate.SetIdle(true);
+                ReleaseMediaModel();
             }
 
             var wait = _pending.NextDueIn() ?? _tuning.IdlePoll;
@@ -695,6 +774,8 @@ public sealed class IndexingCoordinator : IIndexingService
         var due = _pending.TakeDue();
         if (due.Count == 0)
             return;
+        // Same order as the passes: deletes and rescans first, then documents, pictures, audio, video.
+        due = due.OrderBy(c => c.Kind is ChangeKind.Delete or ChangeKind.Rescan ? -1 : IndexOrder.Rank(c.Path)).ToList();
         var previous = _activity;
         _gate.SetIdle(false);
         SetActivity(Activity.Working);
@@ -745,7 +826,7 @@ public sealed class IndexingCoordinator : IIndexingService
                     if (_discovery.IsExcluded(change.Path))
                         RemovePath(change.Path);
                     else
-                        ProcessFile(change.Path, IndexPhase.Incremental, cancellationToken);
+                        ProcessOrDefer(change.Path, cancellationToken);
                 }
                 else if (!IsRootOrUnderMissingRoot(change.Path))
                 {
@@ -753,6 +834,16 @@ public sealed class IndexingCoordinator : IIndexingService
                 }
                 break;
         }
+    }
+
+    /// <summary>Indexes a file a watcher reported, unless a pass is still on an earlier kind: then it waits its turn.</summary>
+    private void ProcessOrDefer(string path, CancellationToken cancellationToken)
+    {
+        var rank = IndexOrder.Rank(path);
+        if (rank > _stage)
+            _deferred.Add(rank, path, IndexPhase.Incremental);
+        else
+            ProcessFile(path, IndexPhase.Incremental, cancellationToken);
     }
 
     private void RemovePath(string path)
@@ -774,12 +865,19 @@ public sealed class IndexingCoordinator : IIndexingService
             ? user.EnumerateUnder(directory, cancellationToken)
             : GenericWalk(directory, cancellationToken);
         var n = 0;
+        var media = new List<string>();
         foreach (var file in files)
         {
             if (++n % DiscoveryGateEvery == 0)
                 WaitForGate(cancellationToken);
-            ProcessFile(file, IndexPhase.Incremental, cancellationToken);
+            if (IndexOrder.Rank(file) > IndexOrder.Documents)
+                media.Add(file); // after the documents of this directory
+            else
+                ProcessFile(file, IndexPhase.Incremental, cancellationToken);
         }
+
+        foreach (var file in media.OrderBy(IndexOrder.Rank))
+            ProcessOrDefer(file, cancellationToken);
     }
 
     /// <summary>Walk for third-party <see cref="IFileDiscovery"/> implementations: breadth-first, no links, honouring IsExcluded.</summary>
@@ -952,6 +1050,13 @@ public sealed class IndexingCoordinator : IIndexingService
         for (var i = 0; i < chunks.Count; i++)
             records.Add(new ChunkRecord(chunks[i].Index, chunks[i].Start, chunks[i].Length, chunks[i].Text, vectors[i]));
 
+        // Pictures, audio and video: vectors of their content next to the name vector.
+        if (kind is FileKind.Image or FileKind.Audio or FileKind.Video && (extracted is null || string.IsNullOrWhiteSpace(extracted.Text)))
+        {
+            foreach (var media in EmbedMedia(path, kind, cancellationToken))
+                records.Add(media with { Index = records.Count });
+        }
+
         return TryStore(() => _store.UpsertFile(new FileEntry(path, size, modified, kind, phase), records), "write");
     }
 
@@ -1010,6 +1115,113 @@ public sealed class IndexingCoordinator : IIndexingService
             relative = Path.GetRelativePath(bestRoot, path);
         var parts = relative.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
         return string.Join(" / ", parts);
+    }
+
+    /// <summary>
+    /// Content vectors of a picture (one), an audio file (one per clip) or a video (one for its frames, one per clip of
+    /// its sound). Chunk text stays empty; for clips <see cref="ChunkRecord.Start"/> and <see cref="ChunkRecord.Length"/>
+    /// hold the clip's position in whole seconds. Decoding or embedding failures leave the file with its name vector.
+    /// </summary>
+    private List<ChunkRecord> EmbedMedia(string path, FileKind kind, CancellationToken cancellationToken)
+    {
+        var records = new List<ChunkRecord>();
+        var model = _mediaModel;
+        var decoder = _mediaDecoder;
+        if (model is null || decoder is null)
+            return records;
+        var capabilities = model.MediaCapabilities;
+        try
+        {
+            switch (kind)
+            {
+                case FileKind.Image when capabilities.HasFlag(MediaCapabilities.Image):
+                {
+                    WaitForTurn(cancellationToken);
+                    var image = decoder.DecodeImageAsync(path, _tuning.ImageMaxSide, cancellationToken).GetAwaiter().GetResult();
+                    if (image is not null)
+                        records.Add(MediaRecord(EmbedMediaPart(() => model.EmbedImage(image, cancellationToken), path, cancellationToken), 0, 0));
+                    break;
+                }
+                case FileKind.Audio when capabilities.HasFlag(MediaCapabilities.Audio):
+                    AddClips(_tuning.MaxAudioClips);
+                    break;
+                case FileKind.Video:
+                    if (capabilities.HasFlag(MediaCapabilities.Video))
+                    {
+                        WaitForTurn(cancellationToken);
+                        var frames = decoder.DecodeVideoAsync(path, _tuning.MaxVideoFrames, _tuning.VideoMaxSide, cancellationToken).GetAwaiter().GetResult();
+                        if (frames is { Frames.Count: > 0 })
+                            records.Add(MediaRecord(EmbedMediaPart(() => model.EmbedVideo(frames.Frames, cancellationToken), path, cancellationToken), 0, (int)frames.Duration.TotalSeconds));
+                    }
+
+                    if (capabilities.HasFlag(MediaCapabilities.Audio))
+                        AddClips(_tuning.MaxVideoAudioClips);
+                    break;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            IndexingLog.MediaFailed(_logger, e, path);
+        }
+
+        records.RemoveAll(r => r.Vector.Length == 0);
+        return records;
+
+        void AddClips(int maxClips)
+        {
+            WaitForTurn(cancellationToken);
+            var clips = decoder.DecodeAudioAsync(path, maxClips, cancellationToken).GetAwaiter().GetResult();
+            foreach (var clip in clips ?? [])
+            {
+                WaitForTurn(cancellationToken);
+                records.Add(MediaRecord(EmbedMediaPart(() => model.EmbedAudio(clip, cancellationToken), path, cancellationToken),
+                    (int)clip.Offset.TotalSeconds, (int)Math.Ceiling((double)clip.Samples.Length / AudioClip.SampleRate)));
+            }
+        }
+    }
+
+    private static ChunkRecord MediaRecord(float[] vector, int startSeconds, int lengthSeconds) =>
+        new(0, startSeconds, lengthSeconds, string.Empty, vector);
+
+    /// <summary>One media embedding; an empty vector when it failed (logged).</summary>
+    private float[] EmbedMediaPart(Func<float[]> embed, string path, CancellationToken cancellationToken)
+    {
+        WaitWhileInteractive(cancellationToken);
+        try
+        {
+            _mediaReleased = false;
+            var vector = embed();
+            return vector.Length == _model!.Dimensions ? vector : [];
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            IndexingLog.MediaFailed(_logger, e, path);
+            return [];
+        }
+    }
+
+    /// <summary>Frees the media encoders' memory once indexing has nothing left to do.</summary>
+    private void ReleaseMediaModel()
+    {
+        if (_mediaReleased || _mediaModel is null)
+            return;
+        _mediaReleased = true;
+        try
+        {
+            _mediaModel.ReleaseMediaResources();
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            IndexingLog.MediaFailed(_logger, e, "(release)");
+        }
     }
 
     private IReadOnlyList<float[]>? EmbedWithBackoff(List<DocumentText> batch, string path, CancellationToken cancellationToken)
@@ -1432,6 +1644,21 @@ internal sealed record CoordinatorTuning(
     /// <summary>Pending watcher paths kept individually before they collapse into root rescans.</summary>
     public int PendingCapacity { get; init; } = PendingChanges.DefaultCapacity;
 
+    /// <summary>30-second clips embedded per audio file (consecutive when they cover it, else spread over it).</summary>
+    public int MaxAudioClips { get; init; } = 4;
+
+    /// <summary>30-second clips of a video's sound embedded next to its frames.</summary>
+    public int MaxVideoAudioClips { get; init; } = 2;
+
+    /// <summary>Frames decoded per video (one per second, thinned out evenly).</summary>
+    public int MaxVideoFrames { get; init; } = 8;
+
+    /// <summary>Pictures are decoded at most this large (the model resizes them to its patch budget anyway).</summary>
+    public int ImageMaxSide { get; init; } = 2048;
+
+    /// <summary>Video frames are decoded at most this large.</summary>
+    public int VideoMaxSide { get; init; } = 1280;
+
     /// <summary>Batch size 2: a model batch cannot be cancelled once started, and two chunks take about a second on
     /// a laptop CPU, which bounds how long a query can wait behind indexing.</summary>
     public static CoordinatorTuning Default { get; } = new(
@@ -1526,4 +1753,7 @@ internal static partial class IndexingLog
 
     [LoggerMessage(27, LogLevel.Debug, "inotify unavailable; falling back to FileSystemWatcher")]
     public static partial void InotifyUnavailable(ILogger logger, Exception exception);
+
+    [LoggerMessage(28, LogLevel.Debug, "Embedding the content of {Path} failed; it stays findable by name")]
+    public static partial void MediaFailed(ILogger logger, Exception exception, string path);
 }

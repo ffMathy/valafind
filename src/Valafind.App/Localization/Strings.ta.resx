@@ -274,7 +274,7 @@
     <value>கோப்புகள் மாறியதும் Valafind மாதிரியைத் தானாக மீண்டும் ஏற்றும், அல்லது அமைப்புகளில் வேறு மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma-ஐ ஏற்ற முடியவில்லை</value>
+    <value>EmbeddingGemma 2-ஐ ஏற்ற முடியவில்லை</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>இதில் நிறுவப்படும்:</value>
@@ -283,7 +283,7 @@
     <value>சாதனத்திலுள்ள மாதிரி தொடங்க சில வினாடிகள் ஆகும். அது தயாரானதும் உங்கள் தேடல் இயங்கும்.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma ஏற்றப்படுகிறது…</value>
+    <value>EmbeddingGemma 2 ஏற்றப்படுகிறது…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Valafind-இன் இந்தப் பதிப்பில் மாதிரி சேர்க்கப்படவில்லை, அதைத் தானாகப் பதிவிறக்கவும் செய்யாது. இந்தக் கட்டளையை டெர்மினலில் இயக்கி ஒருமுறை நிறுவவும்:</value>
@@ -292,7 +292,7 @@
     <value>மாதிரி வந்தவுடன் Valafind அதைத் தானாகக் கண்டறியும் — மறுதொடக்கம் தேவையில்லை. ஏற்கெனவே ஒரு நகல் உள்ளதா? அமைப்புகளில் அதன் கோப்புறையைத் தேர்ந்தெடுக்கவும்.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma மாதிரி நிறுவப்படவில்லை</value>
+    <value>EmbeddingGemma 2 மாதிரி நிறுவப்படவில்லை</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>உள்ளமைந்த மாதிரியை {0} இல் பிரித்தெடுக்க முடியவில்லை: {1}</value>
@@ -337,7 +337,7 @@
     <value>அட்டவணையிட ஒரு கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
+    <value>EmbeddingGemma 2 மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU {0} ஐத் தாண்டினால் அல்லது வட்டுச் செயல்பாடு அதிகமாக இருந்தால் தானாக இடைநிறுத்தும்</value>

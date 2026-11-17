@@ -112,10 +112,10 @@ public sealed class SettingsViewModelTests : IDisposable
     [Fact]
     public void ModelDetectionTextReflectsTheHost()
     {
-        var host = new FakeHost { Detected = "/models/embeddinggemma-300m" };
+        var host = new FakeHost { Detected = "/models/embeddinggemma-2" };
         var vm = new SettingsViewModel(new ValafindSettings(), host);
         Assert.True(vm.IsModelDetected);
-        Assert.Equal("Detected: /models/embeddinggemma-300m", vm.ModelDetectionText);
+        Assert.Equal("Detected: /models/embeddinggemma-2", vm.ModelDetectionText);
         host.Detected = null;
         vm.ModelDirectory = "/nowhere";
         Assert.False(vm.IsModelDetected);
@@ -175,7 +175,7 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.False(vm.IsModelDetected);
         Assert.Contains("tools", vm.ModelDetectionText, StringComparison.Ordinal);
         Assert.Contains("/opt/Valafind", vm.ModelDetectionText, StringComparison.Ordinal);
-        Assert.Contains("/default/models/embeddinggemma-300m", vm.ModelDetectionText, StringComparison.Ordinal);
+        Assert.Contains("/default/models/embeddinggemma-2", vm.ModelDetectionText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public sealed class SettingsViewModelTests : IDisposable
         public string? HotkeyError { get; init; }
         public bool Autostart { get; private set; }
         public SettingsSnapshot? Applied { get; private set; }
-        public string DefaultModelDirectory => "/default/models/embeddinggemma-300m";
+        public string DefaultModelDirectory => "/default/models/embeddinggemma-2";
         public string AppDirectory => "/opt/Valafind";
         public string LogDirectory => "/data/logs";
         public int LogFolderOpened { get; private set; }

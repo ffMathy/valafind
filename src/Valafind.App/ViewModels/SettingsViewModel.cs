@@ -379,7 +379,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         public static DesignHost Instance { get; } = new();
         public string? DetectModel(string? configuredDirectory) => null;
-        public string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, "embeddinggemma-300m");
+        public string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, "embeddinggemma-2");
         public string AppDirectory => AppContext.BaseDirectory;
         public string LogDirectory => AppPaths.LogDirectory;
         public void OpenLogFolder() { }

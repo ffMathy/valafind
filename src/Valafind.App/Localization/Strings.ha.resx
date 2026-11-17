@@ -274,7 +274,7 @@
     <value>Valafind zai sake loda samfurin da kansa da zarar fayilolin sun canza, ko zaɓi wani fayil ɗin ajiya na samfuri a Saituna.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>Ba a iya loda EmbeddingGemma ba</value>
+    <value>Ba a iya loda EmbeddingGemma 2 ba</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>Ana shigar da shi a cikin:</value>
@@ -283,7 +283,7 @@
     <value>Samfurin da ke cikin na'ura yana ɗaukar 'yan daƙiƙoƙi kafin ya fara. Bincikenka zai gudana da zarar ya shirya.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>Ana loda EmbeddingGemma…</value>
+    <value>Ana loda EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Wannan ginin Valafind ba ya zuwa da samfurin kuma ba ya sauke shi da kansa. Shigar da shi sau ɗaya ta hanyar gudanar da wannan umarnin a tasha:</value>
@@ -292,7 +292,7 @@
     <value>Valafind zai lura da samfurin da kansa da zarar yana nan — babu buƙatar sake farawa. Kana da kwafi tuni? Zaɓi fayil ɗin ajiyarsa a Saituna.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>Ba a shigar da samfurin EmbeddingGemma ba</value>
+    <value>Ba a shigar da samfurin EmbeddingGemma 2 ba</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Ba a iya buɗe samfurin da aka gina a ciki zuwa {0} ba: {1}</value>
@@ -337,7 +337,7 @@
     <value>Zaɓi fayil ɗin ajiya da za a yi wa fihirisa</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>Zaɓi fayil ɗin ajiya na samfurin EmbeddingGemma</value>
+    <value>Zaɓi fayil ɗin ajiya na samfurin EmbeddingGemma 2</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>Yana dakatarwa ta atomatik idan CPU ya wuce {0} ko aikin faifai ya yi yawa</value>

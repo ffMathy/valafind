@@ -14,6 +14,13 @@ public sealed class ReferenceData
     public required float[][] Embeddings { get; init; }
     public required double[] ReadmeSimilarities { get; init; }
 
+    /// <summary>Picture fixtures: file, decoded size, patch/soft-token counts, pixel checks and embedding.</summary>
+    public required MediaReference[] Images { get; init; }
+    public required MediaReference Audio { get; init; }
+    public required MediaReference Video { get; init; }
+    public required string[] Queries { get; init; }
+    public required float[][] QueryEmbeddings { get; init; }
+
     public static ReferenceData Load()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", "embeddinggemma-reference.json");
@@ -27,6 +34,50 @@ public sealed class ReferenceData
             Embeddings = root.GetProperty("embeddings").EnumerateArray()
                 .Select(e => e.EnumerateArray().Select(x => (float)x.GetDouble()).ToArray()).ToArray(),
             ReadmeSimilarities = root.GetProperty("readme_similarities").EnumerateArray().Select(x => x.GetDouble()).ToArray(),
+            Images = root.GetProperty("images").EnumerateArray().Select(MediaReference.From).ToArray(),
+            Audio = MediaReference.From(root.GetProperty("audio")),
+            Video = MediaReference.From(root.GetProperty("video")),
+            Queries = root.GetProperty("queries").EnumerateArray().Select(e => e.GetString()!).ToArray(),
+            QueryEmbeddings = root.GetProperty("query_embeddings").EnumerateArray()
+                .Select(e => e.EnumerateArray().Select(x => (float)x.GetDouble()).ToArray()).ToArray(),
+        };
+    }
+}
+
+/// <summary>One media fixture of the reference file (fields that do not apply are 0 / empty).</summary>
+public sealed class MediaReference
+{
+    public required string File { get; init; }
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public int Patches { get; init; }
+    public int SoftTokens { get; init; }
+    public int Samples { get; init; }
+    public int Frames { get; init; }
+    public int ValidFrames { get; init; }
+    public float[] Head { get; init; } = [];
+    public double Sum { get; init; }
+    public required float[] Embedding { get; init; }
+
+    public string Path => System.IO.Path.Combine(AppContext.BaseDirectory, "Fixtures", "Media", File);
+
+    public static MediaReference From(JsonElement e)
+    {
+        int Int(string name) => e.TryGetProperty(name, out var v) ? v.GetInt32() : 0;
+        float[] Floats(string name) => e.TryGetProperty(name, out var v) ? v.EnumerateArray().Select(x => (float)x.GetDouble()).ToArray() : [];
+        return new MediaReference
+        {
+            File = e.GetProperty("file").GetString()!,
+            Width = Int("width"),
+            Height = Int("height"),
+            Patches = Int("patches"),
+            SoftTokens = Int("soft_tokens"),
+            Samples = Int("samples"),
+            Frames = Int("frames"),
+            ValidFrames = Int("valid_frames"),
+            Head = e.TryGetProperty("pixel_values_head", out _) ? Floats("pixel_values_head") : Floats("features_head"),
+            Sum = e.TryGetProperty("pixel_values_sum", out var ps) ? ps.GetDouble() : e.TryGetProperty("features_sum", out var fs) ? fs.GetDouble() : 0,
+            Embedding = Floats("embedding"),
         };
     }
 }

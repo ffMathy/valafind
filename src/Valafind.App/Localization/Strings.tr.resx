@@ -274,7 +274,7 @@
     <value>Dosyalar değiştiğinde Valafind modeli kendiliğinden yeniden yükler; dilerseniz Ayarlar'dan başka bir model klasörü seçin.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma yüklenemedi</value>
+    <value>EmbeddingGemma 2 yüklenemedi</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>Yükleneceği konum:</value>
@@ -283,7 +283,7 @@
     <value>Cihaz üzerindeki modelin başlaması birkaç saniye sürer. Aramanız model hazır olur olmaz çalışır.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma yükleniyor…</value>
+    <value>EmbeddingGemma 2 yükleniyor…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Valafind'ın bu derlemesi model olmadan gelir ve modeli kendiliğinden indirmez. Bir terminalde şu komutu çalıştırarak modeli bir kez yükleyin:</value>
@@ -292,7 +292,7 @@
     <value>Valafind, model yerine konduğu anda bunu kendiliğinden fark eder — yeniden başlatma gerekmez. Zaten bir kopyanız mı var? Ayarlar'dan klasörünü seçin.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma modeli yüklü değil</value>
+    <value>EmbeddingGemma 2 modeli yüklü değil</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Yerleşik model {0} konumuna açılamadı: {1}</value>
@@ -337,7 +337,7 @@
     <value>Dizinlenecek bir klasör seçin</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma model klasörünü seçin</value>
+    <value>EmbeddingGemma 2 model klasörünü seçin</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU {0} değerini aştığında veya disk etkinliği yüksek olduğunda otomatik olarak duraklar</value>

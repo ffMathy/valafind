@@ -274,7 +274,7 @@
     <value>Valafind recharge le modèle automatiquement dès que les fichiers changent ; vous pouvez aussi choisir un autre dossier de modèle dans les Réglages.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>Impossible de charger EmbeddingGemma</value>
+    <value>Impossible de charger EmbeddingGemma 2</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>Il s’installe dans :</value>
@@ -283,7 +283,7 @@
     <value>Le modèle local met quelques secondes à démarrer. Votre recherche sera lancée dès qu’il sera prêt.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>Chargement d’EmbeddingGemma…</value>
+    <value>Chargement d’EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Cette version de Valafind est fournie sans le modèle et ne le télécharge pas d’elle-même. Installez-le une fois en exécutant cette commande dans un terminal :</value>
@@ -292,7 +292,7 @@
     <value>Valafind détecte le modèle automatiquement dès qu’il est présent, sans redémarrage. Vous en avez déjà une copie ? Choisissez son dossier dans les Réglages.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>Modèle EmbeddingGemma non installé</value>
+    <value>Modèle EmbeddingGemma 2 non installé</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Impossible de décompresser le modèle intégré dans {0} : {1}</value>
@@ -337,7 +337,7 @@
     <value>Choisissez un dossier à indexer</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>Choisissez le dossier du modèle EmbeddingGemma</value>
+    <value>Choisissez le dossier du modèle EmbeddingGemma 2</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>Se suspend automatiquement lorsque le processeur dépasse {0} ou que l’activité disque est élevée</value>

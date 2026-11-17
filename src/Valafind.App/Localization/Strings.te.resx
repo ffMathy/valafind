@@ -274,7 +274,7 @@
     <value>ఫైళ్ళు మారగానే Valafind మోడల్‌ను స్వయంగా మళ్ళీ లోడ్ చేస్తుంది, లేదా సెట్టింగ్‌లలో మరో మోడల్ ఫోల్డర్‌ను ఎంచుకోండి.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma‌ను లోడ్ చేయడం సాధ్యపడలేదు</value>
+    <value>EmbeddingGemma 2‌ను లోడ్ చేయడం సాధ్యపడలేదు</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>ఇక్కడ ఇన్‌స్టాల్ అవుతుంది:</value>
@@ -283,7 +283,7 @@
     <value>పరికరంలోని మోడల్ ప్రారంభం కావడానికి కొన్ని సెకన్లు పడుతుంది. అది సిద్ధం కాగానే మీ శోధన నడుస్తుంది.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>EmbeddingGemma లోడ్ అవుతోంది…</value>
+    <value>EmbeddingGemma 2 లోడ్ అవుతోంది…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Valafind యొక్క ఈ బిల్డ్‌లో మోడల్ లేదు, దాన్ని స్వయంగా డౌన్‌లోడ్ కూడా చేయదు. టెర్మినల్‌లో ఈ ఆదేశాన్ని అమలు చేసి ఒకసారి ఇన్‌స్టాల్ చేయండి:</value>
@@ -292,7 +292,7 @@
     <value>మోడల్ అందుబాటులోకి రాగానే Valafind దాన్ని స్వయంగా గుర్తిస్తుంది — రీస్టార్ట్ అవసరం లేదు. ఇప్పటికే కాపీ ఉందా? సెట్టింగ్‌లలో దాని ఫోల్డర్‌ను ఎంచుకోండి.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma మోడల్ ఇన్‌స్టాల్ కాలేదు</value>
+    <value>EmbeddingGemma 2 మోడల్ ఇన్‌స్టాల్ కాలేదు</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>అంతర్నిర్మిత మోడల్‌ను {0} కు అన్‌ప్యాక్ చేయడం సాధ్యపడలేదు: {1}</value>
@@ -337,7 +337,7 @@
     <value>ఇండెక్స్ చేయడానికి ఫోల్డర్‌ను ఎంచుకోండి</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma మోడల్ ఫోల్డర్‌ను ఎంచుకోండి</value>
+    <value>EmbeddingGemma 2 మోడల్ ఫోల్డర్‌ను ఎంచుకోండి</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>CPU {0} దాటినప్పుడు లేదా డిస్క్ కార్యకలాపం ఎక్కువగా ఉన్నప్పుడు ఆటోమేటిక్‌గా పాజ్ అవుతుంది</value>

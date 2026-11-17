@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Downloads EmbeddingGemma-300m (ONNX, q8) for Valafind.
+    Downloads EmbeddingGemma 2 (ONNX, q8: text model, vision encoder, audio encoder; ~850 MB) for Valafind.
 
 .DESCRIPTION
     Default target is the per-user models folder Valafind looks in:
-      Windows: %LOCALAPPDATA%\Valafind\models\embeddinggemma-300m
-      macOS:   ~/Library/Application Support/Valafind/models/embeddinggemma-300m
-      Linux:   ${XDG_DATA_HOME:-~/.local/share}/valafind/models/embeddinggemma-300m
+      Windows: %LOCALAPPDATA%\Valafind\models\embeddinggemma-2
+      macOS:   ~/Library/Application Support/Valafind/models/embeddinggemma-2
+      Linux:   ${XDG_DATA_HOME:-~/.local/share}/valafind/models/embeddinggemma-2
     VALAFIND_DATA_DIR overrides the data folder, as it does for the app.
 
     This one-time download is the ONLY network access involved; the Valafind app itself never downloads anything.
@@ -30,15 +30,19 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'   # the progress bar makes Invoke-WebRequest very slow on Windows PowerShell
 
-$BaseUrl = 'https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main'
+$BaseUrl = 'https://huggingface.co/onnx-community/embeddinggemma-2-ONNX/resolve/main'
 $Files = @(
-    'tokenizer.model',
     'tokenizer.json',
     'tokenizer_config.json',
-    'special_tokens_map.json',
     'config.json',
+    'processor_config.json',
+    'preprocessor_config.json',
     'onnx/model_quantized.onnx',
-    'onnx/model_quantized.onnx_data'
+    'onnx/model_quantized.onnx_data',
+    'onnx/vision_encoder_quantized.onnx',
+    'onnx/vision_encoder_quantized.onnx_data',
+    'onnx/audio_encoder_quantized.onnx',
+    'onnx/audio_encoder_quantized.onnx_data'
 )
 
 if (-not $Target) {
@@ -55,13 +59,12 @@ if (-not $Target) {
     else {
         $data = Join-Path $env:LOCALAPPDATA 'Valafind'
     }
-    $Target = Join-Path (Join-Path $data 'models') 'embeddinggemma-300m'
+    $Target = Join-Path (Join-Path $data 'models') 'embeddinggemma-2'
 }
 
 Write-Host @'
-EmbeddingGemma is provided under and subject to the Gemma Terms of Use:
-  https://ai.google.dev/gemma/terms
-By downloading the model you agree to those terms.
+EmbeddingGemma 2 is provided by Google DeepMind under the Apache License 2.0:
+  https://huggingface.co/google/embeddinggemma-2
 
 This one-time download is the only network access Valafind needs.
 The Valafind app itself never downloads anything and runs fully offline.

@@ -30,6 +30,10 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Install ffmpeg (Linux audio/video decoding tests)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+
       - name: Restore
         run: dotnet restore Valafind.slnx
 
@@ -40,13 +44,14 @@ jobs:
         run: dotnet test --solution Valafind.slnx --configuration Release --no-build
 
   model-parity:
-    # Downloads EmbeddingGemma once and checks tokenizer + embedding parity against the committed reference.
-    name: EmbeddingGemma parity (Linux)
+    # Downloads EmbeddingGemma 2 once and checks tokenizer + text/picture/audio/video embedding parity against the
+    # committed reference, plus end-to-end search.
+    name: EmbeddingGemma 2 parity (Linux)
     runs-on: ubuntu-latest
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
-      VALAFIND_TEST_MODEL_DIR: ${{ github.workspace }}/.model/embeddinggemma-300m
+      VALAFIND_TEST_MODEL_DIR: ${{ github.workspace }}/.model/embeddinggemma-2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -55,18 +60,20 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .model
-          key: embeddinggemma-300m-q8-v1
+          key: embeddinggemma-2-q8-daa72c5
           enableCrossOsArchive: true
+      - name: Install ffmpeg (video decoding)
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - name: Fetch model
         run: |
-          if [ ! -f "$VALAFIND_TEST_MODEL_DIR/onnx/model_quantized.onnx_data" ]; then
+          if [ ! -f "$VALAFIND_TEST_MODEL_DIR/onnx/audio_encoder_quantized.onnx_data" ]; then
             bash tools/fetch-model.sh "$VALAFIND_TEST_MODEL_DIR"
           fi
       - name: Embedding tests
         run: dotnet test --project tests/Valafind.Core.Tests --configuration Release -- --filter-namespace "Valafind.Core.Tests.Embedding" --filter-namespace "Valafind.Core.Tests.EndToEnd"
 
   publish:
-    # One self-contained, single-file executable per platform with the EmbeddingGemma model embedded, so a download
+    # One self-contained, single-file executable per platform with the EmbeddingGemma 2 model embedded, so a download
     # is all a user needs. macOS additionally gets the same executable wrapped in a zipped Valafind.app.
     name: Publish (${{ matrix.rid }})
     needs: build-test
@@ -85,8 +92,8 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
       # Relative for the bash fetch script (Git Bash on Windows), absolute for MSBuild.
-      MODEL_DIR: .model/embeddinggemma-300m
-      MODEL_DIR_ABS: ${{ github.workspace }}/.model/embeddinggemma-300m
+      MODEL_DIR: .model/embeddinggemma-2
+      MODEL_DIR_ABS: ${{ github.workspace }}/.model/embeddinggemma-2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -95,12 +102,12 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .model
-          key: embeddinggemma-300m-q8-v1
+          key: embeddinggemma-2-q8-daa72c5
           enableCrossOsArchive: true
       - name: Fetch model
         shell: bash
         run: |
-          if [ ! -f "$MODEL_DIR/onnx/model_quantized.onnx_data" ]; then
+          if [ ! -f "$MODEL_DIR/onnx/audio_encoder_quantized.onnx_data" ]; then
             bash tools/fetch-model.sh "$MODEL_DIR"
           fi
       - name: Publish
@@ -120,8 +127,8 @@ jobs:
             exit 1
           fi
           size=$(wc -c < "publish/${{ matrix.rid }}/${{ matrix.exe }}")
-          if [ "$size" -lt 300000000 ]; then
-            echo "::error::Executable is only $size bytes; the ~310 MB model is not bundled."
+          if [ "$size" -lt 800000000 ]; then
+            echo "::error::Executable is only $size bytes; the ~850 MB model is not bundled."
             exit 1
           fi
       - name: Stage executable

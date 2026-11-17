@@ -274,7 +274,7 @@
     <value>Valafind сам перезагрузит модель после изменения файлов. Также можно выбрать другую папку модели в настройках.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>Не удалось загрузить EmbeddingGemma</value>
+    <value>Не удалось загрузить EmbeddingGemma 2</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>Папка установки:</value>
@@ -283,7 +283,7 @@
     <value>Запуск локальной модели занимает несколько секунд. Поиск выполнится, как только она будет готова.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>Загрузка EmbeddingGemma…</value>
+    <value>Загрузка EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>Эта сборка Valafind поставляется без модели и не загружает её самостоятельно. Установите её один раз, выполнив в терминале команду:</value>
@@ -292,7 +292,7 @@
     <value>Valafind сам обнаружит модель, как только она появится, — перезапуск не нужен. Уже есть копия? Укажите её папку в настройках.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>Модель EmbeddingGemma не установлена</value>
+    <value>Модель EmbeddingGemma 2 не установлена</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Не удалось распаковать встроенную модель в {0}: {1}</value>
@@ -337,7 +337,7 @@
     <value>Выберите папку для индексирования</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>Выберите папку модели EmbeddingGemma</value>
+    <value>Выберите папку модели EmbeddingGemma 2</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>Приостанавливается автоматически, когда загрузка ЦП превышает {0} или диск сильно загружен</value>

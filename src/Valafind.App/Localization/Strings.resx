@@ -274,7 +274,7 @@
     <value>Valafind reloads the model by itself once the files change, or choose another model folder in Settings.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>EmbeddingGemma could not be loaded</value>
+    <value>EmbeddingGemma 2 could not be loaded</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>It installs into:</value>
@@ -283,7 +283,7 @@
     <value>The on-device model takes a few seconds to start. Your search runs as soon as it is ready.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>Loading EmbeddingGemma…</value>
+    <value>Loading EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>This build of Valafind comes without the model and does not download it by itself. Install it once by running this command in a terminal:</value>
@@ -292,7 +292,7 @@
     <value>Valafind notices the model by itself as soon as it is there — no restart needed. Already have a copy? Choose its folder in Settings.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>EmbeddingGemma model not installed</value>
+    <value>EmbeddingGemma 2 model not installed</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>Could not unpack the built-in model to {0}: {1}</value>
@@ -337,7 +337,7 @@
     <value>Choose a folder to index</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>Choose the EmbeddingGemma model folder</value>
+    <value>Choose the EmbeddingGemma 2 model folder</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>Pauses automatically when CPU passes {0} or disk activity is high</value>

@@ -274,7 +274,7 @@
     <value>يعيد Valafind تحميل النموذج تلقائيًا عند تغيّر الملفات، أو اختر مجلد نموذج آخر في الإعدادات.</value>
   </data>
   <data name="ModelFailedTitle" xml:space="preserve">
-    <value>تعذّر تحميل EmbeddingGemma</value>
+    <value>تعذّر تحميل EmbeddingGemma 2</value>
   </data>
   <data name="ModelInstallsInto" xml:space="preserve">
     <value>يُثبَّت في:</value>
@@ -283,7 +283,7 @@
     <value>يستغرق بدء تشغيل النموذج المحلي بضع ثوانٍ. سيُنفَّذ بحثك فور جاهزيته.</value>
   </data>
   <data name="ModelLoadingTitle" xml:space="preserve">
-    <value>جارٍ تحميل EmbeddingGemma…</value>
+    <value>جارٍ تحميل EmbeddingGemma 2…</value>
   </data>
   <data name="ModelMissingBody" xml:space="preserve">
     <value>يأتي هذا الإصدار من Valafind بدون النموذج ولا ينزّله تلقائيًا. ثبّته مرة واحدة بتشغيل هذا الأمر في نافذة طرفية:</value>
@@ -292,7 +292,7 @@
     <value>يكتشف Valafind النموذج تلقائيًا فور وجوده — دون الحاجة إلى إعادة التشغيل. هل لديك نسخة بالفعل؟ اختر مجلدها في الإعدادات.</value>
   </data>
   <data name="ModelMissingTitle" xml:space="preserve">
-    <value>نموذج EmbeddingGemma غير مثبّت</value>
+    <value>نموذج EmbeddingGemma 2 غير مثبّت</value>
   </data>
   <data name="ModelUnpackFailed" xml:space="preserve">
     <value>تعذّر فك ضغط النموذج المدمج إلى {0}: {1}</value>
@@ -337,7 +337,7 @@
     <value>اختر مجلدًا لفهرسته</value>
   </data>
   <data name="PickModelFolder" xml:space="preserve">
-    <value>اختر مجلد نموذج EmbeddingGemma</value>
+    <value>اختر مجلد نموذج EmbeddingGemma 2</value>
   </data>
   <data name="PolicyPauses" xml:space="preserve">
     <value>تتوقف مؤقتًا تلقائيًا عندما يتجاوز استخدام المعالج {0} أو يرتفع نشاط القرص</value>
