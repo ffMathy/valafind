@@ -16,3 +16,5 @@ models/
 
 # Temporary cross-module compile stubs used during isolated module development; never commit.
 **/_Pending*Stub*.cs
+# ...except the tiny fake model files the BundledModel tests embed.
+!tests/Valafind.Core.Tests/Fixtures/BundledModel/**
