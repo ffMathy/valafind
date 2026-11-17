@@ -20,7 +20,8 @@ public sealed record UiLanguage(string Code, string NativeName)
 /// </summary>
 public static class Loc
 {
-    /// <summary>Every shipped UI language, English (the source) first, then by number of speakers.</summary>
+    /// <summary>Every shipped UI language, English (the source) first, then the 19 most spoken languages by number
+    /// of speakers, then Danish.</summary>
     public static IReadOnlyList<UiLanguage> Languages { get; } =
     [
         new("en", "English"),
@@ -43,6 +44,7 @@ public static class Loc
         new("tr", "Türkçe"),
         new("ta", "தமிழ்"),
         new("ko", "한국어"),
+        new("da", "Dansk"),
     ];
 
     /// <summary>Formats a translated text with the current culture (numbers, dates inside the arguments).</summary>
