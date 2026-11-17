@@ -1,6 +1,8 @@
-Valafind release binaries contain the EmbeddingGemma-300m model (ONNX export by onnx-community, unmodified).
+Valafind release binaries contain the EmbeddingGemma 2 model by Google DeepMind (ONNX export by onnx-community,
+8-bit quantized text model, vision encoder and audio encoder, otherwise unmodified):
+https://huggingface.co/google/embeddinggemma-2
 
-Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms
+EmbeddingGemma 2 is licensed under the Apache License, Version 2.0: https://www.apache.org/licenses/LICENSE-2.0
+Copyright Google LLC.
 
-Use of the model is also subject to the Gemma Prohibited Use Policy: ai.google.dev/gemma/prohibited_use_policy
-By using Valafind's built-in model you agree to these terms.
+Use of the model must also adhere to the Gemma Prohibited Use Policy: ai.google.dev/gemma/prohibited_use_policy

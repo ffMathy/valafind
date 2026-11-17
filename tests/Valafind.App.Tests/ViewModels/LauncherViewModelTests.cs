@@ -56,10 +56,10 @@ public sealed class LauncherViewModelTests
     public void ModelMissingOnUnixRunsTheShippedScriptThroughBash()
     {
         using var vm = Create(UiFlavor.Linux);
-        vm.SetModelMissing("/home/u/.local/share/valafind/models/embeddinggemma-300m");
+        vm.SetModelMissing("/home/u/.local/share/valafind/models/embeddinggemma-2");
         Assert.Equal("bash '/opt/Valafind/tools/fetch-model.sh'", vm.FetchCommandText);
         Assert.Equal("bash '/opt/Valafind/tools/fetch-model.sh' --force", vm.RepairCommandText);
-        Assert.Equal("/home/u/.local/share/valafind/models/embeddinggemma-300m", vm.ModelTargetDirectory);
+        Assert.Equal("/home/u/.local/share/valafind/models/embeddinggemma-2", vm.ModelTargetDirectory);
     }
 
     [Fact]

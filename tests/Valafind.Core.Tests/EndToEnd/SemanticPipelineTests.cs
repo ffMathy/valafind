@@ -131,6 +131,73 @@ public sealed class SemanticPipelineTests : IDisposable
         Assert.All(onlyCode, x => Assert.Equal(FileKind.Code, x.Kind));
     }
 
+    [Fact]
+    public async Task Finds_pictures_and_recordings_by_what_they_show_and_say()
+    {
+        var modelDir = Environment.GetEnvironmentVariable(ModelFixture.EnvironmentVariable);
+        Assert.SkipWhen(string.IsNullOrWhiteSpace(modelDir) || !ModelLocator.IsValid(modelDir, out _),
+            $"{ModelFixture.EnvironmentVariable} not set; skipping end-to-end media test.");
+        ModelLocator.IsValid(modelDir!, out var modelFile);
+
+        string Copy(string fixture, string target)
+        {
+            var path = _home.P(target);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Media", fixture), path);
+            return path;
+        }
+
+        // Names say nothing about the content.
+        var circle = Copy("red-circle.png", "Pictures/IMG_0001.png");
+        var invoice = Copy("invoice.png", "Pictures/IMG_0002.png");
+        var speech = Copy("speech.wav", "Music/rec_17.wav");
+        var note = _home.File("Documents/n.txt", "Shopping list: milk, eggs, coffee beans and a loaf of rye bread.");
+
+        var settings = new ValafindSettings { Roots = [_home.Root], EmbeddingDimensions = 256 };
+        using var model = new EmbeddingGemmaModel(new EmbeddingOptions
+        {
+            ModelDirectory = modelDir!, ModelFile = modelFile, Dimensions = 256, IntraOpThreads = 2,
+        });
+        using var store = new SqliteIndexStore(Path.Combine(_data, "index.db"));
+        store.Open(model.ModelId, model.Dimensions);
+        var discovery = new UserFileDiscovery(settings, _home.Root, _data, TimeProvider.System, _ => null);
+        var chunker = new TextChunker(new ChunkerOptions { TargetTokens = Math.Min(320, model.MaxInputTokens) }, model.CountTokens);
+        await using (var coordinator = new IndexingCoordinator(discovery, new DocumentReader(), chunker, model, store,
+                         new FakeMonitor { Cpu = 1, DiskBusy = 0, DiskBytes = 0 }, settings,
+                         NullLogger<IndexingCoordinator>.Instance, null,
+                         CoordinatorTuning.Default with
+                         {
+                             Debounce = TimeSpan.FromMilliseconds(100),
+                             IdlePoll = TimeSpan.FromMilliseconds(200),
+                             Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+                         }, new Valafind.Core.Extraction.Media.MediaDecoder()))
+        {
+            await coordinator.StartAsync(TestContext.Current.CancellationToken);
+            var deadline = DateTime.UtcNow.AddMinutes(5);
+            while (coordinator.Status.State != IndexingState.UpToDate)
+            {
+                Assert.True(DateTime.UtcNow < deadline, $"indexing did not finish: {coordinator.Status}");
+                await Task.Delay(50, TestContext.Current.CancellationToken);
+            }
+        }
+
+        Assert.Equal(4, store.GetStats().Files);
+        Assert.Equal(7, store.GetStats().Chunks); // note: 1; each picture: name + content; audio: name + 1 clip
+
+        var search = new SearchService(model, store);
+        async Task<string> Top(string q) =>
+            (await search.SearchAsync(q, SearchFilter.None, 10, TestContext.Current.CancellationToken))[0].Path;
+
+        Assert.Equal(circle, await Top("a red circle"));
+        Assert.Equal(invoice, await Top("invoice"));
+        Assert.Equal(speech, await Top("weather forecast for tomorrow"));
+        Assert.Equal(note, await Top("groceries to buy"));
+
+        var onlyPictures = await search.SearchAsync("weather", new SearchFilter(new HashSet<FileKind> { FileKind.Image }), 10,
+            TestContext.Current.CancellationToken);
+        Assert.All(onlyPictures, x => Assert.Equal(FileKind.Image, x.Kind));
+    }
+
     private static readonly string[] QueryStopwords = ["the", "where", "we"];
 
     private static string WriteDocx(string path, params string[] paragraphs)

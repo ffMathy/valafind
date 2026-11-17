@@ -3,9 +3,9 @@
 #
 #   packaging/macos/make-app-bundle.sh <publish-dir> <output-dir> [version]
 #
-# The bundle runs as a menu-bar (LSUIElement) app. Release builds embed the EmbeddingGemma model in the executable
+# The bundle runs as a menu-bar (LSUIElement) app. Release builds embed the EmbeddingGemma 2 model in the executable
 # (published with -p:ValafindModelDir=...). For a build without it, a model folder placed at
-# Valafind.app/Contents/Resources/models/embeddinggemma-300m is found automatically (see ModelLocator);
+# Valafind.app/Contents/Resources/models/embeddinggemma-2 is found automatically (see ModelLocator);
 # otherwise the app asks the user to run Contents/MacOS/tools/fetch-model.sh once.
 # Builds an .icns from the app PNG when the macOS tools (sips, iconutil) are available.
 set -euo pipefail

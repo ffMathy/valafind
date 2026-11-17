@@ -19,7 +19,7 @@ public sealed record DocumentText(string Title, string Text);
 /// </summary>
 public interface IEmbeddingModel : IDisposable
 {
-    /// <summary>Stable identifier of model + quantisation + dimensions, e.g. "embeddinggemma-300m/q8/256".
+    /// <summary>Stable identifier of model + quantisation + dimensions, e.g. "embeddinggemma-2/model_quantized/256".
     /// Stored in the index; a change forces re-embedding.</summary>
     string ModelId { get; }
     int Dimensions { get; }
@@ -27,6 +27,63 @@ public interface IEmbeddingModel : IDisposable
     int CountTokens(string text);
     float[] EmbedQuery(string query, CancellationToken cancellationToken = default);
     IReadOnlyList<float[]> EmbedDocuments(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default);
+}
+
+/// <summary>A decoded picture or video frame: 8-bit RGB, row-major, no padding (<c>Rgb.Length == Width * Height * 3</c>),
+/// already turned upright (EXIF orientation / video rotation applied).</summary>
+public sealed record DecodedImage(int Width, int Height, byte[] Rgb)
+{
+    /// <summary>Throws when the buffer does not match the size.</summary>
+    public void Validate()
+    {
+        if (Width <= 0 || Height <= 0 || Rgb is null || Rgb.LongLength != (long)Width * Height * 3)
+            throw new ArgumentException($"Invalid {Width}x{Height} RGB image ({Rgb?.LongLength ?? 0} bytes).");
+    }
+}
+
+/// <summary>A piece of audio for the audio encoder: mono 16 kHz samples in [-1, 1], at most
+/// <see cref="MaxSeconds"/> long, starting at <paramref name="Offset"/> in the file.</summary>
+public sealed record AudioClip(float[] Samples, TimeSpan Offset)
+{
+    public const int SampleRate = 16_000;
+
+    /// <summary>The audio encoder reads at most 30 s per input (the feature extractor's <c>max_length</c>).</summary>
+    public const int MaxSeconds = 30;
+}
+
+/// <summary>Frames sampled from a video (at most one per second, in time order) and their time stamps.</summary>
+public sealed record VideoFrames(IReadOnlyList<DecodedImage> Frames, IReadOnlyList<TimeSpan> Timestamps, TimeSpan Duration);
+
+/// <summary>Kinds of media an <see cref="IMediaEmbeddingModel"/> can embed.</summary>
+[Flags]
+public enum MediaCapabilities
+{
+    None = 0,
+    Image = 1,
+    Audio = 2,
+    Video = 4,
+}
+
+/// <summary>
+/// Optional capability of an <see cref="IEmbeddingModel"/>: embeds pictures, audio and video into the same vector space
+/// as text, so a text query finds them by what they show or say. Same threading rules as the text calls (background
+/// priority; queries preempt). Implementations MUST NOT perform network I/O.
+/// </summary>
+public interface IMediaEmbeddingModel
+{
+    /// <summary>What this install can embed (the vision and audio encoders are separate, optional files).</summary>
+    MediaCapabilities MediaCapabilities { get; }
+
+    float[] EmbedImage(DecodedImage image, CancellationToken cancellationToken = default);
+
+    float[] EmbedAudio(AudioClip clip, CancellationToken cancellationToken = default);
+
+    /// <summary>One vector for the frames together (they are one input, in order).</summary>
+    float[] EmbedVideo(IReadOnlyList<DecodedImage> frames, CancellationToken cancellationToken = default);
+
+    /// <summary>Frees the media encoders' memory (they are loaded again on the next media call). Called when
+    /// indexing goes idle.</summary>
+    void ReleaseMediaResources();
 }
 
 // ---------------------------------------------------------------- Extraction (Valafind.Core.Extraction)
@@ -49,6 +106,27 @@ public interface ITextExtractor
 public interface IDocumentReader
 {
     Task<ExtractedText?> ReadAsync(string path, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Decodes pictures, audio and video for <see cref="IMediaEmbeddingModel"/> with the operating system's codecs (or a
+/// bundled/installed decoder). Never throws for missing, unreadable or unsupported files: it returns null. Only
+/// <see cref="OperationCanceledException"/> for the caller's token propagates. No network I/O.
+/// </summary>
+public interface IMediaDecoder
+{
+    /// <summary>The picture, upright, scaled down (never up) so that neither side exceeds
+    /// <paramref name="maxSide"/> pixels.</summary>
+    Task<DecodedImage?> DecodeImageAsync(string path, int maxSide, CancellationToken cancellationToken);
+
+    /// <summary>Up to <paramref name="maxClips"/> clips of up to <see cref="AudioClip.MaxSeconds"/> each: consecutive
+    /// from the start when the whole file fits, otherwise spread evenly over the file. Empty when the file has no
+    /// audio track.</summary>
+    Task<IReadOnlyList<AudioClip>?> DecodeAudioAsync(string path, int maxClips, CancellationToken cancellationToken);
+
+    /// <summary>Frames at whole seconds (one per second, like the model's 1 fps sampling), thinned out evenly to at
+    /// most <paramref name="maxFrames"/>, each scaled down to at most <paramref name="maxSide"/> pixels.</summary>
+    Task<VideoFrames?> DecodeVideoAsync(string path, int maxFrames, int maxSide, CancellationToken cancellationToken);
 }
 
 public sealed record TextChunk(int Index, int Start, int Length, string Text);

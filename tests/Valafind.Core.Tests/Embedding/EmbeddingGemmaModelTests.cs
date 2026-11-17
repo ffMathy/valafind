@@ -135,8 +135,8 @@ public sealed class EmbeddingGemmaModelTests(ModelFixture fixture) : IClassFixtu
         var ct = TestContext.Current.CancellationToken;
         var small = fixture.Small;
         Assert.Equal(256, small.Dimensions);
-        Assert.Equal("embeddinggemma-300m/model_quantized/256", small.ModelId);
-        Assert.Equal("embeddinggemma-300m/model_quantized/768", fixture.Full.ModelId);
+        Assert.Equal("embeddinggemma-2/model_quantized/256", small.ModelId);
+        Assert.Equal("embeddinggemma-2/model_quantized/768", fixture.Full.ModelId);
 
         var query = small.EmbedQuery(ReadmeQuery, ct);
         Assert.Equal(256, query.Length);

@@ -91,7 +91,8 @@ public sealed partial class ResultItemViewModel : ObservableObject
     /// <summary>Human-readable size.</summary>
     public string SizeText { get; }
 
-    /// <summary>Best-matching passage, whitespace-collapsed. Empty for files matched by name only (images, media).</summary>
+    /// <summary>Best-matching passage, whitespace-collapsed. Empty for pictures, audio and video (they match by what they
+    /// show or say, or by name, and have no passage to show) and for other files indexed by name only.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSnippet), nameof(CaptionWithSnippet))]
     public partial string Snippet { get; private set; }

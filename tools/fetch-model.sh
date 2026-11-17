@@ -1,26 +1,30 @@
 #!/usr/bin/env bash
-# Downloads EmbeddingGemma-300m (ONNX, q8) for Valafind.
+# Downloads EmbeddingGemma 2 (ONNX, q8: text model, vision encoder, audio encoder; ~850 MB) for Valafind.
 #
 #   tools/fetch-model.sh [target-dir] [--force]
 #
 # Default target is the per-user models folder Valafind looks in:
-#   macOS:   ~/Library/Application Support/Valafind/models/embeddinggemma-300m
-#   Linux:   ${XDG_DATA_HOME:-~/.local/share}/valafind/models/embeddinggemma-300m
-#   Windows: %LOCALAPPDATA%\Valafind\models\embeddinggemma-300m   (prefer tools/fetch-model.ps1 there)
+#   macOS:   ~/Library/Application Support/Valafind/models/embeddinggemma-2
+#   Linux:   ${XDG_DATA_HOME:-~/.local/share}/valafind/models/embeddinggemma-2
+#   Windows: %LOCALAPPDATA%\Valafind\models\embeddinggemma-2   (prefer tools/fetch-model.ps1 there)
 # VALAFIND_DATA_DIR overrides the data folder, as it does for the app.
 #
 # This one-time download is the ONLY network access involved; the Valafind app itself never downloads anything.
 set -euo pipefail
 
-BASE_URL="https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX/resolve/main"
+BASE_URL="https://huggingface.co/onnx-community/embeddinggemma-2-ONNX/resolve/main"
 FILES=(
-  tokenizer.model
   tokenizer.json
   tokenizer_config.json
-  special_tokens_map.json
   config.json
+  processor_config.json
+  preprocessor_config.json
   onnx/model_quantized.onnx
   onnx/model_quantized.onnx_data
+  onnx/vision_encoder_quantized.onnx
+  onnx/vision_encoder_quantized.onnx_data
+  onnx/audio_encoder_quantized.onnx
+  onnx/audio_encoder_quantized.onnx_data
 )
 
 force=0
@@ -44,7 +48,7 @@ if [ -z "$target" ]; then
       *) data="${XDG_DATA_HOME:-$HOME/.local/share}/valafind" ;;
     esac
   fi
-  target="$data/models/embeddinggemma-300m"
+  target="$data/models/embeddinggemma-2"
 fi
 
 if command -v curl >/dev/null 2>&1; then
@@ -57,9 +61,8 @@ else
 fi
 
 cat <<'EOF'
-EmbeddingGemma is provided under and subject to the Gemma Terms of Use:
-  https://ai.google.dev/gemma/terms
-By downloading the model you agree to those terms.
+EmbeddingGemma 2 is provided by Google DeepMind under the Apache License 2.0:
+  https://huggingface.co/google/embeddinggemma-2
 
 This one-time download is the only network access Valafind needs.
 The Valafind app itself never downloads anything and runs fully offline.

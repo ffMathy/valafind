@@ -1,12 +1,14 @@
 using Microsoft.ML.OnnxRuntime;
 using Valafind.Core.Abstractions;
+using Valafind.Core.Embedding.Media;
 
 namespace Valafind.Core.Embedding;
 
 /// <summary>
-/// <see cref="IEmbeddingModel"/> backed by Google's EmbeddingGemma-300m (ONNX export by onnx-community) running on
-/// ONNX Runtime's CPU provider. Entirely offline: the tokenizer and model are read from
-/// <see cref="EmbeddingOptions.ModelDirectory"/> and nothing is ever downloaded.
+/// <see cref="IEmbeddingModel"/> and <see cref="IMediaEmbeddingModel"/> backed by Google's EmbeddingGemma 2 (ONNX export
+/// by onnx-community) running on ONNX Runtime's CPU provider: text, pictures, audio and video in one vector space.
+/// Entirely offline: the tokenizer and models are read from <see cref="EmbeddingOptions.ModelDirectory"/> and nothing is
+/// ever downloaded.
 /// </summary>
 /// <remarks>
 /// <para>The tokenizer and inference session are loaded on first use (or by <see cref="EnsureLoaded"/>). Load
@@ -24,11 +26,18 @@ namespace Valafind.Core.Embedding;
 /// <para>Queries are embedded as <c>"task: search result | query: {query}"</c> and documents as
 /// <c>"title: {title|none} | text: {text}"</c>. The model's 768-d output is truncated to
 /// <see cref="Dimensions"/> (Matryoshka) and re-normalised.</para>
+/// <para>Media go through a separate encoder first (<c>vision_encoder</c> for pictures and video frames,
+/// <c>audio_encoder</c> for audio), whose soft tokens replace placeholder tokens in the text model's input, exactly as the
+/// reference processor lays them out: a picture is <c>&lt;bos&gt; &lt;|image&gt; &lt;|image|&gt;×n &lt;image|&gt; &lt;eos&gt;</c>,
+/// a video one such block per frame with <c>&lt;|video|&gt;</c> placeholders, audio
+/// <c>&lt;|audio&gt; &lt;|audio|&gt;×n &lt;audio|&gt;</c>; media get no task prompt. The encoders are loaded on first use and
+/// freed by <see cref="ReleaseMediaResources"/>. Every encoder run is scheduled like a document batch (queries preempt
+/// it); a video runs the encoder once per frame so a query never waits long.</para>
 /// </remarks>
-public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
+public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding, IMediaEmbeddingModel
 {
     /// <summary>Model family part of <see cref="ModelId"/>.</summary>
-    public const string ModelName = "embeddinggemma-300m";
+    public const string ModelName = "embeddinggemma-2";
 
     internal const int MinTokens = 64;
 
@@ -41,16 +50,37 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
 
     internal const string InputIdsName = "input_ids";
     internal const string AttentionMaskName = "attention_mask";
+    internal const string ImageFeaturesName = "image_features";
+    internal const string VideoFeaturesName = "video_features";
+    internal const string AudioFeaturesName = "audio_features";
     internal const string SentenceEmbeddingName = "sentence_embedding";
+    internal const string PixelValuesName = "pixel_values";
+    internal const string PixelPositionIdsName = "pixel_position_ids";
+    internal const string InputFeaturesName = "input_features";
+    internal const string InputFeaturesMaskName = "input_features_mask";
+
+    // Special tokens of the EmbeddingGemma 2 vocabulary (tokenizer_config.json / config.json).
+    internal const int BeginImageId = 255999;
+    internal const int BeginAudioId = 256000;
+    internal const int ImageTokenId = 258880;
+    internal const int AudioTokenId = 258881;
+    internal const int EndImageId = 258882;
+    internal const int EndAudioId = 258883;
+    internal const int VideoTokenId = 258884;
 
     internal const string IntraOpSpinningKey = "session.intra_op.allow_spinning";
     internal const string InterOpSpinningKey = "session.inter_op.allow_spinning";
 
     private readonly string _modelDirectory;
     private readonly string _modelPath;
+    private readonly string? _visionPath;
+    private readonly string? _audioPath;
     private readonly int _maxTokens;
     private readonly int _intraOpThreads;
     private readonly int _batchSize;
+    private readonly int _imageSoftTokens;
+    private readonly int _videoFrameSoftTokens;
+    private readonly int _maxVideoFrames;
 
     private readonly Lock _loadLock = new();
     private readonly RunScheduler _scheduler = new();
@@ -58,7 +88,11 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
     private volatile ITextTokenizer? _tokenizer;
     private volatile InferenceSession? _session;
     private SessionOptions? _sessionOptions;
+    private InferenceSession? _visionSession; // read with Volatile.Read, written under _loadLock
+    private InferenceSession? _audioSession;
     private int _outputWidth;
+    private int _featureWidth = 512;
+    private HashSet<string> _textInputs = [];
     private volatile bool _disposed;
 
     /// <summary>Validates <paramref name="options"/> and resolves the model files. Does not load the model yet.</summary>
@@ -74,6 +108,9 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
         _maxTokens = options.MaxTokens;
         _intraOpThreads = options.IntraOpThreads;
         _batchSize = options.BatchSize;
+        _imageSoftTokens = options.ImageSoftTokens;
+        _videoFrameSoftTokens = options.VideoFrameSoftTokens;
+        _maxVideoFrames = options.MaxVideoFrames;
         Dimensions = options.Dimensions;
 
         var modelFile = options.ModelFile.Replace('\\', '/');
@@ -94,9 +131,17 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
                 Path.Combine(_modelDirectory, "tokenizer.json"));
 
         ModelId = $"{ModelName}/{Path.GetFileNameWithoutExtension(modelFile)}/{Dimensions}";
+
+        if (options.EnableMedia)
+        {
+            if (ModelLocator.FindVisionEncoder(_modelDirectory) is { } vision)
+                _visionPath = Path.Combine(_modelDirectory, vision.Replace('/', Path.DirectorySeparatorChar));
+            if (ModelLocator.FindAudioEncoder(_modelDirectory) is { } audio)
+                _audioPath = Path.Combine(_modelDirectory, audio.Replace('/', Path.DirectorySeparatorChar));
+        }
     }
 
-    /// <summary>E.g. <c>"embeddinggemma-300m/model_quantized/256"</c>.</summary>
+    /// <summary>E.g. <c>"embeddinggemma-2/model_quantized/256"</c>.</summary>
     public string ModelId { get; }
 
     /// <inheritdoc />
@@ -108,6 +153,14 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
 
     /// <summary>Full path of the ONNX file in use.</summary>
     internal string ModelPath => _modelPath;
+
+    /// <inheritdoc />
+    public MediaCapabilities MediaCapabilities =>
+        (_visionPath is null ? MediaCapabilities.None : MediaCapabilities.Image | MediaCapabilities.Video)
+        | (_audioPath is null ? MediaCapabilities.None : MediaCapabilities.Audio);
+
+    /// <summary>Largest frame count <see cref="EmbedVideo"/> uses (more frames are thinned out evenly).</summary>
+    public int MaxVideoFrames => _maxVideoFrames;
 
     /// <summary>The tokenizer (loaded on demand). Exposed for the chunker.</summary>
     internal ITextTokenizer Tokenizer => GetTokenizer();
@@ -243,7 +296,12 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
     /// <param name="cancellationToken">Aborts the ORT run (<see cref="RunOptions.Terminate"/>) and throws.</param>
     /// <param name="interactive">True for a query: it preempts a running document batch and runs before any
     /// waiting one. False for a document batch: it yields to queries and is transparently re-run when preempted.</param>
-    internal float[][] RunBatch(IReadOnlyList<int[]> sequences, CancellationToken cancellationToken, bool interactive = false)
+    internal float[][] RunBatch(IReadOnlyList<int[]> sequences, CancellationToken cancellationToken, bool interactive = false) =>
+        RunTextModel(sequences, null, interactive, cancellationToken);
+
+    /// <summary>Runs the text model on padded <paramref name="sequences"/>; <paramref name="media"/> fills the
+    /// placeholder tokens (null: text only).</summary>
+    private float[][] RunTextModel(IReadOnlyList<int[]> sequences, MediaFeatures? media, bool interactive, CancellationToken cancellationToken)
     {
         var session = GetSession();
         var padId = GetTokenizer().PadId;
@@ -266,9 +324,49 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
         }
 
         long[] shape = [batch, seqLen];
-        using var idsValue = OrtValue.CreateTensorValueFromMemory(inputIds, shape);
-        using var maskValue = OrtValue.CreateTensorValueFromMemory(mask, shape);
+        var names = new List<string>(5) { InputIdsName, AttentionMaskName };
+        var values = new List<OrtValue>(5);
+        try
+        {
+            values.Add(OrtValue.CreateTensorValueFromMemory(inputIds, shape));
+            values.Add(OrtValue.CreateTensorValueFromMemory(mask, shape));
+            foreach (var (name, kind) in new[] { (ImageFeaturesName, MediaKind.Image), (VideoFeaturesName, MediaKind.Video), (AudioFeaturesName, MediaKind.Audio) })
+            {
+                if (!_textInputs.Contains(name))
+                    continue;
+                var features = media is not null && media.Kind == kind ? media.Values : [];
+                names.Add(name);
+                values.Add(OrtValue.CreateTensorValueFromMemory(features, [features.Length / _featureWidth, _featureWidth]));
+            }
 
+            return Scheduled(runOptions =>
+            {
+                var results = new float[batch][];
+                using var outputs = session.Run(runOptions, names, values, [SentenceEmbeddingName]);
+                var output = outputs[0];
+                var outShape = output.GetTensorTypeAndShape().Shape;
+                if (outShape.Length != 2 || outShape[0] != batch || outShape[1] < Dimensions)
+                    throw new InvalidDataException($"Unexpected {SentenceEmbeddingName} shape [{string.Join(", ", outShape)}].");
+                var width = (int)outShape[1];
+                var data = output.GetTensorDataAsSpan<float>();
+                for (var b = 0; b < batch; b++)
+                    results[b] = Matryoshka.TruncateAndNormalize(data.Slice(b * width, width), Dimensions);
+                return results;
+            }, interactive, cancellationToken);
+        }
+        finally
+        {
+            foreach (var value in values)
+                value.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="body"/> (one ORT run) under the scheduler: interactive runs preempt background ones;
+    /// a preempted background run is re-run once the query is done.
+    /// </summary>
+    private T Scheduled<T>(Func<RunOptions, T> body, bool interactive, CancellationToken cancellationToken)
+    {
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -283,7 +381,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
                 try
                 {
                     ObjectDisposedException.ThrowIf(_disposed, this);
-                    return Execute(session, run.Options, idsValue, maskValue, batch);
+                    return body(run.Options);
                 }
                 catch (OnnxRuntimeException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -291,7 +389,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
                 }
                 catch (OnnxRuntimeException) when (run.Preempted)
                 {
-                    // A query terminated this document run; re-run it once the query is done.
+                    // A query terminated this background run; re-run it once the query is done.
                     Interlocked.Increment(ref _preemptedRuns);
                 }
                 finally
@@ -306,19 +404,197 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
         }
     }
 
-    private float[][] Execute(InferenceSession session, RunOptions runOptions, OrtValue idsValue, OrtValue maskValue, int batch)
+    // ------------------------------------------------------------------ media
+
+    private enum MediaKind
     {
-        var results = new float[batch][];
-        using var outputs = session.Run(runOptions, [InputIdsName, AttentionMaskName], [idsValue, maskValue], [SentenceEmbeddingName]);
-        var output = outputs[0];
-        var outShape = output.GetTensorTypeAndShape().Shape;
-        if (outShape.Length != 2 || outShape[0] != batch || outShape[1] < Dimensions)
-            throw new InvalidDataException($"Unexpected {SentenceEmbeddingName} shape [{string.Join(", ", outShape)}].");
-        var width = (int)outShape[1];
-        var data = output.GetTensorDataAsSpan<float>();
-        for (var b = 0; b < batch; b++)
-            results[b] = Matryoshka.TruncateAndNormalize(data.Slice(b * width, width), Dimensions);
-        return results;
+        Image,
+        Video,
+        Audio,
+    }
+
+    /// <summary>Soft tokens from an encoder: [rows × feature width], row-major.</summary>
+    private sealed record MediaFeatures(MediaKind Kind, float[] Values, int Rows);
+
+    /// <inheritdoc />
+    public float[] EmbedImage(DecodedImage image, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var vision = GetVisionSession();
+        var patches = VisionPreprocessor.Preprocess(image, _imageSoftTokens);
+        cancellationToken.ThrowIfCancellationRequested();
+        var features = RunVision(vision, patches, cancellationToken);
+        var rows = features.Length / _featureWidth;
+        var ids = new int[rows + 4];
+        ids[0] = GetTokenizer().BosId;
+        ids[1] = BeginImageId;
+        Array.Fill(ids, ImageTokenId, 2, rows);
+        ids[^2] = EndImageId;
+        ids[^1] = GetTokenizer().EosId;
+        return RunTextModel([ids], new MediaFeatures(MediaKind.Image, features, rows), interactive: false, cancellationToken)[0];
+    }
+
+    /// <inheritdoc />
+    public float[] EmbedVideo(IReadOnlyList<DecodedImage> frames, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frames);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (frames.Count == 0)
+            throw new ArgumentException("A video needs at least one frame.", nameof(frames));
+        var vision = GetVisionSession();
+        var selected = SelectFrames(frames.Count, _maxVideoFrames).Select(i => frames[i]).ToList();
+
+        // One encoder run per frame: a query waits for at most one frame, and memory stays small.
+        var perFrame = new List<float[]>(selected.Count);
+        foreach (var frame in selected)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            perFrame.Add(RunVision(vision, VisionPreprocessor.Preprocess(frame, _videoFrameSoftTokens), cancellationToken));
+        }
+
+        var total = perFrame.Sum(f => f.Length);
+        var values = new float[total];
+        var ids = new List<int>(total / _featureWidth + 2 * perFrame.Count + 2) { GetTokenizer().BosId };
+        var offset = 0;
+        foreach (var f in perFrame)
+        {
+            f.CopyTo(values, offset);
+            offset += f.Length;
+            ids.Add(BeginImageId);
+            for (var i = 0; i < f.Length / _featureWidth; i++)
+                ids.Add(VideoTokenId);
+            ids.Add(EndImageId);
+        }
+        ids.Add(GetTokenizer().EosId);
+        return RunTextModel([ids.ToArray()], new MediaFeatures(MediaKind.Video, values, total / _featureWidth), interactive: false, cancellationToken)[0];
+    }
+
+    /// <inheritdoc />
+    public float[] EmbedAudio(AudioClip clip, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        var audio = GetAudioSession();
+        var input = AudioFeatureExtractor.Extract(clip.Samples);
+        if (input.Frames == 0 || !input.Mask.Any(m => m))
+            throw new ArgumentException("The audio clip is too short to embed.", nameof(clip));
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var featuresValue = OrtValue.CreateTensorValueFromMemory(input.Features, [1, input.Frames, AudioFeatureExtractor.MelBins]);
+        using var maskValue = OrtValue.CreateTensorValueFromMemory(input.Mask, [1, input.Frames]);
+        var features = Scheduled(runOptions =>
+        {
+            using var outputs = audio.Run(runOptions, [InputFeaturesName, InputFeaturesMaskName], [featuresValue, maskValue], [audio.OutputNames[0]]);
+            return ReadFeatures(outputs[0]);
+        }, interactive: false, cancellationToken);
+
+        var rows = features.Length / _featureWidth;
+        if (rows == 0)
+            throw new ArgumentException("The audio clip is too short to embed.", nameof(clip));
+        var ids = new int[rows + 4];
+        ids[0] = GetTokenizer().BosId;
+        ids[1] = BeginAudioId;
+        Array.Fill(ids, AudioTokenId, 2, rows);
+        ids[^2] = EndAudioId;
+        ids[^1] = GetTokenizer().EosId;
+        return RunTextModel([ids], new MediaFeatures(MediaKind.Audio, features, rows), interactive: false, cancellationToken)[0];
+    }
+
+    /// <summary>
+    /// Indices of the frames to use: all of them when they fit, otherwise <paramref name="max"/> spread evenly (the
+    /// reference processor's "uniform" overflow strategy: <c>np.linspace(0, n - 1, max, dtype=int)</c>).
+    /// </summary>
+    internal static int[] SelectFrames(int count, int max)
+    {
+        if (count <= max)
+            return Enumerable.Range(0, count).ToArray();
+        var result = new int[max];
+        for (var i = 0; i < max; i++)
+            result[i] = max == 1 ? 0 : (int)((double)(count - 1) * i / (max - 1));
+        return result;
+    }
+
+    private float[] RunVision(InferenceSession vision, VisionPatches patches, CancellationToken cancellationToken)
+    {
+        using var pixels = OrtValue.CreateTensorValueFromMemory(patches.PixelValues, [1, patches.Patches, VisionPreprocessor.PatchPixels]);
+        using var positions = OrtValue.CreateTensorValueFromMemory(patches.PositionIds, [1, patches.Patches, 2]);
+        return Scheduled(runOptions =>
+        {
+            using var outputs = vision.Run(runOptions, [PixelValuesName, PixelPositionIdsName], [pixels, positions], [vision.OutputNames[0]]);
+            return ReadFeatures(outputs[0]);
+        }, interactive: false, cancellationToken);
+    }
+
+    private float[] ReadFeatures(OrtValue output)
+    {
+        var shape = output.GetTensorTypeAndShape().Shape;
+        if (shape.Length != 2 || shape[1] != _featureWidth)
+            throw new InvalidDataException($"Unexpected encoder output shape [{string.Join(", ", shape)}].");
+        return output.GetTensorDataAsSpan<float>().ToArray();
+    }
+
+    /// <inheritdoc />
+    public void ReleaseMediaResources()
+    {
+        lock (_loadLock)
+        {
+            if (_disposed || (_visionSession is null && _audioSession is null))
+                return;
+            _scheduler.EnterExclusive();
+            try
+            {
+                _visionSession?.Dispose();
+                _visionSession = null;
+                _audioSession?.Dispose();
+                _audioSession = null;
+            }
+            finally
+            {
+                _scheduler.Exit(null);
+            }
+        }
+    }
+
+    /// <summary>True while an encoder is loaded (tests).</summary>
+    internal bool HasMediaSessions => Volatile.Read(ref _visionSession) is not null || Volatile.Read(ref _audioSession) is not null;
+
+    private InferenceSession GetVisionSession() =>
+        GetMediaSession(ref _visionSession, _visionPath ?? throw new NotSupportedException("The vision encoder is not installed."),
+            [PixelValuesName, PixelPositionIdsName]);
+
+    private InferenceSession GetAudioSession() =>
+        GetMediaSession(ref _audioSession, _audioPath ?? throw new NotSupportedException("The audio encoder is not installed."),
+            [InputFeaturesName, InputFeaturesMaskName]);
+
+    private InferenceSession GetMediaSession(ref InferenceSession? field, string path, string[] inputs)
+    {
+        GetSession(); // the text model fixes the feature width the encoders must produce
+        var session = Volatile.Read(ref field);
+        if (session is not null)
+            return session;
+        lock (_loadLock)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (field is not null)
+                return field;
+            var created = new InferenceSession(path, _sessionOptions!);
+            try
+            {
+                var names = created.InputMetadata.Keys.ToHashSet(StringComparer.Ordinal);
+                if (!names.SetEquals(inputs))
+                    throw new InvalidDataException($"Encoder inputs [{string.Join(", ", names)}] are not [{string.Join(", ", inputs)}].");
+                if (created.OutputNames.Count != 1)
+                    throw new InvalidDataException($"Encoder has {created.OutputNames.Count} outputs; expected one.");
+            }
+            catch
+            {
+                created.Dispose();
+                throw;
+            }
+            Volatile.Write(ref field, created);
+            return created;
+        }
     }
 
     /// <summary>Number of document runs that were terminated by a query and re-run (diagnostics and tests).</summary>
@@ -505,8 +781,15 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
     private void ValidateSignature(InferenceSession session)
     {
         var inputs = session.InputMetadata.Keys.ToHashSet(StringComparer.Ordinal);
-        if (!inputs.SetEquals([InputIdsName, AttentionMaskName]))
-            throw new InvalidDataException($"Model inputs [{string.Join(", ", inputs)}] are not [{InputIdsName}, {AttentionMaskName}].");
+        var known = new HashSet<string>(StringComparer.Ordinal) { InputIdsName, AttentionMaskName, ImageFeaturesName, VideoFeaturesName, AudioFeaturesName };
+        if (!inputs.Contains(InputIdsName) || !inputs.Contains(AttentionMaskName) || !inputs.IsSubsetOf(known))
+            throw new InvalidDataException($"Model inputs [{string.Join(", ", inputs)}] are not those of EmbeddingGemma 2 ({string.Join(", ", known)}).");
+        foreach (var name in new[] { ImageFeaturesName, VideoFeaturesName, AudioFeaturesName })
+        {
+            if (session.InputMetadata.TryGetValue(name, out var meta) && meta.Dimensions is [_, > 0 and var width])
+                _featureWidth = width;
+        }
+        _textInputs = inputs;
         if (!session.OutputMetadata.TryGetValue(SentenceEmbeddingName, out var output))
             throw new InvalidDataException($"Model has no '{SentenceEmbeddingName}' output (outputs: {string.Join(", ", session.OutputMetadata.Keys)}).");
         var dims = output.Dimensions;
@@ -527,6 +810,10 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
             _scheduler.EnterExclusive();
             try
             {
+                _visionSession?.Dispose();
+                _visionSession = null;
+                _audioSession?.Dispose();
+                _audioSession = null;
                 _session?.Dispose();
                 _session = null;
                 _sessionOptions?.Dispose();
