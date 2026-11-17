@@ -99,7 +99,9 @@ public sealed class RunSchedulerTests
 
         var entered = Task.Run(() => scheduler.EnterInteractive(CancellationToken.None), TestContext.Current.CancellationToken);
         var deadline = DateTime.UtcNow.Add(Hang);
-        while (!background.Preempted && DateTime.UtcNow < deadline)
+        // EnterInteractive sets Preempted and then RunOptions.Terminate on another thread: wait for BOTH, or this
+        // thread can observe the first and read the second in between (seen on a busy CI runner).
+        while (!(background.Preempted && options.Terminate) && DateTime.UtcNow < deadline)
             Thread.Sleep(1);
         Assert.True(background.Preempted);
         Assert.True(options.Terminate);
