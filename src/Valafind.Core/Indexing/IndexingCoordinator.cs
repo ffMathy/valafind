@@ -1471,7 +1471,22 @@ public sealed class IndexingCoordinator : IIndexingService
         return new IndexStatus(state, _phase,
             Interlocked.Read(ref _frequentDone), Interlocked.Read(ref _frequentTotal),
             Interlocked.Read(ref _allDone), Interlocked.Read(ref _allTotal),
-            _discoveryComplete, _gate.LastSample, _activity == Activity.Working ? _currentFile : null);
+            _discoveryComplete, _gate.LastSample, _activity == Activity.Working ? _currentFile : null)
+        {
+            IndexedByKind = FileCountsByKind(),
+        };
+    }
+
+    private IReadOnlyDictionary<FileKind, long> FileCountsByKind()
+    {
+        try
+        {
+            return _store.GetFileCountsByKind();
+        }
+        catch (Exception e) when (e is ObjectDisposedException or InvalidOperationException)
+        {
+            return EmptyKindCounts.Instance;
+        }
     }
 
     /// <summary>Updates <see cref="Status"/> and raises <see cref="StatusChanged"/> at most every StatusInterval.</summary>

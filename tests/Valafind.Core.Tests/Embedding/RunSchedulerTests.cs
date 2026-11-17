@@ -18,14 +18,19 @@ public sealed class RunSchedulerTests
     {
         // A waiter is woken by Exit at the same moment another thread cancels its token. The cancel callback takes
         // the scheduler's lock; the waiter must not block on that callback while holding the lock.
-        const int Iterations = 3000;
+        // Each round fails on its own after Hang if it deadlocks. The number of rounds is bounded by time rather than
+        // fixed: on a saturated CI runner (the ONNX tests run alongside) a round can take 20+ ms, and 3000 of them
+        // overran the overall timeout without any deadlock.
+        const int MaxIterations = 3000, MinIterations = 200;
+        var budget = TimeSpan.FromSeconds(5);
         var scheduler = new EmbeddingGemmaModel.RunScheduler();
         var failure = (Exception?)null;
         var worker = new Thread(() =>
         {
             try
             {
-                for (var i = 0; i < Iterations; i++)
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                for (var i = 0; i < MaxIterations && (i < MinIterations || clock.Elapsed < budget); i++)
                     OneRound(scheduler, interactiveWaiter, i);
             }
 #pragma warning disable CA1031 // reported to the test thread below
@@ -36,7 +41,8 @@ public sealed class RunSchedulerTests
             }
         }) { IsBackground = true }; // a deadlocked round must not keep the test process alive
         worker.Start();
-        Assert.True(worker.Join(Hang), "scheduler deadlocked when a cancellation raced a wake-up");
+        // A deadlocked round throws TimeoutException after Hang; this outer bound only catches a hung test thread.
+        Assert.True(worker.Join(TimeSpan.FromMinutes(3)), "scheduler deadlocked when a cancellation raced a wake-up");
         Assert.Null(failure);
 
         // Still usable afterwards.

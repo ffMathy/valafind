@@ -179,6 +179,8 @@ public interface IIndexStore : IDisposable
     int RemoveUnder(string directoryPrefix);
     IReadOnlyList<StoreHit> Search(ReadOnlySpan<float> query, SearchFilter filter, int topK);
     IndexStats GetStats();
+    /// <summary>Indexed files per <see cref="FileKind"/>; kinds without files may be left out. Cheap (kept in memory).</summary>
+    IReadOnlyDictionary<FileKind, long> GetFileCountsByKind() => EmptyKindCounts.Instance;
     string? GetMeta(string key);
     void SetMeta(string key, string value);
 }
@@ -251,6 +253,16 @@ public sealed record IndexStatus(
     string? CurrentFile)
 {
     public static IndexStatus Initial { get; } = new(IndexingState.Starting, IndexPhase.Frequent, 0, 0, 0, 0, false, null, null);
+
+    /// <summary>Files currently in the index per <see cref="FileKind"/> (kinds without files may be left out).</summary>
+    public IReadOnlyDictionary<FileKind, long> IndexedByKind { get; init; } = EmptyKindCounts.Instance;
+}
+
+/// <summary>Shared empty per-kind count map.</summary>
+public static class EmptyKindCounts
+{
+    /// <summary>The empty map.</summary>
+    public static IReadOnlyDictionary<FileKind, long> Instance { get; } = new Dictionary<FileKind, long>();
 }
 
 public interface IIndexingService : IAsyncDisposable

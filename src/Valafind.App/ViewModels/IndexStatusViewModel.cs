@@ -20,6 +20,56 @@ public enum StatusTone
     Error,
 }
 
+/// <summary>Indexed-file count of one group of file kinds ("PDFs 312"), shown in the index panel.</summary>
+public sealed partial class KindCountViewModel : ObservableObject
+{
+    internal KindCountViewModel(string label, params FileKind[] kinds)
+    {
+        Label = label;
+        Kinds = kinds;
+    }
+
+    /// <summary>Group caption ("PDFs").</summary>
+    public string Label { get; }
+
+    /// <summary>Kinds counted in this group (groups do not overlap).</summary>
+    internal IReadOnlyList<FileKind> Kinds { get; }
+
+    /// <summary>Indexed files in this group.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasFiles))]
+    public partial long Count { get; private set; }
+
+    /// <summary>"1,204".</summary>
+    [ObservableProperty] public partial string CountText { get; private set; } = "0";
+
+    /// <summary>True when at least one file of the group is indexed (empty groups are hidden).</summary>
+    public bool HasFiles => Count > 0;
+
+    internal void Update(IReadOnlyDictionary<FileKind, long> counts)
+    {
+        long n = 0;
+        foreach (var kind in Kinds)
+            n += counts.TryGetValue(kind, out var c) ? c : 0;
+        Count = n;
+        CountText = DisplayFormat.Count(n);
+    }
+
+    /// <summary>The groups in display order: the filter chips' categories, made disjoint, plus media and other.</summary>
+    internal static IReadOnlyList<KindCountViewModel> CreateDefaults() =>
+    [
+        new(Strings.FilterDocuments, FileKind.Document, FileKind.Text),
+        new(Strings.FilterPdfs, FileKind.Pdf),
+        new(Strings.FilterSpreadsheets, FileKind.Spreadsheet),
+        new(Strings.FilterSlides, FileKind.Presentation),
+        new(Strings.FilterMail, FileKind.Mail),
+        new(Strings.FilterCode, FileKind.Code, FileKind.Notebook),
+        new(Strings.FilterImages, FileKind.Image),
+        new(Strings.GroupMedia, FileKind.Audio, FileKind.Video),
+        new(Strings.GroupOther, FileKind.Other, FileKind.Archive),
+    ];
+}
+
 /// <summary>UI projection of <see cref="IndexStatus"/>: texts, progress fractions and pressure meters.</summary>
 public sealed partial class IndexStatusViewModel : ObservableObject
 {
@@ -156,6 +206,15 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>Tray menu caption: "Pause indexing" / "Resume indexing".</summary>
     [ObservableProperty] public partial string PauseMenuText { get; private set; } = Strings.PauseIndexing;
 
+    /// <summary>Indexed files per type group, in display order (updated in place).</summary>
+    public IReadOnlyList<KindCountViewModel> KindCounts { get; } = KindCountViewModel.CreateDefaults();
+
+    /// <summary>True once any file is indexed, so the per-type row has something to show.</summary>
+    [ObservableProperty] public partial bool HasKindCounts { get; private set; }
+
+    /// <summary>"Documents 1,204 · PDFs 312 · …" (tooltips).</summary>
+    [ObservableProperty] public partial string KindCountsText { get; private set; } = string.Empty;
+
     /// <summary>Recomputes every projected value from <paramref name="status"/>.</summary>
     /// <param name="status">Raw status from the indexing service.</param>
     /// <param name="maxCpuPercent">User CPU threshold (for "high" colouring).</param>
@@ -180,6 +239,17 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         AllPercentText = DisplayFormat.Percent(AllFraction);
         AllCountText = Loc.Format(Strings.IndexCountOf, DisplayFormat.Count(status.AllDone), DisplayFormat.Count(status.AllTotal) + (status.DiscoveryComplete ? string.Empty : "+"));
         AllSummaryText = AllPercentText + " · " + AllCountText;
+
+        // Indexed files per type.
+        var parts = new List<string>(KindCounts.Count);
+        foreach (var group in KindCounts)
+        {
+            group.Update(status.IndexedByKind);
+            if (group.HasFiles)
+                parts.Add(group.Label + " " + group.CountText);
+        }
+        HasKindCounts = parts.Count > 0;
+        KindCountsText = string.Join(" · ", parts);
 
         var done = status.FrequentDone + status.AllDone;
         var total = status.FrequentTotal + status.AllTotal;
@@ -214,7 +284,8 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         // State.
         IsPaused = status.State is IndexingState.PausedByUser or IndexingState.PausedSystemBusy or IndexingState.PausedOnBattery;
         IsUpToDate = status.State == IndexingState.UpToDate;
-        UpToDateDetail = Loc.Format(Strings.IndexUpToDateDetail, DisplayFormat.Count(status.AllDone));
+        UpToDateDetail = Loc.Format(Strings.IndexUpToDateDetail, DisplayFormat.Count(status.AllDone))
+            + (HasKindCounts ? Environment.NewLine + KindCountsText : string.Empty);
         (StateText, ShortStateText, Tone) = status.State switch
         {
             IndexingState.Starting => (Strings.StatePreparing, Strings.StateStarting, StatusTone.Neutral),

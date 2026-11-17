@@ -141,6 +141,8 @@ public class IndexingCoordinatorTests
             await coordinator.StartAsync(TestContext.Current.CancellationToken);
             await WaitFor(() => coordinator.Status.State == IndexingState.UpToDate && coordinator.Status.DiscoveryComplete, "third run");
             Assert.Equal(20, coordinator.Status.AllDone);
+            // The status carries the store's live per-type counts.
+            Assert.Equal(store.GetStats().Files, coordinator.Status.IndexedByKind.Values.Sum());
         }
         Assert.Equal(1, reader.Reads);
         Assert.Equal(1, third.EmbeddedDocuments);

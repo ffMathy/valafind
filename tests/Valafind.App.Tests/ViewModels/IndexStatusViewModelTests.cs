@@ -96,6 +96,33 @@ public sealed class IndexStatusViewModelTests
     }
 
     [Fact]
+    public void CountsIndexedFilesPerTypeGroup()
+    {
+        var vm = new IndexStatusViewModel();
+        Assert.False(vm.HasKindCounts);
+        var counts = new Dictionary<FileKind, long>
+        {
+            [FileKind.Document] = 1000, [FileKind.Text] = 204, [FileKind.Pdf] = 312, [FileKind.Code] = 40, [FileKind.Notebook] = 2,
+        };
+        vm.Update(DesignData.IdleStatus with { IndexedByKind = counts }, 30, 25);
+
+        Assert.True(vm.HasKindCounts);
+        var documents = vm.KindCounts.Single(k => k.Label == "Documents");
+        Assert.Equal(1204, documents.Count);
+        Assert.Equal("1,204", documents.CountText);
+        Assert.Equal(42, vm.KindCounts.Single(k => k.Label == "Code").Count);
+        Assert.False(vm.KindCounts.Single(k => k.Label == "Mail").HasFiles);
+        Assert.Equal("Documents 1,204 · PDFs 312 · Code 42", vm.KindCountsText);
+
+        // The same item objects are updated in place, so the panel follows every status change.
+        var pdfs = vm.KindCounts.Single(k => k.Label == "PDFs");
+        vm.Update(DesignData.IdleStatus with { IndexedByKind = new Dictionary<FileKind, long> { [FileKind.Pdf] = 313 } }, 30, 25);
+        Assert.Same(pdfs, vm.KindCounts.Single(k => k.Label == "PDFs"));
+        Assert.Equal(313, pdfs.Count);
+        Assert.Equal(0, documents.Count);
+    }
+
+    [Fact]
     public void ModelUnavailableIsAnError()
     {
         var vm = new IndexStatusViewModel();
