@@ -23,6 +23,7 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
     private const uint AllStreams = 0xFFFFFFFE;
     private const uint MediaSource = 0xFFFFFFFF;
     private const uint EndOfStream = 0x2;
+    private const uint CurrentMediaTypeChanged = 0x20;
     private const ushort VtI8 = 20;
     private const int MaxFramesPerSeek = 900;
 
@@ -141,8 +142,7 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
                 return null;
             if (Call(reader, ReaderGetCurrentMediaType, FirstAudioStream, &current) < 0)
                 return null;
-            var channels = (int)(GetUInt32(current, MF_MT_AUDIO_NUM_CHANNELS) ?? 0);
-            var rate = (int)(GetUInt32(current, MF_MT_AUDIO_SAMPLES_PER_SECOND) ?? 0);
+            var (channels, rate) = AudioFormat(current);
             if (channels <= 0 || rate <= 0)
                 return null;
 
@@ -163,6 +163,27 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
 
                 try
                 {
+                    if ((flags & CurrentMediaTypeChanged) != 0)
+                    {
+                        // Decoders (AAC especially) settle their real output format only once they have seen the
+                        // stream: what is delivered from here on follows the new type.
+                        Release(current);
+                        current = 0;
+                        if (Call(reader, ReaderGetCurrentMediaType, FirstAudioStream, &current) < 0)
+                            return null;
+                        var (newChannels, newRate) = AudioFormat(current);
+                        if (newChannels <= 0 || newRate <= 0)
+                            return null;
+                        if (newRate != rate && mono.Count > 0)
+                        {
+                            var converted = AudioResampler.Resample(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(mono), rate, newRate);
+                            mono.Clear();
+                            mono.AddRange(converted);
+                        }
+
+                        (channels, rate) = (newChannels, newRate);
+                    }
+
                     if (firstFrameTicks < 0)
                         firstFrameTicks = timestamp;
                     CopyAudio(sample, channels, mono);
@@ -172,7 +193,8 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
                     Release(sample);
                 }
 
-                if (TimeSpan.FromTicks(firstFrameTicks) + TimeSpan.FromSeconds((double)mono.Count / rate) >= end)
+                // Stop on the decoder's own time stamps (not on a sample count, which depends on the reported format).
+                if (timestamp >= end.Ticks || TimeSpan.FromTicks(firstFrameTicks) + TimeSpan.FromSeconds((double)mono.Count / rate) >= end + TimeSpan.FromSeconds(5))
                     break;
             }
 
@@ -225,7 +247,7 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
             foreach (var time in times)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                frames.Add(ReadFrameAt(reader, time, frameWidth, frameHeight, stride, rotation, width, height, cancellationToken));
+                frames.Add(ReadFrameAt(reader, time, ref frameWidth, ref frameHeight, ref stride, rotation, width, height, cancellationToken));
             }
 
             return frames;
@@ -239,7 +261,10 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
         }
     }
 
-    private static DecodedImage? ReadFrameAt(nint reader, TimeSpan time, int frameWidth, int frameHeight, int stride, int rotation,
+    private static (int Channels, int Rate) AudioFormat(nint mediaType) =>
+        ((int)(GetUInt32(mediaType, MF_MT_AUDIO_NUM_CHANNELS) ?? 0), (int)(GetUInt32(mediaType, MF_MT_AUDIO_SAMPLES_PER_SECOND) ?? 0));
+
+    private static DecodedImage? ReadFrameAt(nint reader, TimeSpan time, ref int frameWidth, ref int frameHeight, ref int stride, int rotation,
         int width, int height, CancellationToken cancellationToken)
     {
         Seek(reader, time);
@@ -258,6 +283,23 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
 
             try
             {
+                if ((flags & CurrentMediaTypeChanged) != 0)
+                {
+                    nint changed = 0;
+                    if (Call(reader, ReaderGetCurrentMediaType, FirstVideoStream, &changed) >= 0 && changed != 0)
+                    {
+                        var size = GetUInt64(changed, MF_MT_FRAME_SIZE) ?? 0;
+                        if (size != 0)
+                        {
+                            frameWidth = (int)(size >> 32);
+                            frameHeight = (int)(size & 0xFFFFFFFF);
+                            stride = (int?)GetUInt32(changed, MF_MT_DEFAULT_STRIDE) ?? frameWidth * 4;
+                        }
+
+                        Release(changed);
+                    }
+                }
+
                 if (timestamp + tolerance < time.Ticks && i < MaxFramesPerSeek - 1)
                     continue;
                 var rgb = CopyFrame(sample, frameWidth, frameHeight, stride);
