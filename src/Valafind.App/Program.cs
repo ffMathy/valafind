@@ -16,6 +16,12 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Started from a download or anywhere else: install for this user and start the installed copy instead.
+        var installation = Installation.OnStartup(args);
+        if (installation.Exit)
+            return 0;
+        args = installation.Arguments;
+
         var command = ParseCommand(args);
 
         // Forward an explicit command to a running instance (e.g. a Wayland shortcut bound to "<path> --toggle").

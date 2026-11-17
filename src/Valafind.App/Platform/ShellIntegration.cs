@@ -37,6 +37,32 @@ public static class ShellIntegration
         throw new InvalidOperationException("No program to open files was found (install xdg-utils).");
     }
 
+    /// <summary>Opens an https:// address in the user's browser.</summary>
+    /// <exception cref="ArgumentException">The address is not an absolute https:// URL.</exception>
+    /// <exception cref="InvalidOperationException">No browser could be started.</exception>
+    public static void OpenUrl(Uri url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        if (!url.IsAbsoluteUri || url.Scheme != Uri.UriSchemeHttps)
+            throw new ArgumentException("Only https:// addresses are opened.", nameof(url));
+
+        if (OperatingSystem.IsWindows())
+        {
+            StartOrThrow(new ProcessStartInfo(url.AbsoluteUri) { UseShellExecute = true });
+            return;
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            StartOrThrow(Tool("/usr/bin/open", url.AbsoluteUri));
+            return;
+        }
+
+        if (TryStart(Tool("xdg-open", url.AbsoluteUri)) || TryStart(Tool("gio", "open", url.AbsoluteUri)))
+            return;
+        throw new InvalidOperationException("No program to open web pages was found (install xdg-utils).");
+    }
+
     /// <summary>Shows <paramref name="path"/> selected in Explorer / Finder / the freedesktop file manager.</summary>
     /// <exception cref="ArgumentException">The path is empty or not rooted after normalisation.</exception>
     /// <exception cref="FileNotFoundException">Nothing exists at the path.</exception>

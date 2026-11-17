@@ -5,7 +5,7 @@ using Avalonia.Platform;
 
 namespace Valafind.App.Services;
 
-/// <summary>Tray / menu-bar icon with the Open, Pause/Resume, Settings… and Quit menu.</summary>
+/// <summary>Tray / menu-bar icon with the Open, Pause/Resume, Settings…, Check for updates… and Quit menu.</summary>
 internal sealed class TrayIconController : IDisposable
 {
     private readonly Application _app;
@@ -14,7 +14,7 @@ internal sealed class TrayIconController : IDisposable
     private readonly NativeMenuItem _pause;
     private bool _disposed;
 
-    public TrayIconController(Application app, Action open, Action togglePause, Action settings, Action quit)
+    public TrayIconController(Application app, Action open, Action togglePause, Action settings, Action checkForUpdates, Action quit)
     {
         _app = app;
         _open = new NativeMenuItem("Open Valafind");
@@ -23,6 +23,8 @@ internal sealed class TrayIconController : IDisposable
         _pause.Click += (_, _) => togglePause();
         var settingsItem = new NativeMenuItem("Settings…");
         settingsItem.Click += (_, _) => settings();
+        var updatesItem = new NativeMenuItem("Check for updates…");
+        updatesItem.Click += (_, _) => checkForUpdates();
         var quitItem = new NativeMenuItem("Quit Valafind");
         quitItem.Click += (_, _) => quit();
 
@@ -31,6 +33,7 @@ internal sealed class TrayIconController : IDisposable
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(_pause);
         menu.Items.Add(settingsItem);
+        menu.Items.Add(updatesItem);
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(quitItem);
 
