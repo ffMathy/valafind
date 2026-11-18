@@ -96,6 +96,7 @@ public class StartupCheckTests
         File.WriteAllText(files[123], "edited, and longer than before");
         store.EntryLookups = 0;
         store.BatchLookups = 0;
+        store.EntryLookupPaths.Clear();
         var reader = new FakeReader();
         await using var coordinator = Create(discovery, store, Tuning, reader);
         await RunUntilUpToDate(coordinator, "restart");
@@ -105,8 +106,11 @@ public class StartupCheckTests
         Assert.Equal(1, reader.Reads);
         // 600 files in batches of 256: three queries (a slow walk may send a part-filled batch after a second).
         Assert.InRange(store.BatchLookups, 3, 10);
-        // Only the edited file took the per-file check (fresh stat and lookup) before it was indexed.
-        Assert.Equal(1, store.EntryLookups);
+        // Only the edited file took the per-file check (fresh stat and lookup) before it was indexed. On macOS the real
+        // file watcher can also report the edit made just before it started, so that file may be checked twice.
+        Assert.NotEmpty(store.EntryLookupPaths);
+        Assert.All(store.EntryLookupPaths, p => Assert.Equal(files[123], p));
+        Assert.InRange(store.EntryLookups, 1, 2);
     }
 
     [Fact]

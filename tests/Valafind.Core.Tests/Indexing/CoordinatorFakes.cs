@@ -126,9 +126,13 @@ internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, 
     /// <summary>Single-path lookups (<see cref="GetEntry"/>) and batch lookups (<see cref="GetEntries"/>) so far.</summary>
     public int EntryLookups, BatchLookups;
 
+    /// <summary>The paths passed to <see cref="GetEntry"/>, in order.</summary>
+    public readonly ConcurrentQueue<string> EntryLookupPaths = new();
+
     public IndexedEntry? GetEntry(string path)
     {
         Interlocked.Increment(ref EntryLookups);
+        EntryLookupPaths.Enqueue(path);
         return Find(path);
     }
 
