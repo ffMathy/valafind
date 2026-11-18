@@ -5,6 +5,7 @@ using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Configuration;
+using Valafind.Core.Extraction;
 using Valafind.Core.Platform;
 
 namespace Valafind.Core.Indexing;
@@ -31,7 +32,7 @@ public interface IIndexedPathSource
 /// <param name="Path">The path as stored (its spelling may differ in case from a lookup on case-insensitive systems).</param>
 /// <param name="Size">Size when indexed.</param>
 /// <param name="ModifiedUtc">Last write time when indexed.</param>
-public sealed record IndexedEntry(string Path, long Size, DateTimeOffset ModifiedUtc);
+public sealed record IndexedEntry(string Path, long Size, DateTimeOffset ModifiedUtc, bool ContentPending = false);
 
 /// <summary>Optional capability of an <see cref="IIndexStore"/>: fingerprint lookup that also returns the stored
 /// spelling, so case-only renames (Windows, macOS) are noticed and re-indexed under the new name.</summary>
@@ -87,6 +88,7 @@ public sealed class IndexingCoordinator : IIndexingService
     private readonly IEmbeddingModel? _model;
     private readonly IMediaEmbeddingModel? _mediaModel;
     private readonly IMediaDecoder? _mediaDecoder;
+    private readonly ICloudFiles _cloud;
     private readonly IIndexStore _store;
     private readonly ILogger<IndexingCoordinator> _logger;
     private readonly TimeProvider _time;
@@ -181,6 +183,7 @@ public sealed class IndexingCoordinator : IIndexingService
         _model = model;
         _mediaModel = model as IMediaEmbeddingModel;
         _mediaDecoder = mediaDecoder;
+        _cloud = tuning.Cloud ?? CloudFiles.Current;
         _store = store;
         _logger = logger;
         _time = time ?? TimeProvider.System;
@@ -940,7 +943,9 @@ public sealed class IndexingCoordinator : IIndexingService
     // ------------------------------------------------------------------ per-file pipeline
 
     /// <summary>What <see cref="Prepare"/> found out about a file that needs (re-)indexing.</summary>
-    private sealed record PreparedFile(string Path, long Size, DateTimeOffset Modified, FileFingerprint? Fingerprint);
+    private sealed record PreparedFile(string Path, long Size, DateTimeOffset Modified, FileFingerprint? Fingerprint, bool OnlineOnly = false);
+
+    private bool CanDownload(string path, long size) => _cloud.CanDownload(path, size, IndexOrder.Rank(path) > IndexOrder.Documents);
 
     /// <summary>Indexes one file on this thread if it changed since it was last indexed. Never throws except for
     /// cancellation.</summary>
@@ -981,6 +986,7 @@ public sealed class IndexingCoordinator : IIndexingService
         upToDate = false;
         long size;
         DateTimeOffset modified;
+        bool onlineOnly;
         try
         {
             var info = new FileInfo(path);
@@ -991,6 +997,7 @@ public sealed class IndexingCoordinator : IIndexingService
             }
             size = info.Length;
             modified = new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero);
+            onlineOnly = _cloud.IsOnlineOnly(path, info.Attributes);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
@@ -1000,6 +1007,7 @@ public sealed class IndexingCoordinator : IIndexingService
 
         FileFingerprint? fingerprint = null;
         string? storedPath = null;
+        var contentPending = false;
         try
         {
             if (_store is IIndexedEntrySource entries)
@@ -1008,6 +1016,7 @@ public sealed class IndexingCoordinator : IIndexingService
                 {
                     fingerprint = new FileFingerprint(entry.Size, entry.ModifiedUtc);
                     storedPath = entry.Path;
+                    contentPending = entry.ContentPending;
                 }
             }
             else
@@ -1029,38 +1038,75 @@ public sealed class IndexingCoordinator : IIndexingService
         // A case-only rename (Windows, macOS) keeps size and mtime: re-index so the stored path and the name that is
         // part of every embedding follow the new spelling.
         var renamed = storedPath is not null && IsDifferentSpelling(storedPath, path);
-        if (fingerprint is not null && !renamed && IsUnchanged(fingerprint, size, modified))
+        if (fingerprint is not null && !renamed && IsUnchanged(fingerprint, size, modified) &&
+            !(contentPending && (!onlineOnly || CanDownload(path, size))))
         {
+            // Unchanged. A file indexed by name only while it was online-only is read once it is on this device (or
+            // can be downloaded); a file indexed in full that went back to online-only keeps its entry.
             upToDate = true;
             return null;
         }
-        return new PreparedFile(path, size, modified, fingerprint);
+        return new PreparedFile(path, size, modified, fingerprint, onlineOnly);
     }
 
     /// <summary>Extracts, embeds and stores a file <see cref="Prepare"/> found changed. Runs on a worker thread
     /// (or inline from <see cref="ProcessFile"/>); waits for its turn first. Never throws except for cancellation.</summary>
     private bool Index(PreparedFile file, IndexPhase phase, CancellationToken cancellationToken)
     {
-        var (path, size, modified, fingerprint) = file;
+        var (path, size, _, _, onlineOnly) = file;
         WaitForTurn(cancellationToken);
         SetCurrentFile(path);
 
-        ExtractedText? extracted;
-        var readStarted = _time.GetTimestamp();
+        // An online-only cloud file is downloaded for reading and given back to the cloud afterwards. When that is not
+        // possible (too large, disk nearly full, no connection) it is indexed by name without touching its content.
+        IDisposable? download = null;
+        var contentPending = false;
+        if (onlineOnly)
+        {
+            if (CanDownload(path, size))
+                download = _cloud.Download(path, size, cancellationToken);
+            contentPending = download is null;
+            if (contentPending)
+                IndexingLog.OnlineOnlyNameOnly(_logger, path);
+        }
         try
         {
-            extracted = _reader.ReadAsync(path, cancellationToken).GetAwaiter().GetResult();
+            return Index(file, phase, contentPending, cancellationToken);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        finally
         {
-            throw;
+            download?.Dispose();
         }
-        catch (Exception e)
+    }
+
+    private bool Index(PreparedFile file, IndexPhase phase, bool contentPending, CancellationToken cancellationToken)
+    {
+        var (path, size, modified, fingerprint, _) = file;
+        ExtractedText? extracted;
+        if (contentPending)
         {
-            IndexingLog.ReadFailed(_logger, e, path);
-            extracted = null;
+            // Reading it would download it: name only.
+            var nameKind = MetadataOnlyExtractor.KindOf(path);
+            extracted = nameKind == FileKind.Other ? null : new ExtractedText(string.Empty, nameKind);
         }
-        Rest(_time.GetElapsedTime(readStarted), cancellationToken);
+        else
+        {
+            var readStarted = _time.GetTimestamp();
+            try
+            {
+                extracted = _reader.ReadAsync(path, cancellationToken).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                IndexingLog.ReadFailed(_logger, e, path);
+                extracted = null;
+            }
+            Rest(_time.GetElapsedTime(readStarted), cancellationToken);
+        }
 
         var kind = extracted?.Kind ?? FileKinds.Classify(path);
         if (extracted is null && kind == FileKind.Other)
@@ -1118,13 +1164,13 @@ public sealed class IndexingCoordinator : IIndexingService
             records.Add(new ChunkRecord(chunks[i].Index, chunks[i].Start, chunks[i].Length, chunks[i].Text, vectors[i]));
 
         // Pictures, audio and video: vectors of their content next to the name vector.
-        if (kind is FileKind.Image or FileKind.Audio or FileKind.Video && (extracted is null || string.IsNullOrWhiteSpace(extracted.Text)))
+        if (!contentPending && kind is FileKind.Image or FileKind.Audio or FileKind.Video && (extracted is null || string.IsNullOrWhiteSpace(extracted.Text)))
         {
             foreach (var media in EmbedMedia(path, kind, cancellationToken))
                 records.Add(media with { Index = records.Count });
         }
 
-        return TryStore(() => _store.UpsertFile(new FileEntry(path, size, modified, kind, phase), records), "write");
+        return TryStore(() => _store.UpsertFile(new FileEntry(path, size, modified, kind, phase, contentPending), records), "write");
     }
 
     /// <summary>Same size and same mtime. A difference below 2 s is tolerated only when one side has whole-second
@@ -1777,6 +1823,9 @@ internal sealed record CoordinatorTuning(
     /// <summary>The pace controller (null: one sized for this machine, see <see cref="IndexingPace.DefaultMaxConcurrency"/>).</summary>
     public IndexingPace? Pace { get; init; }
 
+    /// <summary>Online-only cloud file support (null: <see cref="CloudFiles.Current"/>).</summary>
+    public ICloudFiles? Cloud { get; init; }
+
     /// <summary>Batch size 2: a model batch cannot be cancelled once started, and two chunks take about a second on
     /// a laptop CPU, which bounds how long a query can wait behind indexing.</summary>
     public static CoordinatorTuning Default { get; } = new(
@@ -1874,4 +1923,7 @@ internal static partial class IndexingLog
 
     [LoggerMessage(28, LogLevel.Debug, "Embedding the content of {Path} failed; it stays findable by name")]
     public static partial void MediaFailed(ILogger logger, Exception exception, string path);
+
+    [LoggerMessage(29, LogLevel.Debug, "{Path} is online-only and could not be downloaded; indexed by name until it can be read")]
+    public static partial void OnlineOnlyNameOnly(ILogger logger, string path);
 }

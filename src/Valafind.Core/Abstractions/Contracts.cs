@@ -151,7 +151,9 @@ public enum IndexPhase
 
 public sealed record FileFingerprint(long Size, DateTimeOffset ModifiedUtc);
 
-public sealed record FileEntry(string Path, long Size, DateTimeOffset ModifiedUtc, FileKind Kind, IndexPhase Phase);
+/// <param name="ContentPending">The file was online-only (a cloud placeholder) and could not be downloaded, so it is
+/// indexed by name only; its content is indexed once it can be read.</param>
+public sealed record FileEntry(string Path, long Size, DateTimeOffset ModifiedUtc, FileKind Kind, IndexPhase Phase, bool ContentPending = false);
 
 public sealed record ChunkRecord(int Index, int Start, int Length, string Text, float[] Vector);
 

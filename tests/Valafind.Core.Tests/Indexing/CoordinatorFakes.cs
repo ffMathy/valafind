@@ -100,7 +100,7 @@ internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, 
             foreach (var (key, value) in Files)
             {
                 if (string.Equals(key, path, _comparison))
-                    return new IndexedEntry(key, value.Entry.Size, value.Entry.ModifiedUtc);
+                    return new IndexedEntry(key, value.Entry.Size, value.Entry.ModifiedUtc, value.Entry.ContentPending);
             }
             return null;
         }

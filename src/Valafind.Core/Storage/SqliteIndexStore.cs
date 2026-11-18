@@ -30,7 +30,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
     private const UnixFileMode GroupOtherBits = UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
                                                 UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private const int BusyTimeoutMs = 10_000;
     private const int MaxPooledReaders = 8;
     private const string ModelIdKey = "model_id";
@@ -223,7 +223,8 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 mtime_utc   INTEGER NOT NULL,
                 kind        INTEGER NOT NULL,
                 phase       INTEGER NOT NULL,
-                indexed_utc INTEGER NOT NULL);
+                indexed_utc INTEGER NOT NULL,
+                content_pending INTEGER NOT NULL DEFAULT 0);
             CREATE TABLE IF NOT EXISTS chunks(
                 file_id INTEGER NOT NULL,
                 idx     INTEGER NOT NULL,
@@ -233,7 +234,19 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 vector  BLOB    NOT NULL);
             CREATE UNIQUE INDEX IF NOT EXISTS chunks_file_idx ON chunks(file_id, idx);
             """, tx);
+        // Schema 1 → 2: online-only files indexed by name until their content can be read.
+        if (!HasColumn(db, tx, "files", "content_pending"))
+            Execute(db, "ALTER TABLE files ADD COLUMN content_pending INTEGER NOT NULL DEFAULT 0;", tx);
         tx.Commit();
+    }
+
+    private static bool HasColumn(SqliteConnection db, SqliteTransaction tx, string table, string column)
+    {
+        using var cmd = db.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = $"SELECT 1 FROM pragma_table_info('{table}') WHERE name = $column;";
+        cmd.Parameters.AddWithValue("$column", column);
+        return cmd.ExecuteScalar() is not null;
     }
 
     private static void EnsureModel(SqliteConnection db, string modelId, int dimensions)
@@ -352,11 +365,12 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         return WithReader(db =>
         {
             using var cmd = db.CreateCommand();
-            cmd.CommandText = "SELECT path, size, mtime_utc FROM files WHERE path_key = $key;";
+            cmd.CommandText = "SELECT path, size, mtime_utc, content_pending FROM files WHERE path_key = $key;";
             cmd.Parameters.AddWithValue("$key", key);
             using var reader = cmd.ExecuteReader();
             return reader.Read()
-                ? new IndexedEntry(reader.GetString(0), reader.GetInt64(1), new DateTimeOffset(reader.GetInt64(2), TimeSpan.Zero))
+                ? new IndexedEntry(reader.GetString(0), reader.GetInt64(1), new DateTimeOffset(reader.GetInt64(2), TimeSpan.Zero),
+                    reader.GetInt64(3) != 0)
                 : null;
         });
     }
@@ -453,12 +467,13 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                     write.Transaction = tx;
                     write.CommandText = fileId != 0
                         ? """
-                          UPDATE files SET path = $path, size = $size, mtime_utc = $mtime, kind = $kind, phase = $phase, indexed_utc = $now
+                          UPDATE files SET path = $path, size = $size, mtime_utc = $mtime, kind = $kind, phase = $phase, indexed_utc = $now,
+                                           content_pending = $pending
                           WHERE id = $id RETURNING id;
                           """
                         : """
-                          INSERT INTO files(path, path_key, size, mtime_utc, kind, phase, indexed_utc)
-                          VALUES ($path, $key, $size, $mtime, $kind, $phase, $now) RETURNING id;
+                          INSERT INTO files(path, path_key, size, mtime_utc, kind, phase, indexed_utc, content_pending)
+                          VALUES ($path, $key, $size, $mtime, $kind, $phase, $now, $pending) RETURNING id;
                           """;
                     write.Parameters.AddWithValue("$id", fileId);
                     write.Parameters.AddWithValue("$path", path);
@@ -468,6 +483,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                     write.Parameters.AddWithValue("$kind", (int)file.Kind);
                     write.Parameters.AddWithValue("$phase", (int)file.Phase);
                     write.Parameters.AddWithValue("$now", DateTime.UtcNow.Ticks);
+                    write.Parameters.AddWithValue("$pending", file.ContentPending ? 1 : 0);
                     fileId = Convert.ToInt64(write.ExecuteScalar(), CultureInfo.InvariantCulture);
                 }
 

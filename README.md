@@ -131,8 +131,12 @@ The desktop recognizes the app through the desktop entry the installer writes.
   30-second clips, spread over the file when it is longer than two minutes.
 - **Video**: eight frames spread over the video, plus up to two 30-second clips of its sound.
 - **Name only:** archives, legacy `.doc`/`.xls`/`.ppt`/`.msg`, iWork files, and media no decoder can read.
-- **Skipped:** hidden and app-data folders, `node_modules`, `.git`, build output, caches, the Trash, and cloud
-  placeholders that would trigger a download.
+- **Online-only cloud files** (OneDrive Files On-Demand, iCloud Drive, Dropbox, Google Drive, …): downloaded one at
+  a time, indexed like any other file, then made online-only again, so they take no space on your disk. Files you
+  keep on the device ("Always keep on this device") stay downloaded. Documents over 64 MB, media over 1 GB, and any
+  file that would leave less than 2 GB free are indexed by name until they are on your device. On macOS, a provider
+  that refuses to take a file back is not downloaded from again; its files are indexed by name.
+- **Skipped:** hidden and app-data folders, `node_modules`, `.git`, build output, caches and the Trash.
 
 Pictures, audio and video are also findable by their names. Audio and video use Media Foundation on Windows and
 AVFoundation on macOS. On Linux they need `ffmpeg` (`sudo apt install ffmpeg`, `sudo dnf install ffmpeg`, …); without

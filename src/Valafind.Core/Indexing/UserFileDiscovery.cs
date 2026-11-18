@@ -10,7 +10,9 @@ namespace Valafind.Core.Indexing;
 /// Finds user files to index. Phase 1 (<see cref="EnumerateFrequentFiles"/>) merges the OS "recent documents"
 /// sources with recently touched files in the usual document folders and ranks them by frequency and recency.
 /// Phase 2 (<see cref="EnumerateAllFiles"/>) walks every root breadth-first so shallow, more relevant folders come
-/// first. Symlinks/junctions are never followed and cloud placeholders that would trigger a download are skipped.
+/// first. Symlinks/junctions are never followed. Online-only cloud files (OneDrive Files On-Demand, iCloud Drive, …) are
+/// listed like any other file; listing them downloads nothing, and the indexer decides how to read them
+/// (<see cref="ICloudFiles"/>).
 /// </summary>
 public sealed class UserFileDiscovery : IFileDiscovery
 {
@@ -19,10 +21,6 @@ public sealed class UserFileDiscovery : IFileDiscovery
     private const int RecentFolderMaxEntries = 50_000;
     private static readonly TimeSpan RecentWindow = TimeSpan.FromDays(90);
     private static readonly TimeSpan MdfindTimeout = TimeSpan.FromSeconds(30);
-
-    // Windows cloud-file attributes (not in the FileAttributes enum).
-    private const FileAttributes RecallOnDataAccess = (FileAttributes)0x00400000;
-    private const FileAttributes RecallOnOpen = (FileAttributes)0x00040000;
 
     private readonly ExclusionRules _rules;
     private readonly string _home;
@@ -50,11 +48,9 @@ public sealed class UserFileDiscovery : IFileDiscovery
             string.IsNullOrWhiteSpace(dataDirectory) ? null : Path.GetFullPath(dataDirectory),
             settings.Excludes, FileSystemExclusionProbe.Instance);
 
-        var skip = FileAttributes.System | FileAttributes.Offline | FileAttributes.Device;
-        if (OperatingSystem.IsWindows())
-            skip |= RecallOnDataAccess | RecallOnOpen; // reparse points are inspected individually (cloud files are reparse points)
-        else
-            skip |= FileAttributes.ReparsePoint; // symlinks
+        var skip = FileAttributes.System | FileAttributes.Device;
+        if (!OperatingSystem.IsWindows())
+            skip |= FileAttributes.ReparsePoint; // symlinks (on Windows reparse points are inspected individually: cloud files are reparse points)
         _enumerationOptions = new EnumerationOptions
         {
             IgnoreInaccessible = true,
@@ -139,9 +135,6 @@ public sealed class UserFileDiscovery : IFileDiscovery
         {
             cancellationToken.ThrowIfCancellationRequested();
             var (directory, depth) = queue.Dequeue();
-            if (OperatingSystem.IsMacOS() && MacFileFlags.IsDataless(directory))
-                continue; // listing it would materialise it from the cloud
-
             var (files, subdirectories) = ListDirectory(directory);
             foreach (var file in files)
                 yield return file;
@@ -184,8 +177,7 @@ public sealed class UserFileDiscovery : IFileDiscovery
                 {
                     directories.Add(entry.Path);
                 }
-                else if (entry.Length > 0 && !_rules.IsExcludedFileName(entry.Name) &&
-                         !(OperatingSystem.IsMacOS() && MacFileFlags.IsDataless(entry.Path)))
+                else if (entry.Length > 0 && !_rules.IsExcludedFileName(entry.Name))
                 {
                     files.Add(new WalkEntry(entry.Path, entry.Length, entry.Write, entry.Access));
                 }
@@ -298,8 +290,6 @@ public sealed class UserFileDiscovery : IFileDiscovery
                 continue;
             if (!TryStatFile(path, out var length, out var write, out var access) || length <= 0)
                 continue;
-            if (OperatingSystem.IsMacOS() && MacFileFlags.IsDataless(path))
-                continue;
             var lastUsed = candidate.LastUsed ?? new DateTimeOffset(write > access ? write : access, TimeSpan.Zero);
             ranked.Add((path, Score(candidate.Count, lastUsed, now)));
         }
@@ -327,9 +317,7 @@ public sealed class UserFileDiscovery : IFileDiscovery
             if (!info.Exists)
                 return false;
             var attributes = info.Attributes;
-            if ((attributes & (FileAttributes.Directory | FileAttributes.Offline | FileAttributes.Device | FileAttributes.System)) != 0)
-                return false;
-            if (OperatingSystem.IsWindows() && (attributes & (RecallOnDataAccess | RecallOnOpen)) != 0)
+            if ((attributes & (FileAttributes.Directory | FileAttributes.Device | FileAttributes.System)) != 0)
                 return false;
             if ((attributes & FileAttributes.ReparsePoint) != 0 && info.LinkTarget is not null)
                 return false;
