@@ -24,9 +24,9 @@ public class CloudPrefetchTests
     };
 
     private static IndexingCoordinator Create(TempTree tree, IReadOnlyList<string> files, FakeStore store, FakeCloud cloud,
-        IDocumentReader reader, CloudPrefetchOptions? prefetch = null)
+        IDocumentReader reader, CloudPrefetchOptions? prefetch = null, IFileDiscovery? discovery = null)
     {
-        var coordinator = new IndexingCoordinator(new FakeDiscovery([tree.Root], [], files), reader, new FakeChunker(), new FakeModel(),
+        var coordinator = new IndexingCoordinator(discovery ?? new FakeDiscovery([tree.Root], [], files), reader, new FakeChunker(), new FakeModel(),
             store, new FakeMonitor(), new ValafindSettings(), NullLogger<IndexingCoordinator>.Instance, null, Tuning(cloud, prefetch));
         coordinator.OverrideThrottle(TimeSpan.FromMinutes(5));
         return coordinator;
@@ -57,6 +57,21 @@ public class CloudPrefetchTests
 
     private static bool Settled(IndexingCoordinator coordinator) => coordinator.Status.State == IndexingState.UpToDate;
 
+    /// <summary>Holds every download back until <paramref name="limit"/> files are requested, checks that no more are
+    /// requested while none has arrived, then lets the rest through and waits for the pass to finish.</summary>
+    private static async Task ReachLimitThenFinish(IndexingCoordinator coordinator, FakeCloud cloud, FakeStore store, int limit, int files)
+    {
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => cloud.RequestedCount == limit, $"{limit} files requested");
+        await Task.Delay(300, TestContext.Current.CancellationToken);
+        Assert.Equal(limit, cloud.RequestedCount); // the limit holds while nothing arrives
+
+        cloud.ArriveImmediately = true;
+        cloud.ArriveAll();
+        await WaitFor(() => Settled(coordinator) && store.Files.Count == files && cloud.RequestedCount == 0, "indexed and given back");
+        Assert.Equal(limit, cloud.PeakRequested); // and never more after that
+    }
+
     [Fact]
     public async Task FilesAreRequestedAheadThenIndexedAndGivenBack()
     {
@@ -86,16 +101,14 @@ public class CloudPrefetchTests
     public async Task AtMostMaxFilesAreRequestedAtOnce()
     {
         using var tree = new TempTree();
-        var cloud = new FakeCloud { ArriveImmediately = true };
+        var cloud = new FakeCloud();
         var files = OnlineOnlyFiles(tree, cloud, 12);
         var store = new FakeStore();
         var options = new CloudPrefetchOptions { MaxFiles = 3, PollInterval = TimeSpan.FromMilliseconds(10), FreeBytes = _ => 1L << 40 };
         await using var coordinator = Create(tree, files, store, cloud, new CloudAwareReader(cloud), options);
 
-        await coordinator.StartAsync(TestContext.Current.CancellationToken);
-        await WaitFor(() => Settled(coordinator) && store.Files.Count == files.Count && cloud.RequestedCount == 0, "indexed and given back");
+        await ReachLimitThenFinish(coordinator, cloud, store, limit: 3, files.Count);
 
-        Assert.Equal(3, cloud.PeakRequested);
         Assert.Equal(files.Count, cloud.RequestLog.Count);
         Assert.Equal(0, store.DownloadCount);
     }
@@ -104,17 +117,14 @@ public class CloudPrefetchTests
     public async Task RequestedBytesStayWithinTenPercentOfFreeSpace()
     {
         using var tree = new TempTree();
-        var cloud = new FakeCloud { ArriveImmediately = true };
+        var cloud = new FakeCloud();
         var files = OnlineOnlyFiles(tree, cloud, 10, bytes: 40);
         var store = new FakeStore();
         // 10 % of 1000 free bytes: two 40-byte files fit (80 ≤ 0.1 × 1080), a third does not (120 > 0.1 × 1080).
         var options = new CloudPrefetchOptions { PollInterval = TimeSpan.FromMilliseconds(10), FreeBytes = _ => 1000 };
         await using var coordinator = Create(tree, files, store, cloud, new CloudAwareReader(cloud), options);
 
-        await coordinator.StartAsync(TestContext.Current.CancellationToken);
-        await WaitFor(() => Settled(coordinator) && store.Files.Count == files.Count && cloud.RequestedCount == 0, "indexed and given back");
-
-        Assert.Equal(2, cloud.PeakRequested);
+        await ReachLimitThenFinish(coordinator, cloud, store, limit: 2, files.Count);
     }
 
     [Fact]
@@ -253,5 +263,26 @@ public class CloudPrefetchTests
         Assert.Equal(0, prefetcher.Count);
         Assert.Equal(0L, prefetcher.HeldBytes);
         Assert.Equal(0, store.DownloadCount);
+    }
+
+    [Fact]
+    public async Task WalkReadsANameOnlyFileOnceItIsOnTheDevice()
+    {
+        using var tree = new TempTree();
+        var path = tree.File("OneDrive/lease.txt", "the landlord keeps the deposit");
+        var info = new FileInfo(path);
+        var store = new FakeStore();
+        // Indexed by name earlier, while it was online-only; same size and time now, but its content is here.
+        store.UpsertFile(new FileEntry(path, info.Length, new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero),
+            FileKind.Text, IndexPhase.All, ContentPending: true), []);
+        var cloud = new FakeCloud();
+        var reader = new CloudAwareReader(cloud);
+        // A discovery that reports sizes and times, so the walk's batch check for unchanged files is used.
+        await using var coordinator = Create(tree, [path], store, cloud, reader, discovery: new FakeStatDiscovery([tree.Root], [path]));
+
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => Settled(coordinator) && !store.Files[path].Entry.ContentPending, "content indexed");
+
+        Assert.Equal([path], reader.Reads);
     }
 }

@@ -48,7 +48,13 @@ internal sealed class FakeCloud : ICloudFiles
     public bool RefuseRequests { get; set; }
 
     /// <summary>Requested files arrive right away (the sync client is fast); otherwise they arrive on <see cref="ArriveAll"/>.</summary>
-    public bool ArriveImmediately { get; set; }
+    public volatile bool ArriveImmediatelyField;
+
+    public bool ArriveImmediately
+    {
+        get => ArriveImmediatelyField;
+        set => ArriveImmediatelyField = value;
+    }
 
     public CloudMark? RequestDownload(string path)
     {

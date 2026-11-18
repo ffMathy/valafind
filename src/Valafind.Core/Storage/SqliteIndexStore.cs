@@ -34,6 +34,9 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
     private const int SchemaVersion = 2;
     private const int BusyTimeoutMs = 10_000;
     private const int MaxPooledReaders = 8;
+    /// <summary>Keys per <see cref="GetEntries"/> query (SQLite allows 32766 parameters; a few hundred keep each
+    /// statement small).</summary>
+    private const int MaxKeysPerLookup = 500;
     private const string ModelIdKey = "model_id";
     private const string DimensionsKey = "dimensions";
     private const string SchemaVersionKey = "schema_version";
@@ -381,6 +384,46 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                     reader.GetInt64(3) != 0)
                 : null;
         });
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<IndexedEntry?> GetEntries(IReadOnlyList<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        var result = new IndexedEntry?[paths.Count];
+        if (paths.Count == 0)
+            return result;
+        var keys = new string[paths.Count];
+        for (var i = 0; i < paths.Count; i++)
+            keys[i] = _paths.KeyForPath(paths[i]);
+
+        var found = new Dictionary<string, IndexedEntry>(StringComparer.Ordinal);
+        for (var start = 0; start < keys.Length; start += MaxKeysPerLookup)
+        {
+            var count = Math.Min(MaxKeysPerLookup, keys.Length - start);
+            WithReader(db =>
+            {
+                using var cmd = db.CreateCommand();
+                var sql = new StringBuilder("SELECT path_key, path, size, mtime_utc, content_pending FROM files WHERE path_key IN (");
+                for (var i = 0; i < count; i++)
+                {
+                    var name = "$k" + i.ToString(CultureInfo.InvariantCulture);
+                    sql.Append(i == 0 ? name : "," + name);
+                    cmd.Parameters.AddWithValue(name, keys[start + i]);
+                }
+                cmd.CommandText = sql.Append(");").ToString();
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    found[reader.GetString(0)] = new IndexedEntry(reader.GetString(1), reader.GetInt64(2),
+                        new DateTimeOffset(reader.GetInt64(3), TimeSpan.Zero), reader.GetInt64(4) != 0);
+                }
+                return 0;
+            });
+        }
+        for (var i = 0; i < keys.Length; i++)
+            result[i] = found.GetValueOrDefault(keys[i]);
+        return result;
     }
 
     /// <inheritdoc />

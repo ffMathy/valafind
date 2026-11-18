@@ -293,3 +293,18 @@ public interface IFileDiscovery
     IEnumerable<string> EnumerateFrequentFiles(CancellationToken cancellationToken);
     IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken);
 }
+
+/// <summary>A file found by a walk, with the size and last write time the directory listing reported for it.</summary>
+/// <param name="Path">Full path.</param>
+/// <param name="Size">Size in bytes.</param>
+/// <param name="ModifiedUtc">Last write time.</param>
+public readonly record struct DiscoveredFile(string Path, long Size, DateTimeOffset ModifiedUtc);
+
+/// <summary>Optional capability of an <see cref="IFileDiscovery"/>: the Phase 2 walk with each file's size and last
+/// write time as the directory listing reported them. Windows and macOS return those with the listing itself, so
+/// the indexer can tell an unchanged file from the index without a stat call of its own.</summary>
+public interface IFileStatDiscovery
+{
+    /// <summary>The same files, in the same order, as <see cref="IFileDiscovery.EnumerateAllFiles"/>.</summary>
+    IEnumerable<DiscoveredFile> EnumerateAllFilesWithStats(CancellationToken cancellationToken);
+}
