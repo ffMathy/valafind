@@ -6,7 +6,7 @@ using Valafind.Core.Abstractions;
 namespace Valafind.Core.Platform;
 
 /// <summary>macOS implementation: host_statistics(HOST_CPU_LOAD_INFO) for CPU, IOKit IOBlockStorageDriver
-/// "Statistics" for disk, IOPowerSources for battery.</summary>
+/// "Statistics" for disk, IOKit IOAccelerator "PerformanceStatistics" for the GPU, IOPowerSources for battery.</summary>
 /// <remarks>CoreFoundation ownership: objects returned by *Create* / *Copy* functions are released here;
 /// objects obtained through *Get* functions are borrowed and never released.</remarks>
 [SupportedOSPlatform("macos")]
@@ -30,6 +30,9 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
     private readonly nint _keyBytesWritten;
     private readonly nint _keyTimeRead;
     private readonly nint _keyTimeWritten;
+    private readonly nint _keyPerformance;
+    private readonly nint _keyGpuUtilisation;
+    private bool _gpuFailed;
     private CpuTimes? _previousCpu;
     private Dictionary<ulong, DiskStat>? _previousDisks;
     private long _previousTimestamp;
@@ -47,11 +50,14 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
             _keyBytesWritten = CreateString("Bytes (Write)");
             _keyTimeRead = CreateString("Total Time (Read)");
             _keyTimeWritten = CreateString("Total Time (Write)");
+            _keyPerformance = CreateString("PerformanceStatistics");
+            _keyGpuUtilisation = CreateString("Device Utilization %");
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
         {
             _diskFailed = true;
         }
+        _gpuFailed = _keyPerformance == 0 || _keyGpuUtilisation == 0;
         if (_keyStatistics == 0 || _keyBytesRead == 0 || _keyBytesWritten == 0 || _keyTimeRead == 0 || _keyTimeWritten == 0)
             _diskFailed = true;
     }
@@ -96,7 +102,7 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
                 _previousCpu = cpu;
             _previousDisks = disks;
             _previousTimestamp = now;
-            return new PressureSample(DateTimeOffset.UtcNow, cpuPercent, busy, bytes, ReadOnBattery());
+            return new PressureSample(DateTimeOffset.UtcNow, cpuPercent, busy, bytes, ReadOnBattery(), ReadGpu());
         }
     }
 
@@ -177,6 +183,59 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
         }
     }
 
+    /// <summary>Busiest GPU's "Device Utilization %" (what Activity Monitor's GPU history shows); null on failure.</summary>
+    private double? ReadGpu()
+    {
+        if (_gpuFailed)
+            return null;
+        try
+        {
+            var matching = IOServiceMatching("IOAccelerator"); // consumed below
+            if (matching == 0 || IOServiceGetMatchingServices(0, matching, out var iterator) != 0 || iterator == 0)
+                return null;
+            double? max = null;
+            try
+            {
+                uint entry;
+                while ((entry = IOIteratorNext(iterator)) != 0)
+                {
+                    try
+                    {
+                        var stats = IORegistryEntryCreateCFProperty(entry, _keyPerformance, 0, 0);
+                        if (stats == 0)
+                            continue;
+                        try
+                        {
+                            if (CFGetTypeID(stats) != CFDictionaryGetTypeID())
+                                continue;
+                            var value = CFDictionaryGetValue(stats, _keyGpuUtilisation); // borrowed
+                            if (value != 0 && CFGetTypeID(value) == CFNumberGetTypeID() && CFNumberGetValue(value, KCFNumberSInt64Type, out var percent))
+                                max = Math.Max(max ?? 0, Math.Clamp(percent, 0, 100));
+                        }
+                        finally
+                        {
+                            CFRelease(stats);
+                        }
+                    }
+                    finally
+                    {
+                        _ = IOObjectRelease(entry);
+                    }
+                }
+            }
+            finally
+            {
+                _ = IOObjectRelease(iterator);
+            }
+            return max;
+        }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or MarshalDirectiveException)
+        {
+            _gpuFailed = true;
+            return null;
+        }
+    }
+
     private static long GetInt64(nint dictionary, nint key)
     {
         var value = CFDictionaryGetValue(dictionary, key); // borrowed
@@ -222,7 +281,7 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
             if (_disposed)
                 return;
             _disposed = true;
-            foreach (var key in new[] { _keyStatistics, _keyBytesRead, _keyBytesWritten, _keyTimeRead, _keyTimeWritten })
+            foreach (var key in new[] { _keyStatistics, _keyBytesRead, _keyBytesWritten, _keyTimeRead, _keyTimeWritten, _keyPerformance, _keyGpuUtilisation })
             {
                 if (key != 0)
                     CFRelease(key);

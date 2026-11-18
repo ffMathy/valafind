@@ -11,12 +11,17 @@ namespace Valafind.Core.Indexing;
 /// <param name="SampleInterval">How often the gate samples system pressure. Null = 2 seconds.</param>
 /// <param name="IdleSampleInterval">Sampling interval while the indexer is idle and nobody waits on the gate.
 /// Null = 60 seconds.</param>
+/// <param name="MaxGpuPercent">GPU utilisation budget, steered the same way (when the platform reports it).</param>
+/// <param name="SteerGpu">Whether the GPU limit applies: only while the model runs on the GPU. Indexing on the CPU
+/// does not slow down because a game keeps the GPU busy.</param>
 public sealed record ThrottleOptions(
     double MaxCpuPercent,
     double MaxDiskBusyPercent,
     bool PauseOnBattery,
     TimeSpan? SampleInterval = null,
-    TimeSpan? IdleSampleInterval = null)
+    TimeSpan? IdleSampleInterval = null,
+    double MaxGpuPercent = 100,
+    bool SteerGpu = false)
 {
     /// <summary>Default sampling interval.</summary>
     public static readonly TimeSpan DefaultSampleInterval = TimeSpan.FromSeconds(2);
@@ -35,15 +40,19 @@ public sealed record ThrottleOptions(
         SampleInterval is { } s && s > TimeSpan.Zero ? s : DefaultSampleInterval;
 
     /// <summary>Builds options from user settings.</summary>
-    public static ThrottleOptions From(Configuration.ValafindSettings settings) => new(
-        settings.MaxCpuPercent, settings.MaxDiskBusyPercent, settings.PauseOnBattery);
+    /// <param name="settings">User settings.</param>
+    /// <param name="usesGpu">True while the embedding model runs on the GPU (enables <see cref="SteerGpu"/>).</param>
+    public static ThrottleOptions From(Configuration.ValafindSettings settings, bool usesGpu = false) => new(
+        settings.MaxCpuPercent, settings.MaxDiskBusyPercent, settings.PauseOnBattery,
+        MaxGpuPercent: settings.MaxGpuPercent, SteerGpu: usesGpu);
 }
 
 /// <summary>
 /// Decides whether background indexing runs and feeds its <see cref="Pace"/>. Samples
 /// <see cref="ISystemPressureMonitor"/> on its own loop and works out Valafind's own share of CPU and disk.
 /// System load never pauses indexing: every sample taken while indexing runs feeds the pace's PID controllers, which
-/// slow indexing down (to a trickle at worst) to keep whole-machine CPU and disk activity just under their limits.
+/// slow indexing down (to a trickle at worst) to keep whole-machine CPU, disk and (while the model runs there) GPU
+/// activity just under their limits.
 /// The gate only closes when the user pauses, or on battery with <see cref="ThrottleOptions.PauseOnBattery"/>;
 /// <see cref="OverrideUntil"/> overrides the battery rule.
 /// While the owner reports it is idle (<see cref="SetIdle"/>) and nobody waits on the gate, sampling slows to
@@ -298,8 +307,14 @@ public sealed class ThrottleGate : IDisposable
         switch (step.Kind)
         {
             case PaceStepKind.Update:
-                _pace.Update(step.Reading with { MaxCpuPercent = options.MaxCpuPercent, MaxDiskBusyPercent = options.MaxDiskBusyPercent },
-                    step.Elapsed);
+                _pace.Update(step.Reading with
+                {
+                    MaxCpuPercent = options.MaxCpuPercent,
+                    MaxDiskBusyPercent = options.MaxDiskBusyPercent,
+                    MaxGpuPercent = options.MaxGpuPercent,
+                    GpuPercent = options.SteerGpu ? step.Reading.GpuPercent : null,
+                    OwnGpuPercent = options.SteerGpu ? step.Reading.OwnGpuPercent : null,
+                }, step.Elapsed);
                 if (step.Forced)
                     _pace.EnsureAtLeast(1);
                 break;
@@ -339,7 +354,8 @@ public sealed class ThrottleGate : IDisposable
         _previousPaceTimestamp = timestamp;
         if (previous is not { } since)
             return new PaceStep(PaceStepKind.Hold, Forced: forced);
-        var reading = new PaceReading(0, sample.CpuPercent, _lastOwnCpuPercent, 100, sample.DiskBusyPercent, _lastOwnDiskBusyPercent);
+        var reading = new PaceReading(0, sample.CpuPercent, _lastOwnCpuPercent, 100, sample.DiskBusyPercent, _lastOwnDiskBusyPercent,
+            100, sample.GpuPercent, sample.OwnGpuPercent);
         return new PaceStep(PaceStepKind.Update, reading, _time.GetElapsedTime(since, timestamp), forced);
     }
 
@@ -469,10 +485,12 @@ internal static class PressureMath
     }
 
     /// <summary>Removes Valafind's own share. Disk busy time cannot be attributed per process, so it is scaled by
-    /// the share of throughput that was not ours (only when both throughputs are known and meaningful).</summary>
+    /// the share of throughput that was not ours (only when both throughputs are known and meaningful). GPU
+    /// utilisation loses the monitor's <see cref="PressureSample.OwnGpuPercent"/> when it reports one.</summary>
     public static PressureSample SubtractOwn(PressureSample sample, double ownCpuPercent, long? ownIoBytes, TimeSpan wall)
     {
         var cpu = Math.Max(0, sample.CpuPercent - ownCpuPercent);
+        var gpu = sample.GpuPercent is { } g && sample.OwnGpuPercent is { } ownGpu ? Math.Max(0, g - ownGpu) : sample.GpuPercent;
         var bytes = sample.DiskBytesPerSecond;
         var busy = sample.DiskBusyPercent;
         if (ownIoBytes is { } own && wall > TimeSpan.Zero && bytes is { } total)
@@ -483,6 +501,6 @@ internal static class PressureMath
                 busy = b * Math.Clamp(others / total, 0, 1);
             bytes = others;
         }
-        return sample with { CpuPercent = cpu, DiskBusyPercent = busy, DiskBytesPerSecond = bytes };
+        return sample with { CpuPercent = cpu, DiskBusyPercent = busy, DiskBytesPerSecond = bytes, GpuPercent = gpu };
     }
 }

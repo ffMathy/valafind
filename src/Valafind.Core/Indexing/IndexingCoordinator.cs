@@ -229,7 +229,8 @@ public sealed class IndexingCoordinator : IIndexingService
         _deferred = new DeferredFiles(_pathComparer);
         _pending = new PendingChanges(_time, tuning.Debounce, _pathComparer, path => FindRoot(path), tuning.PendingCapacity);
         _lastRootRescan = new Dictionary<string, DateTimeOffset>(_pathComparer);
-        _gate = new ThrottleGate(monitor, () => tuning.Throttle ?? ThrottleOptions.From(settings), _time, tuning.Pace);
+        _gate = new ThrottleGate(monitor, () => tuning.Throttle ?? ThrottleOptions.From(settings, model is IGpuAccelerated { UsesGpu: true }),
+            _time, tuning.Pace);
         _gate.SetUserPaused(settings.UserPaused);
         _gate.Changed += (_, _) => Publish();
         _workers = new IndexingWorkers(_gate.Pace);

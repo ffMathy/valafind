@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>最大磁盘繁忙百分比</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>最大 GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>最大 GPU 百分比</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>模型在 GPU 上运行时适用</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>设置…</value>
   </data>

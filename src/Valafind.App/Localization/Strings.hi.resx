@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>अधिकतम डिस्क व्यस्तता प्रतिशत</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>अधिकतम GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>अधिकतम GPU प्रतिशत</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>मॉडल के GPU पर चलने पर लागू होता है</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>सेटिंग्स…</value>
   </data>

@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>Iyakar kashi na shagalar faifai</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>Iyakar GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>Iyakar kashi na GPU</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>Yana aiki idan samfurin yana gudana a kan GPU</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>Saituna…</value>
   </data>

@@ -36,7 +36,7 @@ namespace Valafind.Core.Embedding;
 /// freed by <see cref="ReleaseMediaResources"/>. Every encoder run is scheduled like a document batch (queries preempt
 /// it); a video runs the encoder once per frame so a query never waits long.</para>
 /// </remarks>
-public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding, IMediaEmbeddingModel
+public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding, IMediaEmbeddingModel, IGpuAccelerated
 {
     /// <summary>Model family part of <see cref="ModelId"/>.</summary>
     public const string ModelName = "embeddinggemma-2";
@@ -961,6 +961,9 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
 
     /// <summary>Where inference runs once loaded: "CPU" or "GPU: vendor (WebGPU)"; null before the model is loaded.</summary>
     public string? ActiveDevice { get; private set; }
+
+    /// <summary>True once the model is loaded on the GPU.</summary>
+    public bool UsesGpu => _gpu is not null;
 
     /// <summary>Why <see cref="EmbeddingDevice.Auto"/> fell back to the CPU, or null.</summary>
     public string? GpuUnavailableReason { get; private set; }

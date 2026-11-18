@@ -49,6 +49,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         vm.Hotkey = "Ctrl+Shift+K";
         vm.MaxCpuPercent = 45;
+        vm.MaxGpuPercent = 60;
         vm.SelectedDimensions = 128;
         Assert.True(vm.ShowReindexWarning);
         vm.Roots.Add("/data/docs");
@@ -58,6 +59,7 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.True(closed);
         Assert.Equal("Ctrl+Shift+K", settings.Hotkey);
         Assert.Equal(45, settings.MaxCpuPercent);
+        Assert.Equal(60, settings.MaxGpuPercent);
         Assert.Equal(128, settings.EmbeddingDimensions);
         Assert.Equal(["/data/docs"], settings.Roots);
         Assert.True(host.Autostart);

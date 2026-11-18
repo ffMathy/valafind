@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>Maximum disk busy percent</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>Maximum GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>Maximum GPU percent</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>Applies while the model runs on the GPU</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>Settings…</value>
   </data>
