@@ -12,7 +12,10 @@
              xmlns:common="using:Valafind.App.Views.Common"
              mc:Ignorable="d" d:DesignWidth="900"
              x:Class="Valafind.App.Views.Common.IndexPanelView"
-             x:DataType="vm:LauncherViewModel">
+             x:DataType="vm:LauncherViewModel"
+             IsVisible="{Binding !Status.IsUpToDate}">
+  <!-- Hidden as a whole once everything is indexed, so the host's margin around it goes too and the body sits flush
+       on the footer. -->
   <Design.DataContext>
     <x:Static Member="vm:DesignData.Windows" />
   </Design.DataContext>
@@ -45,7 +48,7 @@
 
   <!-- Only while indexing is in progress (or paused / waiting for the model); an up-to-date index is shown as a small
        check in the launcher's footer instead. -->
-  <StackPanel Spacing="8" IsVisible="{Binding !Status.IsUpToDate}">
+  <StackPanel Spacing="8">
     <DockPanel Margin="4,0">
       <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
                  Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />

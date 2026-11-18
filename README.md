@@ -12,9 +12,9 @@ file, even when it is written in another language and named `scan_0042.pdf`. Eve
     <th>Linux</th>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/windows-launcher.png" alt="Windows: results on the left, the selected file's details and why it matched on the right"></td>
-    <td><img src="docs/screenshots/macos-launcher.png" alt="macOS floating bar: results grouped by kind, the top match previewed with the sentence that answers the question"></td>
-    <td><img src="docs/screenshots/linux-launcher.png" alt="Linux GNOME-style dialog: results with highlighted passages and the selected file's details"></td>
+    <td><img src="docs/screenshots/windows-launcher.png" alt="Windows: results on the left, the selected file's details, why it matched and a preview of the file on the right"></td>
+    <td><img src="docs/screenshots/macos-launcher.png" alt="macOS floating bar: results grouped by kind, a photo shown as its thumbnail, the top match previewed with the sentence that answers the question"></td>
+    <td><img src="docs/screenshots/linux-launcher.png" alt="Linux GNOME-style dialog: results with highlighted passages and the selected file's details and preview"></td>
   </tr>
 </table>
 
