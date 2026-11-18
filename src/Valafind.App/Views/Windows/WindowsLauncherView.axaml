@@ -382,7 +382,7 @@
         </ScrollViewer>
 
         <!-- Details of the selected file -->
-        <Border x:Name="DetailsPane" Classes="strip" Grid.Column="1" Width="440" BorderThickness="1,0,0,0"
+        <Border x:Name="DetailsPane" Classes="strip" Grid.Column="1" Width="440" BorderThickness="1,1,0,0"
                 BorderBrush="{DynamicResource WinStripBorderBrush}"
                 Padding="20,16,20,16" IsVisible="{Binding IsPreviewVisible}">
           <DockPanel DataContext="{Binding SelectedResult}" x:DataType="vm:ResultItemViewModel"

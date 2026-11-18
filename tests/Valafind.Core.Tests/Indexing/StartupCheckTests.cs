@@ -138,6 +138,7 @@ public class StartupCheckTests
         File.WriteAllText(reported, "after, and longer");
         File.WriteAllText(unreported, "after, and longer");
         history.Changes.Add((reported, ChangeKind.Changed));
+        discovery.ResetWalks();
         await using var coordinator = Create(discovery, store, tuning);
         await RunUntilUpToDate(coordinator, "restart");
         await WaitFor(() => store.Get(reported).Entry.Size == new FileInfo(reported).Length, "reported change indexed");
@@ -145,8 +146,9 @@ public class StartupCheckTests
 
         lock (history.Replayed)
             Assert.Equal([checkpoint], history.Replayed);
-        // No walk: the change the history did not report is still the old version.
-        Assert.NotEqual(new FileInfo(unreported).Length, store.Get(unreported).Entry.Size);
+        // No walk of the folders. (Whether the unreported edit gets indexed anyway is not a sign of a walk: on macOS the
+        // live watcher, FSEvents, can still report a write made just before it started.)
+        Assert.Equal(0, discovery.Walks);
     }
 
     [Fact]
@@ -162,11 +164,13 @@ public class StartupCheckTests
         store.SetMeta(IndexingCoordinator.MetaChangeCheckpoint, "cp-0"); // as saved by the previous run
 
         File.WriteAllText(a, "after, and longer");
+        discovery.ResetWalks();
         await using var coordinator = Create(discovery, store, tuning);
         await RunUntilUpToDate(coordinator, "restart");
         await WaitFor(() => store.Get(a).Entry.Size == new FileInfo(a).Length, "change found by the walk");
         lock (history.Replayed)
             Assert.Single(history.Replayed);
+        Assert.True(discovery.Walks > 0, "the folders were walked");
     }
 
     [Fact]

@@ -237,14 +237,29 @@ internal sealed class FakeDiscovery(IReadOnlyList<string> roots, IReadOnlyList<s
 /// <summary><see cref="FakeDiscovery"/> that also reports each file's size and mtime the way a directory listing does.</summary>
 internal sealed class FakeStatDiscovery(IReadOnlyList<string> roots, IReadOnlyList<string> all) : IFileDiscovery, IFileStatDiscovery
 {
+    private int _walks;
+
     public IReadOnlyList<string> Roots { get; } = roots;
     public bool IsExcluded(string path) => false;
     public IEnumerable<string> EnumerateFrequentFiles(CancellationToken cancellationToken) => [];
-    public IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken) => all.Where(File.Exists);
+
+    /// <summary>Walks of all files so far (either enumeration).</summary>
+    public int Walks => Volatile.Read(ref _walks);
+
+    public void ResetWalks() => Volatile.Write(ref _walks, 0);
+
+    public IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken)
+    {
+        Interlocked.Increment(ref _walks);
+        return Existing();
+    }
+
+    private IEnumerable<string> Existing() => all.Where(File.Exists);
 
     public IEnumerable<DiscoveredFile> EnumerateAllFilesWithStats(CancellationToken cancellationToken)
     {
-        foreach (var path in EnumerateAllFiles(cancellationToken))
+        Interlocked.Increment(ref _walks);
+        foreach (var path in Existing())
         {
             var info = new FileInfo(path);
             yield return new DiscoveredFile(path, info.Length, new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero));
