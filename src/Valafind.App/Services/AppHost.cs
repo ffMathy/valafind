@@ -223,6 +223,9 @@ public sealed class AppHost : IAsyncDisposable
 
     private void StartUpdater()
     {
+        if (StoreInstall.IsActive)
+            return; // The Microsoft Store or the Mac App Store updates this copy; store policies forbid updating it from GitHub.
+
         _updateHttp = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         _updateHttp.DefaultRequestHeaders.UserAgent.ParseAdd("Valafind/" + ReleaseVersion.Current());
         _updater = new Updater(

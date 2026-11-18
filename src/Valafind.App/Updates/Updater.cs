@@ -350,6 +350,11 @@ public sealed class Updater : IDisposable
             return Loc.Format(Strings.UpdatesTurnedOffByVariable, app.NoUpdateVariable);
         }
 
+        if (running.IsStoreInstall)
+        {
+            return Strings.UpdatesUnsupported;
+        }
+
         if (!running.IsSingleFile)
         {
             return Strings.UpdatesOnlyReleaseBuilds;

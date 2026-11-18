@@ -160,6 +160,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      tag: v${{ env.VALAFIND_VERSION }}
     concurrency:
       group: release
       cancel-in-progress: false
@@ -191,3 +193,14 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Valafind $VALAFIND_VERSION" \
             --generate-notes
+
+  store:
+    # Sends each release to the Microsoft Store and the Mac App Store; see packaging/store/README.md.
+    name: Store release
+    needs: release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/store.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
+    secrets: inherit
