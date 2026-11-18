@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>Максимальная загрузка диска в процентах</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>Макс. загрузка ГП</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>Максимальная загрузка ГП в процентах</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>Действует, когда модель работает на ГП</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>Настройки…</value>
   </data>

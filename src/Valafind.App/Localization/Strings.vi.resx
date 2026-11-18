@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>Phần trăm bận ổ đĩa tối đa</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>GPU tối đa</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>Phần trăm GPU tối đa</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>Áp dụng khi mô hình chạy trên GPU</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>Cài đặt…</value>
   </data>

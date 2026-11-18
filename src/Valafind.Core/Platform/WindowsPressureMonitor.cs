@@ -4,21 +4,24 @@ using Valafind.Core.Abstractions;
 
 namespace Valafind.Core.Platform;
 
-/// <summary>Windows implementation: GetSystemTimes for CPU, PDH PhysicalDisk(_Total) counters for disk and
-/// GetSystemPowerStatus for battery.</summary>
+/// <summary>Windows implementation: GetSystemTimes for CPU, PDH PhysicalDisk(_Total) counters for disk, PDH
+/// "GPU Engine(*)" counters for the GPU (Windows 10 1709 and later) and GetSystemPowerStatus for battery.</summary>
 [SupportedOSPlatform("windows")]
 internal sealed partial class WindowsPressureMonitor : ISystemPressureMonitor
 {
     private const uint PdhFmtDouble = 0x00000200;
     private const uint PdhFmtNoCap100 = 0x00008000;
     private const uint ErrorSuccess = 0;
+    private const uint PdhMoreData = 0x800007D2;
     private static readonly TimeSpan BaselineDelay = TimeSpan.FromMilliseconds(250);
 
     private readonly Lock _lock = new();
     private nint _query;
     private nint _idleCounter;
     private nint _bytesCounter;
+    private nint _gpuCounter;
     private bool _pdhAvailable;
+    private readonly int _processId = Environment.ProcessId;
     private (ulong Idle, ulong Kernel, ulong User)? _previousTimes;
     private bool _disposed;
 
@@ -30,6 +33,9 @@ internal sealed partial class WindowsPressureMonitor : ISystemPressureMonitor
                 PdhAddEnglishCounter(_query, @"\PhysicalDisk(_Total)\% Idle Time", 0, out _idleCounter) == ErrorSuccess &&
                 PdhAddEnglishCounter(_query, @"\PhysicalDisk(_Total)\Disk Bytes/sec", 0, out _bytesCounter) == ErrorSuccess)
             {
+                // Optional: older Windows versions and some drivers have no GPU counters.
+                if (PdhAddEnglishCounter(_query, @"\GPU Engine(*)\Utilization Percentage", 0, out _gpuCounter) != ErrorSuccess)
+                    _gpuCounter = 0;
                 _pdhAvailable = PdhCollectQueryData(_query) == ErrorSuccess;
             }
         }
@@ -67,16 +73,18 @@ internal sealed partial class WindowsPressureMonitor : ISystemPressureMonitor
             if (times is not null)
                 _previousTimes = times;
 
-            double? busy = null, bytes = null;
+            double? busy = null, bytes = null, gpu = null, ownGpu = null;
             if (_pdhAvailable && PdhCollectQueryData(_query) == ErrorSuccess)
             {
                 if (TryGetDouble(_idleCounter, PdhFmtDouble | PdhFmtNoCap100, out var idlePercent))
                     busy = Math.Clamp(100.0 - idlePercent, 0, 100);
                 if (TryGetDouble(_bytesCounter, PdhFmtDouble | PdhFmtNoCap100, out var bps))
                     bytes = Math.Max(0, bps);
+                if (_gpuCounter != 0)
+                    (gpu, ownGpu) = GpuEngineMath.Aggregate(ReadArray(_gpuCounter), _processId);
             }
 
-            return new PressureSample(DateTimeOffset.UtcNow, cpu, busy, bytes, ReadOnBattery());
+            return new PressureSample(DateTimeOffset.UtcNow, cpu, busy, bytes, ReadOnBattery(), gpu, ownGpu);
         }
     }
 
@@ -95,6 +103,30 @@ internal sealed partial class WindowsPressureMonitor : ISystemPressureMonitor
             return false;
         value = v.DoubleValue;
         return !double.IsNaN(value) && !double.IsInfinity(value);
+    }
+
+    /// <summary>All instances of a wildcard counter with their values; empty on failure.</summary>
+    private static unsafe List<(string Name, double Percent)> ReadArray(nint counter)
+    {
+        var result = new List<(string, double)>();
+        uint size = 0;
+        if (PdhGetFormattedCounterArray(counter, PdhFmtDouble | PdhFmtNoCap100, ref size, out _, null) != PdhMoreData || size == 0)
+            return result;
+        var buffer = new byte[size];
+        fixed (byte* p = buffer)
+        {
+            if (PdhGetFormattedCounterArray(counter, PdhFmtDouble | PdhFmtNoCap100, ref size, out var count, p) != ErrorSuccess)
+                return result;
+            var items = (PdhFmtCounterValueItem*)p;
+            for (var i = 0; i < count; i++)
+            {
+                if (items[i].Value.CStatus > 1 || items[i].Name == 0)
+                    continue;
+                if (Marshal.PtrToStringUni(items[i].Name) is { } name)
+                    result.Add((name, items[i].Value.DoubleValue));
+            }
+        }
+        return result;
     }
 
     private static bool ReadOnBattery() =>
@@ -135,6 +167,13 @@ internal sealed partial class WindowsPressureMonitor : ISystemPressureMonitor
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    private struct PdhFmtCounterValueItem
+    {
+        public nint Name;
+        public PdhFmtCounterValue Value;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     private struct SystemPowerStatus
     {
         public byte ACLineStatus;
@@ -164,6 +203,9 @@ internal sealed partial class WindowsPressureMonitor : ISystemPressureMonitor
 
     [LibraryImport("pdh.dll")]
     private static partial uint PdhGetFormattedCounterValue(nint counter, uint format, out uint type, out PdhFmtCounterValue value);
+
+    [LibraryImport("pdh.dll", EntryPoint = "PdhGetFormattedCounterArrayW")]
+    private static unsafe partial uint PdhGetFormattedCounterArray(nint counter, uint format, ref uint bufferSize, out uint itemCount, byte* items);
 
     [LibraryImport("pdh.dll")]
     private static partial uint PdhCloseQuery(nint query);

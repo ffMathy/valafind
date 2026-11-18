@@ -4,7 +4,8 @@ using Valafind.Core.Abstractions;
 
 namespace Valafind.Core.Platform;
 
-/// <summary>Linux implementation based on /proc/stat, /proc/diskstats and /sys/class/power_supply.</summary>
+/// <summary>Linux implementation based on /proc/stat, /proc/diskstats, /sys/class/power_supply and
+/// <see cref="LinuxGpuUsage"/> for the GPU.</summary>
 [SupportedOSPlatform("linux")]
 internal sealed class LinuxPressureMonitor : ISystemPressureMonitor
 {
@@ -15,6 +16,7 @@ internal sealed class LinuxPressureMonitor : ISystemPressureMonitor
 
     private readonly Dictionary<string, bool> _physicalCache = new(StringComparer.Ordinal);
     private readonly Lock _lock = new();
+    private readonly LinuxGpuUsage _gpu = new();
     private CpuTimes? _previousCpu;
     private Dictionary<string, DiskCounters>? _previousDisks;
     private long _previousTimestamp;
@@ -50,7 +52,7 @@ internal sealed class LinuxPressureMonitor : ISystemPressureMonitor
             _previousDisks = disks;
             _previousTimestamp = now;
 
-            return new PressureSample(DateTimeOffset.UtcNow, cpuPercent, busy, bytes, ReadOnBattery());
+            return new PressureSample(DateTimeOffset.UtcNow, cpuPercent, busy, bytes, ReadOnBattery(), _gpu.Read());
         }
     }
 
@@ -118,5 +120,7 @@ internal sealed class LinuxPressureMonitor : ISystemPressureMonitor
 
     public void Dispose()
     {
+        lock (_lock)
+            _gpu.Dispose();
     }
 }

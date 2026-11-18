@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>Maks. diskaktivitet i procent</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>Maks. GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>Maks. GPU i procent</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>Gælder, når modellen kører på GPU’en</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>Indstillinger…</value>
   </data>

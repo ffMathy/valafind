@@ -240,6 +240,38 @@ public class IndexingPaceTests
     }
 
     [Fact]
+    public void Settles_GPU_utilisation_just_under_the_GPU_limit_and_learns_its_cost()
+    {
+        const int processors = 8;
+        var pace = new IndexingPace(8, processors);
+        var gpus = new List<double>();
+        for (var i = 0; i < 120; i++)
+        {
+            pace.ReportInFlight(pace.Concurrency);
+            var effort = pace.Effort;
+            var ownCpu = effort * 2; // GPU inference barely touches the CPU
+            var ownGpu = Math.Min(100, effort * 25);
+            gpus.Add(ownGpu);
+            pace.Update(new PaceReading(30, 2 + ownCpu, ownCpu, 25, 1, 0, 50, ownGpu, ownGpu), Dt);
+        }
+        Assert.Equal(PaceLimit.Gpu, pace.LimitedBy);
+        Assert.Equal(45, pace.GpuTargetPercent, 6);
+        Assert.All(gpus.Skip(30), g => Assert.InRange(g, 40, 50.5));
+        Assert.InRange(pace.GpuPerEffort, 22.5, 27.5);
+    }
+
+    [Fact]
+    public void Without_GPU_metrics_the_GPU_does_not_steer()
+    {
+        var pace = new IndexingPace(8, 8);
+        pace.ReportInFlight(1);
+        pace.Update(new PaceReading(30, 10, 8, 25, 1, 0, 30, GpuPercent: null), Dt);
+        Assert.Equal(PaceLimit.Cpu, pace.LimitedBy);
+        Assert.Equal(0, pace.GpuTargetPercent);
+        Assert.True(pace.Effort > 1);
+    }
+
+    [Fact]
     public void Without_disk_metrics_only_the_CPU_steers()
     {
         var pace = new IndexingPace(8, 8);

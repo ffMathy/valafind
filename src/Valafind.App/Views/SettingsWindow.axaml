@@ -261,6 +261,16 @@
             </Border>
             <Border Classes="divider" />
             <Border Classes="item">
+              <Grid Classes="item-row" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                <TextBlock Classes="title" Text="{x:Static l:Strings.SettingsMaxGpu}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Classes="value" Text="{Binding MaxGpuText}" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Classes="hint" Text="{x:Static l:Strings.SettingsMaxGpuHint}" TextWrapping="Wrap" />
+                <Slider Grid.Row="2" Grid.ColumnSpan="2" Minimum="5" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True"
+                        Value="{Binding MaxGpuPercent}" AutomationProperties.Name="{x:Static l:Strings.SettingsMaxGpuA11y}" />
+              </Grid>
+            </Border>
+            <Border Classes="divider" />
+            <Border Classes="item">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <TextBlock Classes="title" Text="{x:Static l:Strings.SettingsPauseOnBattery}" VerticalAlignment="Center" />
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding PauseOnBattery}"

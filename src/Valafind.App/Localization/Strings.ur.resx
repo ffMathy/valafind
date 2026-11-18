@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>زیادہ سے زیادہ ڈسک مصروفیت فیصد</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>زیادہ سے زیادہ GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>زیادہ سے زیادہ GPU فیصد</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>جب ماڈل GPU پر چلتا ہے تب لاگو ہوتا ہے</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>ترتیبات…</value>
   </data>

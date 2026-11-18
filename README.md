@@ -41,7 +41,7 @@ way of everything else starting at login. On macOS it asks the system's change l
 ran; on Windows and Linux it compares each file's size and modification date from the folder listing with the index,
 which costs no more than reading the folders, and only reads files that changed. Every folder is also re-checked once a day.
 
-<img src="docs/screenshots/settings.png" width="420" alt="Settings: global shortcut, indexed folders, CPU and disk limits, pause on battery">
+<img src="docs/screenshots/settings.png" width="420" alt="Settings: global shortcut, indexed folders, CPU, disk and GPU limits, pause on battery">
 
 ## Nothing leaves your computer
 

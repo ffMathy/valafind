@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>कमाल डिस्क व्यस्तता टक्केवारी</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>कमाल GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>कमाल GPU टक्केवारी</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>मॉडेल GPU वर चालत असताना लागू होते</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>सेटिंग्ज…</value>
   </data>
