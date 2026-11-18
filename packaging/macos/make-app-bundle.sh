@@ -12,7 +12,7 @@ set -euo pipefail
 
 publish_dir="${1:?publish dir}"
 out_dir="${2:?output dir}"
-version="${3:-0.1.0}"
+version="${3:-1.0.0}"
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
 
