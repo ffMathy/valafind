@@ -138,6 +138,7 @@ public class StartupCheckTests
         File.WriteAllText(reported, "after, and longer");
         File.WriteAllText(unreported, "after, and longer");
         history.Changes.Add((reported, ChangeKind.Changed));
+        var walksBefore = Volatile.Read(ref discovery.Walks);
         await using var coordinator = Create(discovery, store, tuning);
         await RunUntilUpToDate(coordinator, "restart");
         await WaitFor(() => store.Get(reported).Entry.Size == new FileInfo(reported).Length, "reported change indexed");
@@ -145,8 +146,9 @@ public class StartupCheckTests
 
         lock (history.Replayed)
             Assert.Equal([checkpoint], history.Replayed);
-        // No walk: the change the history did not report is still the old version.
-        Assert.NotEqual(new FileInfo(unreported).Length, store.Get(unreported).Entry.Size);
+        // No walk. (Not checked through `unreported`: on macOS the real file watcher, started before the check, can
+        // report writes made just before it started, and then indexes that file without any walk.)
+        Assert.Equal(walksBefore, Volatile.Read(ref discovery.Walks));
     }
 
     [Fact]

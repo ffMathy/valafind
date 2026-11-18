@@ -268,8 +268,12 @@ internal sealed class FakeStatDiscovery(IReadOnlyList<string> roots, IReadOnlyLi
     public IEnumerable<string> EnumerateFrequentFiles(CancellationToken cancellationToken) => [];
     public IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken) => all.Where(File.Exists);
 
+    /// <summary>Walks started (<see cref="EnumerateAllFilesWithStats"/> calls that began enumerating).</summary>
+    public int Walks;
+
     public IEnumerable<DiscoveredFile> EnumerateAllFilesWithStats(CancellationToken cancellationToken)
     {
+        Interlocked.Increment(ref Walks);
         foreach (var path in EnumerateAllFiles(cancellationToken))
         {
             var info = new FileInfo(path);
