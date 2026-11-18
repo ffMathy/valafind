@@ -9,8 +9,12 @@ internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, 
 {
     public readonly Dictionary<string, CloudDownload> Downloads = new(StringComparer.Ordinal);
 
+    public bool FailLoadingDownloads { get; set; }
+
     public IReadOnlyList<CloudDownload> LoadDownloads()
     {
+        if (FailLoadingDownloads)
+            throw new InvalidOperationException("journal unreadable");
         lock (Downloads)
             return [.. Downloads.Values.OrderBy(d => d.RequestedUtc)];
     }

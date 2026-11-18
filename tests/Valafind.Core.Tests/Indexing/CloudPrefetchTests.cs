@@ -285,4 +285,59 @@ public class CloudPrefetchTests
 
         Assert.Equal([path], reader.Reads);
     }
+
+    [Fact]
+    public async Task EachRequestIsRecordedBeforeTheFileIsChanged()
+    {
+        using var tree = new TempTree();
+        var store = new FakeStore();
+        var cloud = new FakeCloud { RecordedBeforeChange = path => store.LoadDownloads().Any(d => d.Path == path) };
+        var files = OnlineOnlyFiles(tree, cloud, 5);
+        await using var coordinator = Create(tree, files, store, cloud, new CloudAwareReader(cloud));
+
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => cloud.RequestedCount == files.Count, "all files requested");
+
+        Assert.False(cloud.ChangedBeforeRecorded); // a crash at any point leaves a record of every change
+    }
+
+    [Fact]
+    public async Task FileInUseWhenGivenBackStaysRecordedAndIsGivenBackAfterTheNextStart()
+    {
+        using var tree = new TempTree();
+        var cloud = new FakeCloud { ArriveImmediately = true, ReleaseBusy = true };
+        var files = OnlineOnlyFiles(tree, cloud, 3);
+        var store = new FakeStore();
+        await using (var coordinator = Create(tree, files, store, cloud, new CloudAwareReader(cloud)))
+        {
+            await coordinator.StartAsync(TestContext.Current.CancellationToken);
+            await WaitFor(() => Settled(coordinator) && store.Files.Count == files.Count, "indexed");
+        }
+        Assert.Equal(files.Count, store.DownloadCount); // not given back yet: still on record
+
+        cloud.ReleaseBusy = false;
+        await using (var coordinator = Create(tree, files, store, cloud, new CloudAwareReader(cloud)))
+        {
+            await coordinator.StartAsync(TestContext.Current.CancellationToken);
+            await WaitFor(() => Settled(coordinator) && store.DownloadCount == 0, "given back after the restart");
+        }
+        Assert.All(files, f => Assert.Contains(f, cloud.Released));
+    }
+
+    [Fact]
+    public async Task UnreadableRecordsTurnRequestingAheadOffForTheRun()
+    {
+        using var tree = new TempTree();
+        var cloud = new FakeCloud();
+        var files = OnlineOnlyFiles(tree, cloud, 3);
+        var store = new FakeStore { FailLoadingDownloads = true };
+        await using var coordinator = Create(tree, files, store, cloud, new CloudAwareReader(cloud));
+
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => Settled(coordinator) && store.Files.Count == files.Count, "indexed");
+
+        // Valafind's own pins from the earlier run could not be told apart from the user's: no new requests.
+        Assert.Empty(cloud.RequestLog);
+        Assert.Equal(files.Count, cloud.Downloads.Count); // read one at a time instead
+    }
 }

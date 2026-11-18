@@ -107,6 +107,9 @@ public sealed class IndexingCoordinator : IIndexingService
     private readonly IMediaDecoder? _mediaDecoder;
     private readonly ICloudFiles _cloud;
     private readonly CloudPrefetcher? _prefetch;
+    // Set when the requests of an earlier run could not be read: requesting more would take Valafind's own leftover
+    // pins for the user's and never undo them, so files are read one at a time for the rest of this run.
+    private volatile bool _prefetchOff;
     private readonly IIndexStore _store;
     private readonly ILogger<IndexingCoordinator> _logger;
     private readonly TimeProvider _time;
@@ -1202,7 +1205,7 @@ public sealed class IndexingCoordinator : IIndexingService
             onDone?.Invoke();
             return;
         }
-        if (ahead && prepared.OnlineOnly && _prefetch is { } prefetch && CanDownload(path, prepared.Size))
+        if (ahead && prepared.OnlineOnly && _prefetch is { } prefetch && !_prefetchOff && CanDownload(path, prepared.Size))
         {
             while (true)
             {
@@ -1305,6 +1308,7 @@ public sealed class IndexingCoordinator : IIndexingService
         catch (Exception e) when (e is not OperationCanceledException)
         {
             IndexingLog.DownloadJournalFailed(_logger, e);
+            _prefetchOff = true;
             return;
         }
         if (downloads.Count == 0)

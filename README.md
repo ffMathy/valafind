@@ -142,7 +142,11 @@ The desktop recognizes the app through the desktop entry the installer writes.
   up to 1,000 of the next ones ahead (on Windows by marking them *Always keep on this device*), as long as they fit in
   10 % of the free disk space, and indexes each one as it arrives while it carries on with your other files. The
   requests are kept in the index database: after a restart, files that arrived meanwhile are indexed and every request
-  is undone. Files you keep on the device yourself stay downloaded. Documents over 64 MB, media over 1 GB, and any
+  is undone. Files you keep on the device yourself stay downloaded.
+
+  Valafind never deletes, moves or writes your files. It frees a file's space again only when the sync client reports
+  it fully uploaded and no one has written to it since Valafind fetched it; a file you edited, pinned (or whose folder
+  you pinned) or that is still uploading stays on your device. When Valafind can't tell, it leaves the file as it is. Documents over 64 MB, media over 1 GB, and any
   file that would leave less than 2 GB free are indexed by name until they are on your device. On macOS, a provider
   that refuses to take a file back is not downloaded from again; its files are indexed by name.
 - **Skipped:** hidden and app-data folders, `node_modules`, `.git`, build output, caches and the Trash.

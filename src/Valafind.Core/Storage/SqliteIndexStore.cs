@@ -243,11 +243,14 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 size          INTEGER NOT NULL,
                 phase         INTEGER NOT NULL,
                 state         INTEGER NOT NULL,
-                requested_utc INTEGER NOT NULL);
+                requested_utc INTEGER NOT NULL,
+                file_id       INTEGER NOT NULL DEFAULT 0);
             """, tx);
         // Schema 1 → 2: online-only files indexed by name until their content can be read.
         if (!HasColumn(db, tx, "files", "content_pending"))
             Execute(db, "ALTER TABLE files ADD COLUMN content_pending INTEGER NOT NULL DEFAULT 0;", tx);
+        if (!HasColumn(db, tx, "cloud_downloads", "file_id"))
+            Execute(db, "ALTER TABLE cloud_downloads ADD COLUMN file_id INTEGER NOT NULL DEFAULT 0;", tx);
         tx.Commit();
     }
 
@@ -902,13 +905,13 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
     IReadOnlyList<CloudDownload> ICloudDownloadJournal.LoadDownloads() => WithReader(db =>
     {
         using var cmd = db.CreateCommand();
-        cmd.CommandText = "SELECT path, size, phase, state, requested_utc FROM cloud_downloads ORDER BY requested_utc;";
+        cmd.CommandText = "SELECT path, size, phase, state, requested_utc, file_id FROM cloud_downloads ORDER BY requested_utc;";
         using var reader = cmd.ExecuteReader();
         var list = new List<CloudDownload>();
         while (reader.Read())
         {
             list.Add(new CloudDownload(reader.GetString(0), reader.GetInt64(1), (IndexPhase)reader.GetInt32(2),
-                new CloudMark(reader.GetInt32(3)), new DateTimeOffset(reader.GetInt64(4), TimeSpan.Zero)));
+                new CloudMark(reader.GetInt32(3), reader.GetInt64(5)), new DateTimeOffset(reader.GetInt64(4), TimeSpan.Zero)));
         }
         return (IReadOnlyList<CloudDownload>)list;
     });
@@ -921,8 +924,8 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         {
             using var cmd = RequireWriter().CreateCommand();
             cmd.CommandText = """
-                INSERT OR REPLACE INTO cloud_downloads(path_key, path, size, phase, state, requested_utc)
-                VALUES ($key, $path, $size, $phase, $state, $at);
+                INSERT OR REPLACE INTO cloud_downloads(path_key, path, size, phase, state, requested_utc, file_id)
+                VALUES ($key, $path, $size, $phase, $state, $at, $fileId);
                 """;
             cmd.Parameters.AddWithValue("$key", _paths.KeyForPath(download.Path));
             cmd.Parameters.AddWithValue("$path", download.Path);
@@ -930,6 +933,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
             cmd.Parameters.AddWithValue("$phase", (int)download.Phase);
             cmd.Parameters.AddWithValue("$state", download.Mark.State);
             cmd.Parameters.AddWithValue("$at", download.RequestedUtc.UtcTicks);
+            cmd.Parameters.AddWithValue("$fileId", download.Mark.FileId);
             cmd.ExecuteNonQuery();
         }
     }

@@ -32,21 +32,24 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
 
     private static readonly Lock s_initLock = new();
     private static nint s_msgSend;
+    private static nint s_foundation;
     private static bool s_objcUnavailable;
 
     private readonly string _home;
     private readonly Func<string, bool> _isDataless;
     private readonly ConcurrentDictionary<string, byte> _refusesEviction = new(StringComparer.Ordinal);
+    private readonly Func<string, bool?> _isUploaded;
 
     public MacCloudFiles()
-        : this(AppPaths.Home, MacFileFlags.IsDataless)
+        : this(AppPaths.Home, MacFileFlags.IsDataless, IsUploaded)
     {
     }
 
-    internal MacCloudFiles(string home, Func<string, bool> isDataless)
+    internal MacCloudFiles(string home, Func<string, bool> isDataless, Func<string, bool?>? isUploaded = null)
     {
         _home = Path.GetFullPath(home);
         _isDataless = isDataless;
+        _isUploaded = isUploaded ?? IsUploaded;
     }
 
     /// <summary>Allowed time for a download: a minute plus one second per 256 KB (a slow 2 Mbit/s line).</summary>
@@ -54,15 +57,26 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
 
     public bool IsOnlineOnly(string path, FileAttributes attributes) => _isDataless(path);
 
-    public bool CanDownload(string path, long size, bool isMedia) =>
-        CloudFiles.IsWithinSizeLimit(size, isMedia) && !_refusesEviction.ContainsKey(ProviderKey(path)) &&
-        CloudFiles.HasRoomFor(path, size);
+    public bool CanDownload(string path, long size, bool isMedia)
+    {
+        if (!CloudFiles.IsWithinSizeLimit(size, isMedia) || _refusesEviction.ContainsKey(ProviderKey(path)))
+            return false;
+        // A provider that does not say whether its files are uploaded could never be given a file back safely:
+        // download nothing from it.
+        if (_isUploaded(path) is null)
+        {
+            _refusesEviction.TryAdd(ProviderKey(path), 0);
+            return false;
+        }
+        return CloudFiles.HasRoomFor(path, size);
+    }
 
     public IDisposable? Download(string path, long size, CancellationToken cancellationToken)
     {
         if (!_isDataless(path))
             return NoLease.Instance; // already on this device: nothing to give back
 
+        var startedUtc = DateTimeOffset.UtcNow;
         var read = Task.Run(() => Materialize(path), CancellationToken.None);
         bool finished;
         try
@@ -72,30 +86,32 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
         catch (OperationCanceledException)
         {
             // The download goes on in the background; give the file back once it is done.
-            read.ContinueWith(_ => Evict(path), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            read.ContinueWith(_ => Evict(path, startedUtc), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             throw;
         }
         if (!finished)
         {
-            read.ContinueWith(_ => Evict(path), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            read.ContinueWith(_ => Evict(path, startedUtc), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             return null;
         }
         if (!read.Result || _isDataless(path))
             return null;
-        return new Lease(this, path);
+        return new Lease(this, path, startedUtc);
     }
 
-    public CloudMark? RequestDownload(string path)
+    public CloudMark? RequestDownload(string path, Func<CloudMark, bool> record)
     {
         if (!_isDataless(path) || RefusesEviction(path))
             return null;
-        return StartDownloading(path) ? new CloudMark(0) : null;
+        var mark = new CloudMark(0);
+        return record(mark) && StartDownloading(path) ? mark : null;
     }
 
-    public void Release(string path, CloudMark mark)
+    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc)
     {
         if (File.Exists(path) && !_isDataless(path))
-            Evict(path);
+            Evict(path, requestedUtc);
+        return true;
     }
 
     /// <summary><c>[[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:url error:&amp;error]</c>: the
@@ -121,11 +137,15 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
         }
     }
 
-    /// <summary>Makes <paramref name="path"/> online-only again. True when it is dataless afterwards.</summary>
-    internal bool Evict(string path)
+    /// <summary>Makes <paramref name="path"/> online-only again, but only when that cannot lose anything: the
+    /// system reports it as uploaded and no one has written to it since <paramref name="notWrittenSince"/>.
+    /// True when it is dataless afterwards.</summary>
+    internal bool Evict(string path, DateTimeOffset notWrittenSince)
     {
         if (_isDataless(path))
             return true;
+        if (WrittenSince(path, notWrittenSince) || _isUploaded(path) != true)
+            return false; // in use, or changes not uploaded yet: it stays on this device
         if (EvictWithFileManager(path) && WaitUntilDataless(path))
             return true;
         if (EvictWithFileProviderCtl(path) && WaitUntilDataless(path))
@@ -175,6 +195,48 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
             if (Environment.TickCount64 >= deadline || !File.Exists(path))
                 return false;
             Thread.Sleep(100);
+        }
+    }
+
+    private static bool WrittenSince(string path, DateTimeOffset since)
+    {
+        try
+        {
+            return File.GetLastWriteTimeUtc(path) > since.UtcDateTime;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return true; // unknown: assume it was
+        }
+    }
+
+    /// <summary><c>NSURLUbiquitousItemIsUploadedKey</c>: whether the system says the file's data is in the cloud.
+    /// Null when it cannot tell (not a cloud file, or a provider that does not report it).</summary>
+    internal static bool? IsUploaded(string path)
+    {
+        if (!EnsureObjc())
+            return null;
+        var pool = objc_autoreleasePoolPush();
+        try
+        {
+            var url = FileUrl(path);
+            var key = *(nint*)NativeLibrary.GetExport(s_foundation, "NSURLUbiquitousItemIsUploadedKey");
+            if (url == 0 || key == 0)
+                return null;
+            nint value = 0, error = 0;
+            var ok = ((delegate* unmanaged<nint, nint, nint*, nint, nint*, byte>)s_msgSend)(
+                url, Selector("getResourceValue:forKey:error:"), &value, key, &error) != 0;
+            if (!ok || value == 0)
+                return null;
+            return ((delegate* unmanaged<nint, nint, byte>)s_msgSend)(value, Selector("boolValue")) != 0;
+        }
+        catch (EntryPointNotFoundException)
+        {
+            return null;
+        }
+        finally
+        {
+            objc_autoreleasePoolPop(pool);
         }
     }
 
@@ -243,7 +305,7 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
             try
             {
                 var objc = NativeLibrary.Load(Objc);
-                NativeLibrary.Load(Foundation);
+                s_foundation = NativeLibrary.Load(Foundation);
                 s_msgSend = NativeLibrary.GetExport(objc, "objc_msgSend");
                 return true;
             }
@@ -285,14 +347,14 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
     private static nint Msg(nint receiver, string selector, nint a) =>
         ((delegate* unmanaged<nint, nint, nint, nint>)s_msgSend)(receiver, Selector(selector), a);
 
-    private sealed class Lease(MacCloudFiles owner, string path) : IDisposable
+    private sealed class Lease(MacCloudFiles owner, string path, DateTimeOffset startedUtc) : IDisposable
     {
         private int _disposed;
 
         public void Dispose()
         {
             if (Interlocked.Exchange(ref _disposed, 1) == 0)
-                owner.Evict(path);
+                owner.Evict(path, startedUtc);
         }
     }
 

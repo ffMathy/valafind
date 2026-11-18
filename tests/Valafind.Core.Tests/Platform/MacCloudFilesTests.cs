@@ -96,11 +96,11 @@ public class MacCloudFilesTests
         }
         using var tree = new TempTree();
         var path = tree.File("Library/CloudStorage/Fake/report.txt", "content");
-        var cloud = new MacCloudFiles(tree.Root, _ => false);
+        var cloud = new MacCloudFiles(tree.Root, _ => false, _ => true);
         Assert.True(cloud.CanDownload(path, 7, isMedia: false));
 
         // A real local file cannot be evicted (neither NSFileManager nor fileproviderctl will): remembered.
-        Assert.False(cloud.Evict(path));
+        Assert.False(cloud.Evict(path, DateTimeOffset.UtcNow));
 
         Assert.True(cloud.RefusesEviction(path));
         Assert.False(cloud.CanDownload(path, 7, isMedia: false));
@@ -121,10 +121,84 @@ public class MacCloudFilesTests
         var path = tree.File("plain.txt", "local");
         var cloud = new MacCloudFiles();
 
-        Assert.Null(cloud.RequestDownload(path)); // not dataless: nothing to request
+        Assert.Null(cloud.RequestDownload(path, _ => true)); // not dataless: nothing to request
         MacCloudFiles.StartDownloading(path); // not in iCloud: refused or a no-op, never harmful
-        cloud.Release(path, new CloudMark(0));
+        cloud.Release(path, new CloudMark(0), DateTimeOffset.UtcNow);
 
         Assert.Equal("local", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void UploadStateOfALocalFileIsUnknown()
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            Assert.Skip("macOS only.");
+            return;
+        }
+        using var tree = new TempTree();
+        // Not in iCloud or a File Provider domain: Foundation has no upload state for it, and the call is harmless.
+        Assert.Null(MacCloudFiles.IsUploaded(tree.File("plain.txt", "local")));
+    }
+
+    [Fact]
+    public void ProviderThatDoesNotReportUploadStateIsNeverDownloadedFrom()
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            Assert.Skip("macOS only.");
+            return;
+        }
+        using var tree = new TempTree();
+        var path = tree.File("Library/CloudStorage/Fake/report.txt", "content");
+        var cloud = new MacCloudFiles(tree.Root, _ => true, _ => null);
+
+        // Nothing could ever be given back safely, so nothing is downloaded (not even one file is left behind).
+        Assert.False(cloud.CanDownload(path, 7, isMedia: false));
+        Assert.True(cloud.RefusesEviction(path));
+    }
+
+    [Fact]
+    public void FileWithChangesNotUploadedIsNeverEvicted()
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            Assert.Skip("macOS only.");
+            return;
+        }
+        using var tree = new TempTree();
+        var path = tree.File("Library/CloudStorage/Fake/draft.txt", "unsaved work");
+        var since = DateTimeOffset.UtcNow.AddMinutes(1); // not written since: only the upload state decides
+        var cloud = new MacCloudFiles(tree.Root, _ => false, _ => false);
+
+        Assert.False(cloud.Evict(path, since));
+
+        Assert.False(cloud.RefusesEviction(path)); // kept on purpose, not a refusal: the provider stays usable
+        Assert.Equal("unsaved work", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void FileWrittenToSinceItWasDownloadedIsNeverEvicted()
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            Assert.Skip("macOS only.");
+            return;
+        }
+        using var tree = new TempTree();
+        var since = DateTimeOffset.UtcNow.AddMinutes(-1);
+        var path = tree.File("Library/CloudStorage/Fake/notes.txt", "edited by the user"); // written after `since`
+        var uploadChecked = false;
+        var cloud = new MacCloudFiles(tree.Root, _ => false, _ =>
+        {
+            uploadChecked = true;
+            return true;
+        });
+
+        Assert.False(cloud.Evict(path, since));
+
+        Assert.False(uploadChecked); // never got as far as asking to evict
+        Assert.False(cloud.RefusesEviction(path));
+        Assert.Equal("edited by the user", File.ReadAllText(path));
     }
 }

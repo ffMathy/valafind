@@ -130,17 +130,28 @@ internal sealed class CloudPrefetcher : IDisposable
                 return _active.Count == 0 || size > budget ? HoldResult.Failed : HoldResult.NoRoom;
         }
 
-        if (_cloud.RequestDownload(path) is not { } mark)
-            return HoldResult.Failed;
-        var download = new CloudDownload(path, size, phase, mark, _time.GetUtcNow());
-        try
+        // Taken before the request: a write to the file from here on means someone is using it, and it is kept.
+        var requestedUtc = _time.GetUtcNow();
+        CloudDownload? download = null;
+        // Recorded before the file is changed, so even a crash right after the change is undone at the next start.
+        var mark = _cloud.RequestDownload(path, m =>
         {
-            _journal.AddDownload(download);
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
+            download = new CloudDownload(path, size, phase, m, requestedUtc);
+            try
+            {
+                _journal.AddDownload(download);
+                return true;
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                download = null;
+                return false; // not recorded: do not change the file
+            }
+        });
+        if (mark is null || download is null)
         {
-            // Not recorded, so it could not be undone after a restart: undo it now and read the file directly.
-            _cloud.Release(path, mark);
+            if (download is not null)
+                ForgetRecord(path); // recorded, but the change itself failed: nothing to undo
             return HoldResult.Failed;
         }
 
@@ -152,6 +163,18 @@ internal sealed class CloudPrefetcher : IDisposable
             _bytesByDrive[drive] = _bytesByDrive.GetValueOrDefault(drive) + size;
         }
         return HoldResult.Held;
+    }
+
+    private void ForgetRecord(string path)
+    {
+        try
+        {
+            _journal.RemoveDownload(path);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // Left in the journal: released (harmlessly: the file is not pinned by us) after the next restart.
+        }
     }
 
     /// <summary>Takes the requested files that have arrived (or vanished) and, when nothing has arrived for
@@ -205,7 +228,8 @@ internal sealed class CloudPrefetcher : IDisposable
         cancellationToken.ThrowIfCancellationRequested();
     }
 
-    /// <summary>Gives a requested file back (online-only again, original setting restored) and forgets it.</summary>
+    /// <summary>Gives a requested file back (online-only again when that is safe, original setting restored) and
+    /// forgets it. A file another program has open stays recorded and is given back after the next restart.</summary>
     public void Release(string path)
     {
         Entry? entry;
@@ -221,15 +245,17 @@ internal sealed class CloudPrefetcher : IDisposable
             else
                 _bytesByDrive.Remove(drive);
         }
+        var done = true;
         try
         {
-            _cloud.Release(entry.Path, entry.Download.Mark);
+            done = _cloud.Release(entry.Path, entry.Download.Mark, entry.Download.RequestedUtc);
         }
         finally
         {
             try
             {
-                _journal.RemoveDownload(entry.Path);
+                if (done)
+                    _journal.RemoveDownload(entry.Path);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {

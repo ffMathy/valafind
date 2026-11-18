@@ -56,8 +56,19 @@ internal sealed class FakeCloud : ICloudFiles
         set => ArriveImmediatelyField = value;
     }
 
-    public CloudMark? RequestDownload(string path)
+    /// <summary>Releases report the file as in use (to be retried after a restart).</summary>
+    public bool ReleaseBusy { get; set; }
+
+    /// <summary>Journal rows that existed when each request changed its file (record-before-change check).</summary>
+    public Func<string, bool>? RecordedBeforeChange { get; set; }
+    public bool ChangedBeforeRecorded;
+
+    public CloudMark? RequestDownload(string path, Func<CloudMark, bool> record)
     {
+        if (!record(new CloudMark(0)))
+            return null;
+        if (RecordedBeforeChange is { } recorded && !recorded(path))
+            ChangedBeforeRecorded = true;
         lock (OnlineOnly)
         {
             if (RefuseRequests)
@@ -80,15 +91,18 @@ internal sealed class FakeCloud : ICloudFiles
         }
     }
 
-    public void Release(string path, CloudMark mark)
+    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc)
     {
         lock (OnlineOnly)
         {
+            if (ReleaseBusy)
+                return false;
             Released.Add(path);
             Requested.Remove(path);
             if (File.Exists(path))
                 OnlineOnly.Add(path); // online-only again
         }
+        return true;
     }
 
     public int RequestedCount
@@ -358,5 +372,27 @@ public class CloudFileIndexingTests
         {
         }
         Assert.Equal("local", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void WindowsNeverFreesUpOrRepinsAFileThatIsNotACloudPlaceholder()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Cloud Files API is Windows-only.");
+            return;
+        }
+        using var tree = new TempTree();
+        var path = tree.File("plain.txt", "local and precious");
+        var attributes = File.GetAttributes(path);
+        var cloud = new WindowsCloudFiles();
+
+        // A stale record pointing at a path that now holds an ordinary file: nothing is touched.
+        Assert.True(cloud.Release(path, new CloudMark(0, FileId: 12345), DateTimeOffset.UtcNow.AddHours(-1)));
+        Assert.NotEqual(WindowsCloudFiles.FreeResult.Freed, WindowsCloudFiles.FreeUpSpace(path, DateTimeOffset.UtcNow));
+        Assert.Null(cloud.RequestDownload(path, _ => throw new InvalidOperationException("must not record a local file")));
+
+        Assert.Equal("local and precious", File.ReadAllText(path));
+        Assert.Equal(attributes, File.GetAttributes(path));
     }
 }
