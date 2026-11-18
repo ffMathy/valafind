@@ -91,6 +91,26 @@ public class UserFileDiscoveryTests
         Assert.Equal(expected, AppPaths.RealHome(home, inAppSandbox));
 
     [Fact]
+    public void WalkWithStatsReportsTheSameFilesWithTheirSizeAndMtime()
+    {
+        using var tree = new TempTree();
+        var when = new DateTime(2024, 3, 4, 5, 6, 7, DateTimeKind.Utc);
+        tree.File("home/a.txt", "alpha", when);
+        tree.File("home/sub/b.md", "bravo bravo", when.AddDays(1));
+        var discovery = Create(tree);
+
+        var withStats = discovery.EnumerateAllFilesWithStats(TestContext.Current.CancellationToken).ToList();
+        Assert.Equal(discovery.EnumerateAllFiles(TestContext.Current.CancellationToken), withStats.Select(f => f.Path));
+        Assert.All(withStats, f =>
+        {
+            var info = new FileInfo(f.Path);
+            Assert.Equal(info.Length, f.Size);
+            Assert.Equal(new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero), f.ModifiedUtc);
+        });
+        Assert.Equal(new DateTimeOffset(when, TimeSpan.Zero), withStats.Single(f => f.Path.EndsWith("a.txt", StringComparison.Ordinal)).ModifiedUtc);
+    }
+
+    [Fact]
     public void WalksBreadthFirstAndAppliesExclusions()
     {
         using var tree = new TempTree();
