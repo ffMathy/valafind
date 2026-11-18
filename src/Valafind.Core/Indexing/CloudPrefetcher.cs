@@ -85,6 +85,9 @@ internal sealed class CloudPrefetcher : IDisposable
         public CloudDownload Download { get; } = download;
         public Action? OnDone { get; } = onDone;
         public string Path => Download.Path;
+
+        /// <summary>Set (under the prefetcher's lock) once a release has begun, so it happens once.</summary>
+        public bool Releasing { get; set; }
     }
 
     internal enum HoldResult
@@ -235,15 +238,10 @@ internal sealed class CloudPrefetcher : IDisposable
         Entry? entry;
         lock (_lock)
         {
-            if (!_active.Remove(path, out entry))
+            if (!_active.TryGetValue(path, out entry) || entry.Releasing)
                 return;
+            entry.Releasing = true;
             _waiting.Remove(entry);
-            var drive = DriveOf(path);
-            var bytes = _bytesByDrive.GetValueOrDefault(drive) - entry.Download.Size;
-            if (bytes > 0)
-                _bytesByDrive[drive] = bytes;
-            else
-                _bytesByDrive.Remove(drive);
         }
         var done = true;
         try
@@ -252,6 +250,17 @@ internal sealed class CloudPrefetcher : IDisposable
         }
         finally
         {
+            // Counted against the limits until it is actually given back: until then it is still on the disk.
+            lock (_lock)
+            {
+                _active.Remove(path);
+                var drive = DriveOf(path);
+                var bytes = _bytesByDrive.GetValueOrDefault(drive) - entry.Download.Size;
+                if (bytes > 0)
+                    _bytesByDrive[drive] = bytes;
+                else
+                    _bytesByDrive.Remove(drive);
+            }
             try
             {
                 if (done)
