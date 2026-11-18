@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>Zaɓi fayil ɗin ajiya na samfurin EmbeddingGemma 2</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>Yana dakatarwa ta atomatik idan CPU ya wuce {0} ko aikin faifai ya yi yawa</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>Yana ci gaba ta atomatik idan CPU da faifai ba sa aiki</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Nuna ko ɓoye Valafind</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>DALILIN DACEWA · SASHI MAFI KUSA</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>Yana ƙara ko rage gudu don riƙe CPU kusa da {0} da faifai kusa da {1}</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>Yana ci gaba idan an haɗa kwamfutar da wuta</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>Manufa {0}</value>
   </data>
 </root>

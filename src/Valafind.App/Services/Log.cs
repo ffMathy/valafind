@@ -17,8 +17,8 @@ internal static partial class Log
     [LoggerMessage(4, LogLevel.Warning, "Model lookup failed")]
     public static partial void ModelLookupFailed(ILogger logger, Exception exception);
 
-    [LoggerMessage(5, LogLevel.Information, "Core services ready in {ElapsedMs} ms (model {ModelId})")]
-    public static partial void CoreReady(ILogger logger, long elapsedMs, string modelId);
+    [LoggerMessage(5, LogLevel.Information, "Core services ready in {ElapsedMs} ms (model {ModelId} on {Device})")]
+    public static partial void CoreReady(ILogger logger, long elapsedMs, string modelId, string device);
 
     [LoggerMessage(6, LogLevel.Error, "Failed to start Core services")]
     public static partial void CoreFailed(ILogger logger, Exception exception);

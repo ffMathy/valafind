@@ -132,12 +132,17 @@
             <Grid ColumnDefinitions="Auto,*,58" RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4"
                   TextElement.FontSize="11.5" TextElement.Foreground="{DynamicResource VfSubtleBrush}">
               <TextBlock Text="{x:Static l:Strings.IndexCpu}" VerticalAlignment="Center" />
+              <!-- The tick on each meter is the level indexing steers towards (a little under the limit). -->
               <c:MeterBar Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsCpuHigh}" Height="4" Radius="2"
-                          VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}" />
+                          VerticalAlignment="Center" Value="{Binding Status.CpuFraction}" Track="{DynamicResource VfTrackBrush}"
+                          Marker="{Binding Status.CpuTargetFraction}" MarkerBrush="{DynamicResource VfTextBrush}"
+                          ToolTip.Tip="{Binding Status.CpuTargetText}" />
               <TextBlock Grid.Column="2" Classes="num" Text="{Binding Status.CpuText}" HorizontalAlignment="Right" />
               <TextBlock Grid.Row="1" Text="{x:Static l:Strings.IndexDisk}" VerticalAlignment="Center" />
               <c:MeterBar Grid.Row="1" Grid.Column="1" Classes="pressure" Classes.high="{Binding Status.IsDiskHigh}" Height="4"
-                          Radius="2" VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}" />
+                          Radius="2" VerticalAlignment="Center" Value="{Binding Status.DiskFraction}" Track="{DynamicResource VfTrackBrush}"
+                          Marker="{Binding Status.DiskTargetFraction}" MarkerBrush="{DynamicResource VfTextBrush}"
+                          ToolTip.Tip="{Binding Status.DiskTargetText}" />
               <TextBlock Grid.Row="1" Grid.Column="2" Classes="num" Text="{Binding Status.DiskText}" HorizontalAlignment="Right" />
             </Grid>
           </StackPanel>

@@ -16,9 +16,13 @@ internal sealed class CoreServices(
     IIndexStore store,
     ISearchService search,
     IIndexingService indexing,
-    ISystemPressureMonitor monitor) : IAsyncDisposable
+    ISystemPressureMonitor monitor,
+    string device = "CPU") : IAsyncDisposable
 {
     public IEmbeddingModel Model { get; } = model;
+
+    /// <summary>Where the model runs, e.g. "CPU" or "GPU: NVIDIA (WebGPU)" (with the reason when the GPU was not usable).</summary>
+    public string Device { get; } = device;
     public IIndexStore Store { get; } = store;
     public ISearchService Search { get; } = search;
     public IIndexingService Indexing { get; } = indexing;
@@ -138,6 +142,8 @@ internal static class CoreServicesFactory
             {
                 ModelDirectory = modelDirectory,
                 Dimensions = settings.EmbeddingDimensions,
+                Device = settings.UseGpu ? EmbeddingDevice.Auto : EmbeddingDevice.Cpu,
+                GpuCrashMarker = Path.Combine(AppPaths.DataDirectory, "gpu-check.pending"),
             });
             model = gemma;
             // Load now (we are off the UI thread) rather than on the first keystroke: a corrupt model surfaces as
@@ -158,7 +164,10 @@ internal static class CoreServicesFactory
             IIndexingService indexing = new IndexingCoordinator(discovery, reader, chunker, model, store, monitor, settings,
                 loggerFactory.CreateLogger<IndexingCoordinator>(), null, mediaDecoder);
 
-            return new CoreServices(model, store, search, indexing, monitor);
+            var device = gemma.ActiveDevice ?? "CPU";
+            if (gemma.GpuUnavailableReason is { } why)
+                device += $" ({why})";
+            return new CoreServices(model, store, search, indexing, monitor, device);
         }
         catch
         {

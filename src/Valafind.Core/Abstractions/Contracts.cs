@@ -231,6 +231,8 @@ public enum IndexingState
 {
     Starting,
     Running,
+    /// <summary>No longer raised: system load slows indexing down (<see cref="Indexing.IndexingPace"/>) instead of
+    /// pausing it. Kept so stored values and the UI's texts for it stay valid.</summary>
     PausedSystemBusy,
     PausedOnBattery,
     PausedByUser,

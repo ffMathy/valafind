@@ -16,7 +16,7 @@ public class IndexingCoordinatorReviewFixTests
         Debounce = TimeSpan.FromMilliseconds(100),
         IdlePoll = TimeSpan.FromMilliseconds(200),
         ModelBackoffUnit = TimeSpan.FromMilliseconds(1),
-        Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+        Throttle = new ThrottleOptions(30, 25, true, TimeSpan.FromMilliseconds(25)),
         Pace = new IndexingPace(maxConcurrency: 1, processorCount: 1), // one file at a time: these tests check order
         StartupCheckDelay = TimeSpan.Zero, // a restart catches up right away
         History = null, // walk on every platform; ChangeHistoryTests cover the replay

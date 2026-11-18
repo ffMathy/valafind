@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>Ordner des EmbeddingGemma 2-Modells auswählen</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>Pausiert automatisch, wenn die CPU-Last {0} übersteigt oder der Datenträger stark ausgelastet ist</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>Wird automatisch fortgesetzt, wenn CPU und Datenträger im Leerlauf sind</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind ein- oder ausblenden</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>WARUM ES PASST · ÄHNLICHSTE STELLE</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>Wird schneller oder langsamer, um die CPU-Last bei etwa {0} und die Datenträgerlast bei etwa {1} zu halten</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>Wird fortgesetzt, sobald der Computer am Netz ist</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>Ziel {0}</value>
   </data>
 </root>

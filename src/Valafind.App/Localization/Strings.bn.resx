@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>EmbeddingGemma 2 মডেল ফোল্ডার বেছে নিন</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>CPU {0} ছাড়িয়ে গেলে বা ডিস্কের কার্যকলাপ বেশি হলে স্বয়ংক্রিয়ভাবে বিরতি নেয়</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>CPU ও ডিস্ক নিষ্ক্রিয় হলে স্বয়ংক্রিয়ভাবে আবার চালু হয়</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind দেখান বা লুকান</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>কেন মিলেছে · নিকটতম অংশ</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>CPU {0} ও ডিস্ক {1}-এর কাছাকাছি রাখতে গতি বাড়ায় বা কমায়</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>কম্পিউটার চার্জে লাগালে আবার শুরু হয়</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>লক্ষ্য {0}</value>
   </data>
 </root>

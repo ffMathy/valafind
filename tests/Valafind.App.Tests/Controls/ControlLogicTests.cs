@@ -77,3 +77,31 @@ public sealed class ControlLogicTests
     [InlineData(null, null)]
     public void FlavorOverrideParsing(string? value, UiFlavor? expected) => Assert.Equal(expected, UiFlavors.Parse(value));
 }
+
+public sealed class MeterBarMarkerTests
+{
+    [Fact]
+    public void Marker_is_a_tick_across_the_bar_at_its_fraction()
+    {
+        var rect = MeterBar.MarkerRect(200, 4, 0.27);
+        Assert.NotNull(rect);
+        Assert.Equal(200 * 0.27 - MeterBar.MarkerWidth / 2, rect.Value.X, 6);
+        Assert.Equal(-MeterBar.MarkerOverhang, rect.Value.Y);
+        Assert.Equal(4 + 2 * MeterBar.MarkerOverhang, rect.Value.Height);
+    }
+
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(1.0)]
+    public void Marker_stays_inside_the_bar_at_the_ends(double fraction)
+    {
+        var rect = MeterBar.MarkerRect(100, 4, fraction)!.Value;
+        Assert.InRange(rect.X, 0, 100 - MeterBar.MarkerWidth);
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(-0.1)]
+    [InlineData(1.1)]
+    public void No_marker_without_a_valid_fraction(double fraction) => Assert.Null(MeterBar.MarkerRect(100, 4, fraction));
+}

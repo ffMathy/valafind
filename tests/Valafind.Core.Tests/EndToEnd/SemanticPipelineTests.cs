@@ -78,7 +78,7 @@ public sealed class SemanticPipelineTests : IDisposable
                          {
                              Debounce = TimeSpan.FromMilliseconds(100),
                              IdlePoll = TimeSpan.FromMilliseconds(200),
-                             Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+                             Throttle = new ThrottleOptions(30, 25, true, TimeSpan.FromMilliseconds(25)),
                          }))
         {
             await coordinator.StartAsync(TestContext.Current.CancellationToken);
@@ -169,7 +169,7 @@ public sealed class SemanticPipelineTests : IDisposable
                          {
                              Debounce = TimeSpan.FromMilliseconds(100),
                              IdlePoll = TimeSpan.FromMilliseconds(200),
-                             Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
+                             Throttle = new ThrottleOptions(30, 25, true, TimeSpan.FromMilliseconds(25)),
                          }, new Valafind.Core.Extraction.Media.MediaDecoder()))
         {
             await coordinator.StartAsync(TestContext.Current.CancellationToken);

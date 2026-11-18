@@ -1,9 +1,10 @@
 namespace Valafind.Core.Indexing;
 
 /// <summary>
-/// How hard background indexing works, steered by a <see cref="PidController"/> so whole-machine CPU settles just
-/// under the user's limit: when the machine has room (say the limit is 30 % and it sits at 10 %), indexing speeds up;
-/// when other programs need the CPU, it backs off before the <see cref="ThrottleGate"/> has to pause it.
+/// How hard background indexing works, steered by two <see cref="PidController"/>s so whole-machine CPU and disk
+/// activity settle just under the user's limits: when the machine has room (say the CPU limit is 30 % and it sits at
+/// 10 %), indexing speeds up; when other programs need the CPU or the disk, it slows down, to a trickle at worst. It
+/// never stops: only the user (or the battery rule) pauses indexing.
 /// </summary>
 /// <remarks>
 /// <para>The controller's output, <see cref="Effort"/>, is measured in cores' worth of indexing work. It is applied
@@ -15,11 +16,14 @@ namespace Valafind.Core.Indexing;
 /// converted from percent of the machine to units of effort (cores, divided by the learnt <see cref="CoresPerEffort"/>),
 /// so the same gains work on 2 and on 32 cores, and whether a worker keeps one core or three busy. Readings are only fed
 /// in while indexing actually runs; paused or idle periods would otherwise wind the controller up.</para>
-/// <para>Thread-safe: <see cref="Update"/> is called by the gate's sampling loop, the getters by worker threads.</para>
+/// <para>Disk busy time is steered the same way by a second controller (error divided by the learnt
+/// <see cref="DiskPerEffort"/>). The lower of the two outputs is applied (<see cref="LimitedBy"/>), and the other
+/// controller tracks it (<see cref="PidController.TrackDown"/>) instead of winding up.</para>
+/// <para>Thread-safe: <c>Update</c> is called by the gate's sampling loop, the getters by worker threads.</para>
 /// </remarks>
 public sealed class IndexingPace
 {
-    /// <summary>Lowest effort: one worker at 20 % duty. Never zero; pausing completely is the gate's job.</summary>
+    /// <summary>Lowest effort: one worker at 20 % duty. Never zero: system load slows indexing down, it never stops it.</summary>
     public const double MinEffort = 0.2;
 
     /// <summary>Longest single rest, so a worker notices a faster pace soon after it is set.</summary>
@@ -31,17 +35,24 @@ public sealed class IndexingPace
     internal static PidGains DefaultGains(int maxConcurrency) =>
         new(Kp: 0.25, Ki: 0.15, Kd: 0.1, OutputMin: MinEffort, OutputMax: Math.Max(1, maxConcurrency), DerivativeSmoothing: 0.3);
 
-    /// <summary>Bounds and smoothing of the <see cref="CoresPerEffort"/> estimate.</summary>
-    private const double MinCoresPerEffort = 0.25, MaxCoresPerEffort = 4, CoresPerEffortSmoothing = 0.3;
+    /// <summary>Bounds of the <see cref="CoresPerEffort"/> and <see cref="DiskPerEffort"/> estimates and how fast they
+    /// follow new observations. Disk is bounded below at 5 % so the disk loop's gain stays sane while indexing barely
+    /// touches the disk (text files are CPU-bound); the CPU limit is in charge then anyway.</summary>
+    private const double MinCoresPerEffort = 0.25, MaxCoresPerEffort = 4, MinDiskPerEffort = 5, MaxDiskPerEffort = 100,
+        DefaultDiskPerEffort = 10, LearnSmoothing = 0.3;
 
     private readonly Lock _lock = new();
     private readonly PidController _pid;
+    private readonly PidController _diskPid;
     private readonly int _processorCount;
     private double _effort;
     private double _target;
     private int _inFlight;
     private int _peakInFlight;
     private double _coresPerEffort = 1;
+    private double _diskPerEffort = DefaultDiskPerEffort;
+    private double _diskTarget;
+    private PaceLimit _limitedBy;
 
     /// <summary>Creates a pace starting at <paramref name="initialEffort"/> cores.</summary>
     /// <param name="maxConcurrency">Most files indexed at once.</param>
@@ -53,6 +64,7 @@ public sealed class IndexingPace
         MaxConcurrency = Math.Max(1, maxConcurrency);
         _processorCount = Math.Max(1, processorCount);
         _pid = new PidController(gains ?? DefaultGains(MaxConcurrency), initialEffort);
+        _diskPid = new PidController(gains ?? DefaultGains(MaxConcurrency), initialEffort);
         _effort = _pid.Output;
     }
 
@@ -84,6 +96,24 @@ public sealed class IndexingPace
         get { lock (_lock) return _coresPerEffort; }
     }
 
+    /// <summary>Disk busy time (percent) one unit of <see cref="Effort"/> adds, learnt like <see cref="CoresPerEffort"/>.</summary>
+    public double DiskPerEffort
+    {
+        get { lock (_lock) return _diskPerEffort; }
+    }
+
+    /// <summary>Disk busy time (percent) the disk controller steers towards; 0 when the platform reports none.</summary>
+    public double DiskTargetPercent
+    {
+        get { lock (_lock) return _diskTarget; }
+    }
+
+    /// <summary>Which limit set the current <see cref="Effort"/>.</summary>
+    public PaceLimit LimitedBy
+    {
+        get { lock (_lock) return _limitedBy; }
+    }
+
     /// <summary>Files to index at the same time: <see cref="Effort"/> rounded up.</summary>
     public int Concurrency => ConcurrencyFor(Effort, MaxConcurrency);
 
@@ -97,40 +127,70 @@ public sealed class IndexingPace
 
     internal static double DutyCycleFor(double effort, int max) => Math.Clamp(effort / ConcurrencyFor(effort, max), MinEffort, 1);
 
-    /// <summary>The setpoint for a CPU limit: a little under it, so the noise of real readings averages out below the
+    /// <summary>The setpoint for a limit: a little under it, so the noise of real readings averages out below the
     /// limit instead of around it (27 % for a 30 % limit, 95 % for 100 %).</summary>
-    public static double TargetFor(double maxCpuPercent)
+    public static double TargetFor(double limitPercent)
     {
-        var limit = Math.Clamp(maxCpuPercent, 1, 100);
+        var limit = Math.Clamp(limitPercent, 1, 100);
         return limit - Math.Min(5, limit * 0.1);
     }
 
-    /// <summary>Feeds one whole-machine CPU reading taken while indexing ran.</summary>
-    /// <param name="maxCpuPercent">The user's limit.</param>
-    /// <param name="machineCpuPercent">Whole-machine CPU over the last interval, Valafind included.</param>
+    /// <summary>Feeds one whole-machine CPU reading taken while indexing ran (no disk reading).</summary>
+    public void Update(double maxCpuPercent, double machineCpuPercent, TimeSpan dt, double? ownCpuPercent = null) =>
+        Update(new PaceReading(maxCpuPercent, machineCpuPercent, ownCpuPercent), dt);
+
+    /// <summary>Feeds one reading taken while indexing ran. CPU and disk each have their own PID controller; the
+    /// effort is the lower of their outputs (whichever resource is closer to its limit decides), and the other
+    /// controller is pulled down to it so it does not wind up while it is not in charge.</summary>
+    /// <param name="reading">Limits and whole-machine readings over the last interval (Valafind included).</param>
     /// <param name="dt">Time since the previous reading.</param>
-    /// <param name="ownCpuPercent">Valafind's own share of the machine over the same interval, when known; teaches
-    /// <see cref="CoresPerEffort"/>.</param>
-    public void Update(double maxCpuPercent, double machineCpuPercent, TimeSpan dt, double? ownCpuPercent = null)
+    public void Update(PaceReading reading, TimeSpan dt)
     {
         bool changed;
         lock (_lock)
         {
-            _target = TargetFor(maxCpuPercent);
-            var toCores = _processorCount / 100.0;
             // Only speed up when the workers we already allow were all in use: with less work than slots (a walk over
-            // unchanged files, one big file), more effort would not show in the reading and the controller would wind
+            // unchanged files, one big file), more effort would not show in the reading and the controllers would wind
             // up, then overshoot the moment real work arrives.
             var saturated = _peakInFlight >= ConcurrencyFor(_effort, MaxConcurrency);
             _peakInFlight = _inFlight;
-            if (saturated && ownCpuPercent is { } own && dt > TimeSpan.Zero)
+            // _effort is what was applied during the interval this reading covers.
+            var applied = Math.Max(_effort, MinEffort);
+
+            _target = TargetFor(reading.MaxCpuPercent);
+            var toCores = _processorCount / 100.0;
+            if (saturated && reading.OwnCpuPercent is { } ownCpu && dt > TimeSpan.Zero)
             {
-                // _effort is what was applied during the interval this reading covers.
-                var observed = Math.Clamp(own * toCores / Math.Max(_effort, MinEffort), MinCoresPerEffort, MaxCoresPerEffort);
-                _coresPerEffort += CoresPerEffortSmoothing * (observed - _coresPerEffort);
+                var observed = Math.Clamp(ownCpu * toCores / applied, MinCoresPerEffort, MaxCoresPerEffort);
+                _coresPerEffort += LearnSmoothing * (observed - _coresPerEffort);
             }
-            var toEffort = toCores / _coresPerEffort;
-            var output = _pid.Update(_target * toEffort, Math.Clamp(machineCpuPercent, 0, 100) * toEffort, dt, allowIncrease: saturated);
+            var cpuToEffort = toCores / _coresPerEffort;
+            var output = _pid.Update(_target * cpuToEffort, Math.Clamp(reading.MachineCpuPercent, 0, 100) * cpuToEffort, dt, allowIncrease: saturated);
+            _limitedBy = PaceLimit.Cpu;
+
+            if (reading.DiskBusyPercent is { } disk)
+            {
+                _diskTarget = TargetFor(reading.MaxDiskBusyPercent);
+                if (saturated && reading.OwnDiskBusyPercent is { } ownDisk && dt > TimeSpan.Zero)
+                {
+                    var observed = Math.Clamp(ownDisk / applied, MinDiskPerEffort, MaxDiskPerEffort);
+                    _diskPerEffort += LearnSmoothing * (observed - _diskPerEffort);
+                }
+                var diskOutput = _diskPid.Update(_diskTarget / _diskPerEffort, Math.Clamp(disk, 0, 100) / _diskPerEffort, dt, allowIncrease: saturated);
+                if (diskOutput < output)
+                {
+                    output = diskOutput;
+                    _limitedBy = PaceLimit.Disk;
+                }
+            }
+            else
+            {
+                _diskTarget = 0;
+                _diskPid.ForgetMeasurement(); // no disk metrics on this platform (or right now)
+            }
+
+            _pid.TrackDown(output);
+            _diskPid.TrackDown(output);
             changed = Math.Abs(output - _effort) > 1e-9;
             _effort = output;
         }
@@ -154,6 +214,7 @@ public sealed class IndexingPace
     {
         lock (_lock)
             _pid.ForgetMeasurement();
+            _diskPid.ForgetMeasurement();
     }
 
     /// <summary>Raises the effort to at least <paramref name="effort"/> (used while the user forces indexing on).</summary>
@@ -166,6 +227,7 @@ public sealed class IndexingPace
             if (changed)
             {
                 _pid.Reset(effort);
+                _diskPid.Reset(effort);
                 _effort = _pid.Output;
             }
         }
@@ -185,3 +247,24 @@ public sealed class IndexingPace
         return TimeSpan.FromMilliseconds(Math.Min(rest, MaxRest.TotalMilliseconds));
     }
 }
+
+/// <summary>The resource that currently limits <see cref="IndexingPace.Effort"/>.</summary>
+public enum PaceLimit
+{
+    /// <summary>Whole-machine CPU.</summary>
+    Cpu,
+
+    /// <summary>Disk busy time.</summary>
+    Disk,
+}
+
+/// <summary>One sample for <see cref="IndexingPace.Update(PaceReading, TimeSpan)"/>; percentages of the whole machine
+/// (or disk), Valafind included.</summary>
+/// <param name="MaxCpuPercent">The user's CPU limit.</param>
+/// <param name="MachineCpuPercent">Whole-machine CPU over the interval.</param>
+/// <param name="OwnCpuPercent">Valafind's share of it, when known.</param>
+/// <param name="MaxDiskBusyPercent">The user's disk limit.</param>
+/// <param name="DiskBusyPercent">Disk busy time over the interval; null when the platform does not report it.</param>
+/// <param name="OwnDiskBusyPercent">Valafind's estimated share of it, when known.</param>
+public readonly record struct PaceReading(double MaxCpuPercent, double MachineCpuPercent, double? OwnCpuPercent = null,
+    double MaxDiskBusyPercent = 100, double? DiskBusyPercent = null, double? OwnDiskBusyPercent = null);

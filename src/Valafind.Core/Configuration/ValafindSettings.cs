@@ -17,14 +17,12 @@ public sealed class ValafindSettings
     public List<string> Excludes { get; set; } = [];
 
     /// <summary>Whole-machine CPU budget (percent). Indexing speeds up or slows down to keep total CPU just under it
-    /// (<see cref="Indexing.IndexingPace"/>), and pauses while other programs alone use more.</summary>
+    /// (<see cref="Indexing.IndexingPace"/>); it never pauses for CPU, it only slows down.</summary>
     public double MaxCpuPercent { get; set; } = 30;
 
-    /// <summary>Index only while disk busy time stays below this (percent).</summary>
+    /// <summary>Disk busy-time budget (percent), steered like <see cref="MaxCpuPercent"/>: indexing slows down to keep
+    /// disk activity just under it and never pauses for it.</summary>
     public double MaxDiskBusyPercent { get; set; } = 25;
-
-    /// <summary>Pressure must stay below the thresholds this long before indexing (re)starts.</summary>
-    public int CalmSeconds { get; set; } = 15;
 
     public bool PauseOnBattery { get; set; } = true;
 
@@ -32,6 +30,10 @@ public sealed class ValafindSettings
 
     /// <summary>Matryoshka output size: 768, 512, 256 or 128. Changing it re-embeds everything.</summary>
     public int EmbeddingDimensions { get; set; } = 256;
+
+    /// <summary>Run the embedding model on the GPU when one is usable (WebGPU: D3D12, Vulkan or Metal), else the CPU.
+    /// Off: always the CPU. Takes effect on the next start.</summary>
+    public bool UseGpu { get; set; } = true;
 
     /// <summary>Directory holding EmbeddingGemma (tokenizer.model + onnx/model*.onnx). Null = auto-locate.</summary>
     public string? ModelDirectory { get; set; }

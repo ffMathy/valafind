@@ -25,7 +25,7 @@ public class ThrottleGateIdleTests
     {
         var time = new ManualTimeProvider();
         var monitor = new FakeMonitor();
-        using var gate = new ThrottleGate(monitor, () => new ThrottleOptions(30, 25, TimeSpan.Zero, true), time, new FakeOwnUsage(), 4);
+        using var gate = new ThrottleGate(monitor, () => new ThrottleOptions(30, 25, true), time, new FakeOwnUsage(), 4);
         await gate.StartAsync(TestContext.Current.CancellationToken);
         await WaitFor(() => monitor.Samples == 1, "first sample");
         await Settle();
@@ -60,15 +60,15 @@ public class ThrottleGateIdleTests
     public async Task WaiterWakesADormantGate()
     {
         var time = new ManualTimeProvider();
-        var monitor = new FakeMonitor { DiskBusy = 100 };
-        using var gate = new ThrottleGate(monitor, () => new ThrottleOptions(30, 25, TimeSpan.Zero, true), time, new FakeOwnUsage(), 4);
+        var monitor = new FakeMonitor { OnBattery = true };
+        using var gate = new ThrottleGate(monitor, () => new ThrottleOptions(30, 25, true), time, new FakeOwnUsage(), 4);
         gate.SetIdle(true);
         await gate.StartAsync(TestContext.Current.CancellationToken);
         await WaitFor(() => monitor.Samples == 1, "first sample");
         await Settle();
         Assert.False(gate.IsOpen);
 
-        monitor.DiskBusy = 0;
+        monitor.OnBattery = false;
         var open = gate.WaitUntilOpenAsync(TestContext.Current.CancellationToken);
         await WaitFor(() => monitor.Samples == 2, "wake-up sample");
         await open.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
@@ -78,10 +78,10 @@ public class ThrottleGateIdleTests
     [Fact]
     public void IdleIntervalIsNeverShorterThanTheRegularOne()
     {
-        Assert.Equal(TimeSpan.FromSeconds(60), new ThrottleOptions(30, 25, TimeSpan.Zero, true).EffectiveIdleSampleInterval);
+        Assert.Equal(TimeSpan.FromSeconds(60), new ThrottleOptions(30, 25, true).EffectiveIdleSampleInterval);
         Assert.Equal(TimeSpan.FromSeconds(90),
-            new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromSeconds(90)).EffectiveIdleSampleInterval);
+            new ThrottleOptions(30, 25, true, TimeSpan.FromSeconds(90)).EffectiveIdleSampleInterval);
         Assert.Equal(TimeSpan.FromSeconds(5),
-            new ThrottleOptions(30, 25, TimeSpan.Zero, true, null, TimeSpan.FromSeconds(5)).EffectiveIdleSampleInterval);
+            new ThrottleOptions(30, 25, true, null, TimeSpan.FromSeconds(5)).EffectiveIdleSampleInterval);
     }
 }

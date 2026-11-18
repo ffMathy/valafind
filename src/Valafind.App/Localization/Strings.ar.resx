@@ -339,12 +339,6 @@
   <data name="PickModelFolder" xml:space="preserve">
     <value>اختر مجلد نموذج EmbeddingGemma 2</value>
   </data>
-  <data name="PolicyPauses" xml:space="preserve">
-    <value>تتوقف مؤقتًا تلقائيًا عندما يتجاوز استخدام المعالج {0} أو يرتفع نشاط القرص</value>
-  </data>
-  <data name="PolicyResumes" xml:space="preserve">
-    <value>تُستأنف تلقائيًا عندما يكون المعالج والقرص في وضع الخمول</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>إظهار Valafind أو إخفاؤه</value>
   </data>
@@ -635,5 +629,14 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>سبب التطابق · أقرب مقطع</value>
+  </data>
+  <data name="PolicyAdapts" xml:space="preserve">
+    <value>يُسرّع أو يُبطئ ليُبقي المعالج قرب {0} والقرص قرب {1}</value>
+  </data>
+  <data name="PolicyResumesOnPower" xml:space="preserve">
+    <value>يستأنف عند توصيل الكمبيوتر بالكهرباء</value>
+  </data>
+  <data name="IndexTargetTooltip" xml:space="preserve">
+    <value>الهدف {0}</value>
   </data>
 </root>

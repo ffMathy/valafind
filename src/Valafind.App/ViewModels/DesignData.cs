@@ -74,9 +74,10 @@ public static class DesignData
         _ => "/home/mathias/Applications/Valafind",
     };
 
+    /// <summary>Indexing under load: the pace keeps CPU and disk just under their targets (the meters' ticks).</summary>
     internal static IndexStatus BusyStatus { get; } = new(
-        IndexingState.PausedSystemBusy, IndexPhase.All, 6214, 6214, 182_930, 446_120, true,
-        new PressureSample(Now, 78, 70, 92d * 1024 * 1024, false), null) { IndexedByKind = SampleKindCounts };
+        IndexingState.Running, IndexPhase.All, 6214, 6214, 182_930, 446_120, true,
+        new PressureSample(Now, 26, 21, 92d * 1024 * 1024, false), null) { IndexedByKind = SampleKindCounts };
 
     internal static IndexStatus IdleStatus { get; } = new(
         IndexingState.Running, IndexPhase.All, 6214, 6214, 182_930, 446_120, true,
