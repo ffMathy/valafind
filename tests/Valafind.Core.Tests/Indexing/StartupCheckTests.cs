@@ -68,15 +68,20 @@ public class StartupCheckTests
 
         var reader = new FakeReader();
         await using var coordinator = Create(discovery, store, Tuning with { StartupCheckDelay = TimeSpan.FromSeconds(2) }, reader);
+        var startedUtc = DateTime.UtcNow;
         var started = Stopwatch.StartNew();
         await RunUntilUpToDate(coordinator, "restart");
         Assert.True(started.Elapsed < TimeSpan.FromSeconds(1.5), "the restart itself should not wait for the check");
-        Assert.Equal(0, reader.Reads); // nothing yet: the check waits for its delay
+        // Nothing walked yet: the check waits for its delay. (Not checked through the files: on macOS the real file
+        // watcher can report writes made just before it started and index them at once, without any walk.)
+        Assert.Empty(discovery.WalkStarts);
 
         await WaitFor(() => store.Contains(added) && !store.Contains(deleted) &&
-                            store.Get(edited).Entry.Size == new FileInfo(edited).Length, "offline changes picked up");
-        Assert.True(started.Elapsed >= TimeSpan.FromSeconds(2), "the check ran before its delay");
-        Assert.Equal(2, reader.Reads); // the edited and the added file; the unchanged one is not read
+                            store.Get(edited).Entry.Size == new FileInfo(edited).Length && !discovery.WalkStarts.IsEmpty,
+            "offline changes picked up by the check");
+        Assert.True(discovery.WalkStarts.TryPeek(out var walkStart));
+        Assert.True(walkStart - startedUtc >= TimeSpan.FromSeconds(1.9), "the check ran before its delay");
+        Assert.Equal(2, reader.Reads); // the edited and the added file, once each; the unchanged one is not read
     }
 
     [Fact]
@@ -138,6 +143,7 @@ public class StartupCheckTests
         File.WriteAllText(reported, "after, and longer");
         File.WriteAllText(unreported, "after, and longer");
         history.Changes.Add((reported, ChangeKind.Changed));
+        var walksBefore = Volatile.Read(ref discovery.Walks);
         await using var coordinator = Create(discovery, store, tuning);
         await RunUntilUpToDate(coordinator, "restart");
         await WaitFor(() => store.Get(reported).Entry.Size == new FileInfo(reported).Length, "reported change indexed");
@@ -145,8 +151,9 @@ public class StartupCheckTests
 
         lock (history.Replayed)
             Assert.Equal([checkpoint], history.Replayed);
-        // No walk: the change the history did not report is still the old version.
-        Assert.NotEqual(new FileInfo(unreported).Length, store.Get(unreported).Entry.Size);
+        // No walk. (Not checked through `unreported`: on macOS the real file watcher, started before the check, can
+        // report writes made just before it started, and then indexes that file without any walk.)
+        Assert.Equal(walksBefore, Volatile.Read(ref discovery.Walks));
     }
 
     [Fact]

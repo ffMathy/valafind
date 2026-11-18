@@ -43,6 +43,24 @@ jobs:
       - name: Test
         run: dotnet test --solution Valafind.slnx --configuration Release --no-build
 
+      # The online-only cloud file tests call into the OS (Foundation / fileproviderctl on macOS, the Cloud Files API on
+      # Windows) and skip themselves elsewhere. Run them again on their own OS and fail if any of them was skipped.
+      - name: Online-only cloud files (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          dotnet test --project tests/Valafind.Core.Tests --configuration Release --no-build -- \
+            --filter-class "Valafind.Core.Tests.Platform.MacCloudFilesTests" | tee cloud-files.log
+          grep -Eq "skipped: 0" cloud-files.log
+
+      - name: Online-only cloud files (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          dotnet test --project tests/Valafind.Core.Tests --configuration Release --no-build -- \
+            --filter-class "Valafind.Core.Tests.Indexing.CloudFileIndexingTests" | tee cloud-files.log
+          grep -Eq "skipped: 0" cloud-files.log
+
   model-parity:
     # Downloads EmbeddingGemma 2 once and checks tokenizer + text/picture/audio/video embedding parity against the
     # committed reference, plus end-to-end search.
