@@ -1,11 +1,41 @@
 using System.Collections.Concurrent;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Indexing;
+using Valafind.Core.Platform;
 
 namespace Valafind.Core.Tests.Indexing;
 
-internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, IIndexedPathSource, IIndexedEntrySource
+internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, IIndexedPathSource, IIndexedEntrySource, ICloudDownloadJournal
 {
+    public readonly Dictionary<string, CloudDownload> Downloads = new(StringComparer.Ordinal);
+
+    public bool FailLoadingDownloads { get; set; }
+
+    public IReadOnlyList<CloudDownload> LoadDownloads()
+    {
+        if (FailLoadingDownloads)
+            throw new InvalidOperationException("journal unreadable");
+        lock (Downloads)
+            return [.. Downloads.Values.OrderBy(d => d.RequestedUtc)];
+    }
+
+    public void AddDownload(CloudDownload download)
+    {
+        lock (Downloads)
+            Downloads[download.Path] = download;
+    }
+
+    public void RemoveDownload(string path)
+    {
+        lock (Downloads)
+            Downloads.Remove(path);
+    }
+
+    public int DownloadCount
+    {
+        get { lock (Downloads) return Downloads.Count; }
+    }
+
     private readonly Lock _lock = new();
     public readonly Dictionary<string, (FileEntry Entry, IReadOnlyList<ChunkRecord> Chunks)> Files = new(comparer ?? StringComparer.Ordinal);
     private readonly StringComparison _comparison =
@@ -115,7 +145,7 @@ internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, 
             foreach (var (key, value) in Files)
             {
                 if (string.Equals(key, path, _comparison))
-                    return new IndexedEntry(key, value.Entry.Size, value.Entry.ModifiedUtc);
+                    return new IndexedEntry(key, value.Entry.Size, value.Entry.ModifiedUtc, value.Entry.ContentPending);
             }
             return null;
         }
@@ -237,29 +267,22 @@ internal sealed class FakeDiscovery(IReadOnlyList<string> roots, IReadOnlyList<s
 /// <summary><see cref="FakeDiscovery"/> that also reports each file's size and mtime the way a directory listing does.</summary>
 internal sealed class FakeStatDiscovery(IReadOnlyList<string> roots, IReadOnlyList<string> all) : IFileDiscovery, IFileStatDiscovery
 {
-    private int _walks;
-
     public IReadOnlyList<string> Roots { get; } = roots;
     public bool IsExcluded(string path) => false;
     public IEnumerable<string> EnumerateFrequentFiles(CancellationToken cancellationToken) => [];
+    public IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken) => all.Where(File.Exists);
 
-    /// <summary>Walks of all files so far (either enumeration).</summary>
-    public int Walks => Volatile.Read(ref _walks);
+    /// <summary>Walks started (<see cref="EnumerateAllFilesWithStats"/> calls that began enumerating).</summary>
+    public int Walks;
 
-    public void ResetWalks() => Volatile.Write(ref _walks, 0);
-
-    public IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken)
-    {
-        Interlocked.Increment(ref _walks);
-        return Existing();
-    }
-
-    private IEnumerable<string> Existing() => all.Where(File.Exists);
+    /// <summary>When each walk started (UTC).</summary>
+    public readonly ConcurrentQueue<DateTime> WalkStarts = new();
 
     public IEnumerable<DiscoveredFile> EnumerateAllFilesWithStats(CancellationToken cancellationToken)
     {
-        Interlocked.Increment(ref _walks);
-        foreach (var path in Existing())
+        WalkStarts.Enqueue(DateTime.UtcNow);
+        Interlocked.Increment(ref Walks);
+        foreach (var path in EnumerateAllFiles(cancellationToken))
         {
             var info = new FileInfo(path);
             yield return new DiscoveredFile(path, info.Length, new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero));

@@ -87,7 +87,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         MaxCpuPercent = settings.MaxCpuPercent;
         MaxDiskBusyPercent = settings.MaxDiskBusyPercent;
         PauseOnBattery = settings.PauseOnBattery;
-        SelectedDimensions = DimensionOptions.Contains(settings.EmbeddingDimensions) ? settings.EmbeddingDimensions : 256;
+        SelectedDimensions = DimensionOptions.Contains(settings.EmbeddingDimensions) ? settings.EmbeddingDimensions : 768;
         ModelDirectory = settings.ModelDirectory ?? string.Empty;
         StartAtLogin = SafeIsAutostart();
         AutomaticUpdates = settings.AutomaticUpdates;

@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Data.Sqlite;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Indexing;
+using Valafind.Core.Platform;
 
 namespace Valafind.Core.Storage;
 
@@ -23,14 +24,14 @@ namespace Valafind.Core.Storage;
 /// <para>Privacy: the database holds plain text copied from the user's documents, so on Unix its directory is created
 /// 0700 and the database, -wal and -shm files 0600 regardless of the umask (existing ones are tightened on open).</para>
 /// </remarks>
-public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexedEntrySource
+public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexedEntrySource, ICloudDownloadJournal
 {
     private const UnixFileMode PrivateDirectoryMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode PrivateFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
     private const UnixFileMode GroupOtherBits = UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
                                                 UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
     private const int BusyTimeoutMs = 10_000;
     private const int MaxPooledReaders = 8;
     /// <summary>Keys per <see cref="GetEntries"/> query (SQLite allows 32766 parameters; a few hundred keep each
@@ -226,7 +227,8 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 mtime_utc   INTEGER NOT NULL,
                 kind        INTEGER NOT NULL,
                 phase       INTEGER NOT NULL,
-                indexed_utc INTEGER NOT NULL);
+                indexed_utc INTEGER NOT NULL,
+                content_pending INTEGER NOT NULL DEFAULT 0);
             CREATE TABLE IF NOT EXISTS chunks(
                 file_id INTEGER NOT NULL,
                 idx     INTEGER NOT NULL,
@@ -235,8 +237,30 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 text    TEXT    NOT NULL,
                 vector  BLOB    NOT NULL);
             CREATE UNIQUE INDEX IF NOT EXISTS chunks_file_idx ON chunks(file_id, idx);
+            CREATE TABLE IF NOT EXISTS cloud_downloads(
+                path_key      TEXT    PRIMARY KEY,
+                path          TEXT    NOT NULL,
+                size          INTEGER NOT NULL,
+                phase         INTEGER NOT NULL,
+                state         INTEGER NOT NULL,
+                requested_utc INTEGER NOT NULL,
+                file_id       INTEGER NOT NULL DEFAULT 0);
             """, tx);
+        // Schema 1 → 2: online-only files indexed by name until their content can be read.
+        if (!HasColumn(db, tx, "files", "content_pending"))
+            Execute(db, "ALTER TABLE files ADD COLUMN content_pending INTEGER NOT NULL DEFAULT 0;", tx);
+        if (!HasColumn(db, tx, "cloud_downloads", "file_id"))
+            Execute(db, "ALTER TABLE cloud_downloads ADD COLUMN file_id INTEGER NOT NULL DEFAULT 0;", tx);
         tx.Commit();
+    }
+
+    private static bool HasColumn(SqliteConnection db, SqliteTransaction tx, string table, string column)
+    {
+        using var cmd = db.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = $"SELECT 1 FROM pragma_table_info('{table}') WHERE name = $column;";
+        cmd.Parameters.AddWithValue("$column", column);
+        return cmd.ExecuteScalar() is not null;
     }
 
     private static void EnsureModel(SqliteConnection db, string modelId, int dimensions)
@@ -355,11 +379,12 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
         return WithReader(db =>
         {
             using var cmd = db.CreateCommand();
-            cmd.CommandText = "SELECT path, size, mtime_utc FROM files WHERE path_key = $key;";
+            cmd.CommandText = "SELECT path, size, mtime_utc, content_pending FROM files WHERE path_key = $key;";
             cmd.Parameters.AddWithValue("$key", key);
             using var reader = cmd.ExecuteReader();
             return reader.Read()
-                ? new IndexedEntry(reader.GetString(0), reader.GetInt64(1), new DateTimeOffset(reader.GetInt64(2), TimeSpan.Zero))
+                ? new IndexedEntry(reader.GetString(0), reader.GetInt64(1), new DateTimeOffset(reader.GetInt64(2), TimeSpan.Zero),
+                    reader.GetInt64(3) != 0)
                 : null;
         });
     }
@@ -382,7 +407,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
             WithReader(db =>
             {
                 using var cmd = db.CreateCommand();
-                var sql = new StringBuilder("SELECT path_key, path, size, mtime_utc FROM files WHERE path_key IN (");
+                var sql = new StringBuilder("SELECT path_key, path, size, mtime_utc, content_pending FROM files WHERE path_key IN (");
                 for (var i = 0; i < count; i++)
                 {
                     var name = "$k" + i.ToString(CultureInfo.InvariantCulture);
@@ -394,7 +419,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 while (reader.Read())
                 {
                     found[reader.GetString(0)] = new IndexedEntry(reader.GetString(1), reader.GetInt64(2),
-                        new DateTimeOffset(reader.GetInt64(3), TimeSpan.Zero));
+                        new DateTimeOffset(reader.GetInt64(3), TimeSpan.Zero), reader.GetInt64(4) != 0);
                 }
                 return 0;
             });
@@ -496,12 +521,13 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                     write.Transaction = tx;
                     write.CommandText = fileId != 0
                         ? """
-                          UPDATE files SET path = $path, size = $size, mtime_utc = $mtime, kind = $kind, phase = $phase, indexed_utc = $now
+                          UPDATE files SET path = $path, size = $size, mtime_utc = $mtime, kind = $kind, phase = $phase, indexed_utc = $now,
+                                           content_pending = $pending
                           WHERE id = $id RETURNING id;
                           """
                         : """
-                          INSERT INTO files(path, path_key, size, mtime_utc, kind, phase, indexed_utc)
-                          VALUES ($path, $key, $size, $mtime, $kind, $phase, $now) RETURNING id;
+                          INSERT INTO files(path, path_key, size, mtime_utc, kind, phase, indexed_utc, content_pending)
+                          VALUES ($path, $key, $size, $mtime, $kind, $phase, $now, $pending) RETURNING id;
                           """;
                     write.Parameters.AddWithValue("$id", fileId);
                     write.Parameters.AddWithValue("$path", path);
@@ -511,6 +537,7 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                     write.Parameters.AddWithValue("$kind", (int)file.Kind);
                     write.Parameters.AddWithValue("$phase", (int)file.Phase);
                     write.Parameters.AddWithValue("$now", DateTime.UtcNow.Ticks);
+                    write.Parameters.AddWithValue("$pending", file.ContentPending ? 1 : 0);
                     fileId = Convert.ToInt64(write.ExecuteScalar(), CultureInfo.InvariantCulture);
                 }
 
@@ -872,6 +899,56 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
     {
         ArgumentNullException.ThrowIfNull(key);
         return WithReader(db => ReadMeta(db, key, null));
+    }
+
+    /// <inheritdoc />
+    IReadOnlyList<CloudDownload> ICloudDownloadJournal.LoadDownloads() => WithReader(db =>
+    {
+        using var cmd = db.CreateCommand();
+        cmd.CommandText = "SELECT path, size, phase, state, requested_utc, file_id FROM cloud_downloads ORDER BY requested_utc;";
+        using var reader = cmd.ExecuteReader();
+        var list = new List<CloudDownload>();
+        while (reader.Read())
+        {
+            list.Add(new CloudDownload(reader.GetString(0), reader.GetInt64(1), (IndexPhase)reader.GetInt32(2),
+                new CloudMark(reader.GetInt32(3), reader.GetInt64(5)), new DateTimeOffset(reader.GetInt64(4), TimeSpan.Zero)));
+        }
+        return (IReadOnlyList<CloudDownload>)list;
+    });
+
+    /// <inheritdoc />
+    void ICloudDownloadJournal.AddDownload(CloudDownload download)
+    {
+        ArgumentNullException.ThrowIfNull(download);
+        lock (_writeGate)
+        {
+            using var cmd = RequireWriter().CreateCommand();
+            cmd.CommandText = """
+                INSERT OR REPLACE INTO cloud_downloads(path_key, path, size, phase, state, requested_utc, file_id)
+                VALUES ($key, $path, $size, $phase, $state, $at, $fileId);
+                """;
+            cmd.Parameters.AddWithValue("$key", _paths.KeyForPath(download.Path));
+            cmd.Parameters.AddWithValue("$path", download.Path);
+            cmd.Parameters.AddWithValue("$size", download.Size);
+            cmd.Parameters.AddWithValue("$phase", (int)download.Phase);
+            cmd.Parameters.AddWithValue("$state", download.Mark.State);
+            cmd.Parameters.AddWithValue("$at", download.RequestedUtc.UtcTicks);
+            cmd.Parameters.AddWithValue("$fileId", download.Mark.FileId);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    /// <inheritdoc />
+    void ICloudDownloadJournal.RemoveDownload(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        lock (_writeGate)
+        {
+            using var cmd = RequireWriter().CreateCommand();
+            cmd.CommandText = "DELETE FROM cloud_downloads WHERE path_key = $key;";
+            cmd.Parameters.AddWithValue("$key", _paths.KeyForPath(path));
+            cmd.ExecuteNonQuery();
+        }
     }
 
     /// <inheritdoc />

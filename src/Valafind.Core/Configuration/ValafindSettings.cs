@@ -29,7 +29,7 @@ public sealed class ValafindSettings
     public bool UserPaused { get; set; }
 
     /// <summary>Matryoshka output size: 768, 512, 256 or 128. Changing it re-embeds everything.</summary>
-    public int EmbeddingDimensions { get; set; } = 256;
+    public int EmbeddingDimensions { get; set; } = 768;
 
     /// <summary>Run the embedding model on the GPU when one is usable (WebGPU: D3D12, Vulkan or Metal), else the CPU.
     /// Off: always the CPU. Takes effect on the next start.</summary>
