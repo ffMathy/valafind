@@ -7,6 +7,8 @@
     <FontFamily x:Key="VfFontWindows">Segoe UI Variable Text, Segoe UI, fonts:Inter#Inter</FontFamily>
     <FontFamily x:Key="VfFontMac">SF Pro Text, .AppleSystemUIFont, Helvetica Neue, fonts:Inter#Inter</FontFamily>
     <FontFamily x:Key="VfFontLinux">Cantarell, Adwaita Sans, Noto Sans, fonts:Inter#Inter</FontFamily>
+    <!-- Code and data in the details-pane preview. -->
+    <FontFamily x:Key="VfFontMono">Cascadia Mono, Consolas, SF Mono, Menlo, DejaVu Sans Mono, Liberation Mono, Noto Sans Mono, monospace</FontFamily>
 
     <!--
       Minimal button: background/border/corner come from the Button itself; hover and press add a translucent overlay
@@ -101,5 +103,24 @@
     <Setter Property="Cursor" Value="Hand" />
     <!-- Transparent (not null) so the whole row is hit-testable; views override for hover/selected. -->
     <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- Details-pane preview: a picture scaled to the full width of the pane (a tall one scrolls), or the start of the
+       file's text. -->
+  <Style Selector="ScrollViewer.filepicture">
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+  </Style>
+  <Style Selector="Border.filepicture">
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="TextBlock.filetext">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.filetext.mono">
+    <Setter Property="FontFamily" Value="{StaticResource VfFontMono}" />
+    <Setter Property="FontSize" Value="11.5" />
   </Style>
 </Styles>

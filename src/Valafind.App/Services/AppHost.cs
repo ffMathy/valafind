@@ -92,6 +92,7 @@ public sealed class AppHost : IAsyncDisposable
             .AddSingleton(sp => new LauncherViewModel(flavor, sp.GetRequiredService<ValafindSettings>())
             {
                 IsModelBundled = CoreServicesFactory.IsModelBundled,
+                Previews = new FilePreviewService(),
             })
             .BuildServiceProvider();
         return new AppHost(services, instance, startupCommand, firstRun);
