@@ -146,7 +146,8 @@ The desktop recognizes the app through the desktop entry the installer writes.
 
   Valafind never deletes, moves or writes your files. It frees a file's space again only when the sync client reports
   it fully uploaded and no one has written to it since Valafind fetched it; a file you edited, pinned (or whose folder
-  you pinned) or that is still uploading stays on your device. When Valafind can't tell, it leaves the file as it is. Documents over 64 MB, media over 1 GB, and any
+  you pinned) or that is still uploading stays on your device. When Valafind can't tell, it leaves the file as it is.
+  Uninstalling Valafind gives back the files it still has requested. Documents over 64 MB, media over 1 GB, and any
   file that would leave less than 2 GB free are indexed by name until they are on your device. On macOS, a provider
   that refuses to take a file back is not downloaded from again; its files are indexed by name.
 - **Skipped:** hidden and app-data folders, `node_modules`, `.git`, build output, caches and the Trash.

@@ -36,9 +36,11 @@ internal interface ICloudFiles
     /// uploaded, no one has written to it since <paramref name="requestedUtc"/>, and neither the user nor a pinned
     /// folder wants it kept on this device. Otherwise the file is left downloaded. A setting the user changed after
     /// the request is left as the user set it.</remarks>
+    /// <param name="final">No later retry will come (Valafind is being uninstalled): a file that is in use is not kept
+    /// for one. Its original pin is restored and, when it is safe, the sync client is asked to free it once it can.</param>
     /// <returns>False when the file is in use and should be released again later (after a restart); true when
     /// there is nothing more to do.</returns>
-    bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc);
+    bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc, bool final = false);
 }
 
 /// <summary>What <see cref="ICloudFiles.RequestDownload"/> changed, kept (in the index database) until
@@ -109,7 +111,7 @@ internal sealed class NoCloudFiles : ICloudFiles
 
     public CloudMark? RequestDownload(string path, Func<CloudMark, bool> record) => null;
 
-    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc) => true;
+    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc, bool final = false) => true;
 }
 
 /// <summary>
@@ -222,7 +224,7 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
         }
     }
 
-    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc)
+    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc, bool final = false)
     {
         if (mark.State == CloudMark.Untouched || s_unavailable)
             return true;
@@ -245,6 +247,13 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
                 return true; // edited, or never arrived: nothing to free
             if (FreeUpSpace(path, requestedUtc) != FreeResult.Busy)
                 return true;
+            if (final)
+            {
+                // In use, and no retry will come: leave the original pin and let the sync client free it once it can
+                // (it frees only uploaded files), as "Free up space" would.
+                AskToFreeWhenSafe(path, requestedUtc);
+                return true;
+            }
             // In use: pin it again so the retry after the next restart still recognises it as ours to free.
             SetPinState(path, CfPinStatePinned);
             return false;
@@ -347,6 +356,15 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
         }
     }
 
+    /// <summary>Marks the file "Free up space" (unpinned), so the sync client frees it once it can (only after it is
+    /// uploaded), unless the user has a say in it already, it has changes, or it was written to since.</summary>
+    private static void AskToFreeWhenSafe(string path, DateTimeOffset notWrittenSince)
+    {
+        if (TryGetState(path, out var state) && state.PinState is CfPinStateUnspecified or CfPinStateInherit &&
+            state.InSync && state.ModifiedDataSize == 0 && !WrittenSince(path, notWrittenSince) && !IsInPinnedFolder(path))
+            SetPinState(path, CfPinStateUnpinned);
+    }
+
     private static bool WrittenSince(string path, DateTimeOffset since)
     {
         try
@@ -430,11 +448,9 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
-            // Not freed right away because another program has it open: ask the sync client to free it when it can
-            // (which it only does once the file is uploaded), unless the user has a say in it already.
-            if (FreeUpSpace(path, startedUtc) == FreeResult.Busy && TryGetState(path, out var state) &&
-                state.PinState is CfPinStateUnspecified or CfPinStateInherit && state.InSync && !WrittenSince(path, startedUtc))
-                SetPinState(path, CfPinStateUnpinned);
+            // Not freed right away because another program has it open: ask the sync client to free it when it can.
+            if (FreeUpSpace(path, startedUtc) == FreeResult.Busy)
+                AskToFreeWhenSafe(path, startedUtc);
         }
     }
 

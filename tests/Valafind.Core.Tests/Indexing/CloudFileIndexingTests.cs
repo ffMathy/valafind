@@ -91,11 +91,17 @@ internal sealed class FakeCloud : ICloudFiles
         }
     }
 
-    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc)
+    public readonly List<bool> FinalReleases = [];
+
+    /// <summary>Releases fail even as a final attempt (the pin could not be restored).</summary>
+    public bool ReleaseFails { get; set; }
+
+    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc, bool final = false)
     {
         lock (OnlineOnly)
         {
-            if (ReleaseBusy)
+            FinalReleases.Add(final);
+            if (ReleaseFails || (ReleaseBusy && !final))
                 return false;
             Released.Add(path);
             Requested.Remove(path);

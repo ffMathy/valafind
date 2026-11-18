@@ -107,7 +107,7 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
         return record(mark) && StartDownloading(path) ? mark : null;
     }
 
-    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc)
+    public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc, bool final = false)
     {
         if (File.Exists(path) && !_isDataless(path))
             Evict(path, requestedUtc);

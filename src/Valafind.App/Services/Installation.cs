@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Valafind.App.Platform;
 using Valafind.App.Updates;
 using Valafind.Core.Configuration;
+using Valafind.Core.Storage;
 
 namespace Valafind.App.Services;
 
@@ -122,5 +123,17 @@ internal static partial class Installation
         }
 
         public void RemoveAutostart() => Autostart.SetEnabled(false);
+
+        public string? ReleaseExternalState()
+        {
+            var result = CloudDownloadCleanup.ReleaseAll(AppPaths.IndexDatabase);
+            if (result.Error is { } error)
+                return $"Could not read the cloud files Valafind requested: {error}";
+            if (result.Released == 0 && result.Kept == 0)
+                return null;
+            return result.Kept == 0
+                ? $"Gave back {result.Released} cloud files Valafind had requested"
+                : $"Gave back {result.Released} cloud files Valafind had requested; {result.Kept} could not be given back now and stay recorded";
+        }
     }
 }
