@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Configuration;
 using Valafind.App.Localization;
+using Valafind.App.Services;
 
 namespace Valafind.App.ViewModels;
 
@@ -59,6 +60,8 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     private readonly string _appDirectory;
     private ISearchService? _search;
     private CancellationTokenSource? _searchCts;
+    private CancellationTokenSource? _thumbnailCts;
+    private CancellationTokenSource? _previewCts;
     private int _searchGeneration;
     private bool _disposed;
 
@@ -108,6 +111,10 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
 
     /// <summary>Host callbacks (shell, clipboard, window). Set by the composition root.</summary>
     public ILauncherActions? Actions { get; set; }
+
+    /// <summary>Loads row thumbnails and the details-pane preview. Set by the composition root; without it rows keep
+    /// their file-type icons and the pane shows no preview.</summary>
+    public IFilePreviewService? Previews { get; set; }
 
     /// <summary>The search text.</summary>
     [ObservableProperty]
@@ -576,12 +583,96 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
             item.IsExpanded = item.IsSelected && IsPreviewVisible;
         }
         SelectedResult = selected;
+        LoadSelectedPreview();
     }
 
     partial void OnIsPreviewVisibleChanged(bool value)
     {
         foreach (var item in Results)
             item.IsExpanded = item.IsSelected && value;
+        LoadSelectedPreview();
+    }
+
+    // The pane preview of the selected row, loaded the first time the row is selected while the pane is visible. Moving
+    // on cancels it (the row loads again when it is selected next).
+    private void LoadSelectedPreview()
+    {
+        _previewCts?.Cancel();
+        _previewCts?.Dispose();
+        _previewCts = null;
+        if (Previews is not { } previews || !IsPreviewVisible || SelectedResult is not { PreviewState: PreviewLoad.None } item)
+            return;
+        var cts = new CancellationTokenSource();
+        _previewCts = cts;
+        item.PreviewState = PreviewLoad.Loading;
+        _ = LoadPreviewAsync(previews, item, cts.Token);
+    }
+
+    private async Task LoadPreviewAsync(IFilePreviewService previews, ResultItemViewModel item, CancellationToken ct)
+    {
+        FilePreview preview;
+        try
+        {
+            preview = await previews.LoadPreviewAsync(item.Path, item.Kind, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+        }
+        catch (OperationCanceledException)
+        {
+            _post(() => item.PreviewState = item.PreviewState == PreviewLoad.Loading ? PreviewLoad.None : item.PreviewState);
+            return;
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            preview = FilePreview.None;
+        }
+        _post(() =>
+        {
+            if (!_disposed)
+                item.ApplyPreview(preview);
+        });
+    }
+
+    // Thumbnails for the rows that can have one (pictures), a few at a time, top rows first. A new result list cancels them.
+    private void LoadThumbnails()
+    {
+        _thumbnailCts?.Cancel();
+        _thumbnailCts?.Dispose();
+        _thumbnailCts = null;
+        if (Previews is not { } previews)
+            return;
+        var wanted = Results.Where(i => i.ThumbnailState == PreviewLoad.None && i.Thumbnail is null && previews.HasThumbnail(i.Path, i.Kind)).ToList();
+        if (wanted.Count == 0)
+            return;
+        var cts = new CancellationTokenSource();
+        _thumbnailCts = cts;
+        foreach (var item in wanted)
+        {
+            item.ThumbnailState = PreviewLoad.Loading;
+            _ = LoadThumbnailAsync(previews, item, cts.Token);
+        }
+    }
+
+    private async Task LoadThumbnailAsync(IFilePreviewService previews, ResultItemViewModel item, CancellationToken ct)
+    {
+        try
+        {
+            var thumbnail = await previews.LoadThumbnailAsync(item.Path, item.Kind, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            _post(() =>
+            {
+                item.ThumbnailState = PreviewLoad.Loaded;
+                if (!_disposed && thumbnail is not null && item.Thumbnail is null)
+                    item.Thumbnail = thumbnail;
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by newer results; these rows are gone.
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            _post(() => item.ThumbnailState = PreviewLoad.Loaded);
+        }
     }
 
     /// <summary>The filter that corresponds to the current chip and time range.</summary>
@@ -714,6 +805,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
         var ms = Math.Max(1, (int)Math.Round(elapsed.TotalMilliseconds));
         ResultSummary = Loc.Format(Results.Count == 1 ? Strings.ResultSummaryOne : Strings.ResultSummaryMany, Results.Count, ms);
         SelectedIndex = Results.Count > 0 ? 0 : -1;
+        LoadThumbnails();
         UpdateContent();
     }
 
@@ -740,6 +832,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     private void ClearResults()
     {
         SelectedIndex = -1;
+        _thumbnailCts?.Cancel();
         if (Results.Count > 0)
             Results.Clear();
         ResultSummary = string.Empty;
@@ -772,5 +865,11 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
         _searchCts?.Cancel();
         _searchCts?.Dispose();
         _searchCts = null;
+        _thumbnailCts?.Cancel();
+        _thumbnailCts?.Dispose();
+        _thumbnailCts = null;
+        _previewCts?.Cancel();
+        _previewCts?.Dispose();
+        _previewCts = null;
     }
 }

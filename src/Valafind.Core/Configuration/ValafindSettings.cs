@@ -29,12 +29,16 @@ public sealed class ValafindSettings
     /// disk activity just under it and never pauses for it.</summary>
     public double MaxDiskBusyPercent { get; set; } = 25;
 
+    /// <summary>GPU utilisation budget (percent), steered like <see cref="MaxCpuPercent"/> while the embedding model
+    /// runs on the GPU: indexing slows down to keep the busiest GPU just under it and never pauses for it.</summary>
+    public double MaxGpuPercent { get; set; } = 30;
+
     public bool PauseOnBattery { get; set; } = true;
 
     public bool UserPaused { get; set; }
 
     /// <summary>Matryoshka output size: 768, 512, 256 or 128. Changing it re-embeds everything.</summary>
-    public int EmbeddingDimensions { get; set; } = 256;
+    public int EmbeddingDimensions { get; set; } = 768;
 
     /// <summary>Run the embedding model on the GPU when one is usable (WebGPU: D3D12, Vulkan or Metal), else the CPU.
     /// Off: always the CPU. Takes effect on the next start.</summary>

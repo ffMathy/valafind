@@ -17,6 +17,12 @@ public interface IInstallHost
 
     /// <summary>Removes the start-at-login entry (when uninstalling).</summary>
     void RemoveAutostart();
+
+    /// <summary>
+    /// Gives back what the application still holds outside its own folders (when uninstalling, after the running copy
+    /// has quit): Valafind's requested cloud downloads. Returns a line for the log, or null when there was nothing.
+    /// </summary>
+    string? ReleaseExternalState();
 }
 
 /// <summary>What <see cref="SelfInstaller.OnStartup"/> decided.</summary>
@@ -230,13 +236,33 @@ public sealed class SelfInstaller
     internal void Uninstall()
     {
         log.Information($"Uninstalling {app.Name} from {layout.Target}");
+        var stopped = false;
         try
         {
             host.StopRunningInstance();
+            stopped = true;
         }
         catch (Exception exception) when (exception is InvalidOperationException or Win32Exception or IOException)
         {
             log.Warning("Could not stop the running copy", exception);
+        }
+
+        if (stopped)
+        {
+            try
+            {
+                if (host.ReleaseExternalState() is { } released)
+                    log.Information(released);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                log.Warning("Could not give back the cloud files Valafind requested", exception);
+            }
+        }
+        else
+        {
+            // The running copy may still be using them; they are given back by the next Valafind that starts.
+            log.Warning("Cloud files Valafind requested were not given back because the running copy did not quit");
         }
 
         try

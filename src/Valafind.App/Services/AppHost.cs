@@ -106,6 +106,7 @@ public sealed class AppHost : IAsyncDisposable
             {
                 IsModelBundled = CoreServicesFactory.IsModelBundled,
                 FoldersNeedGrant = FolderAccess.IsRequired,
+                Previews = new FilePreviewService(),
             })
             .BuildServiceProvider();
         return new AppHost(services, instance, startupCommand, firstRun);

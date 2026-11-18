@@ -113,7 +113,7 @@ internal sealed class ExclusionRules
             case PathFlavor.MacOS:
                 _systemPrefixes.Add(Combine(_home, "Library"));
                 // iCloud Drive and the File Provider home of Dropbox, OneDrive, Google Drive, Box, … (macOS 12.3+).
-                // Online-only (dataless) files there are skipped individually, so walking them downloads nothing.
+                // Online-only (dataless) files there are indexed by name until they are downloaded.
                 _allowedPrefixes =
                 [
                     Combine(Combine(_home, "Library"), "Mobile Documents"),

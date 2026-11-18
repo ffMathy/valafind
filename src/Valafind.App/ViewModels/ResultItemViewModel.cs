@@ -1,4 +1,6 @@
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Valafind.App.Services;
 using Valafind.Core.Abstractions;
 using Valafind.App.Localization;
 
@@ -140,4 +142,61 @@ public sealed partial class ResultItemViewModel : ObservableObject
 
     /// <summary>Inverse of <see cref="IsExpanded"/>.</summary>
     public bool IsCompact => !IsExpanded;
+
+    /// <summary>Small picture of the file (pictures only), drawn in place of the file-type icon; null until loaded.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasThumbnail))]
+    public partial Bitmap? Thumbnail { get; internal set; }
+
+    /// <summary>True when <see cref="Thumbnail"/> is loaded.</summary>
+    public bool HasThumbnail => Thumbnail is not null;
+
+    /// <summary>The picture shown in the details pane; null until loaded or when the file is not a picture.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPreviewImage))]
+    public partial Bitmap? PreviewImage { get; private set; }
+
+    /// <summary>True when <see cref="PreviewImage"/> is loaded.</summary>
+    public bool HasPreviewImage => PreviewImage is not null;
+
+    /// <summary>The start of the file's text shown in the details pane; null until loaded or when there is none.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPreviewText))]
+    public partial string? PreviewText { get; private set; }
+
+    /// <summary>True when <see cref="PreviewText"/> is loaded.</summary>
+    public bool HasPreviewText => !string.IsNullOrEmpty(PreviewText);
+
+    /// <summary>True when <see cref="PreviewText"/> is code or data (shown in a fixed-width font).</summary>
+    [ObservableProperty]
+    public partial bool IsPreviewMonospace { get; private set; }
+
+    /// <summary>Where the pane preview stands (the launcher loads it once, when the row is first selected).</summary>
+    internal PreviewLoad PreviewState { get; set; }
+
+    /// <summary>Where the row thumbnail stands.</summary>
+    internal PreviewLoad ThumbnailState { get; set; }
+
+    /// <summary>Shows a loaded pane preview. The picture also serves as the thumbnail when that is still missing.</summary>
+    internal void ApplyPreview(FilePreview preview)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+        PreviewState = PreviewLoad.Loaded;
+        PreviewImage = preview.Image;
+        IsPreviewMonospace = preview.IsMonospace;
+        PreviewText = preview.Text;
+        if (Thumbnail is null && preview.Image is not null)
+            Thumbnail = preview.Image;
+    }
+}
+
+/// <summary>Progress of a lazily loaded preview or thumbnail.</summary>
+internal enum PreviewLoad
+{
+    /// <summary>Not requested yet (or cancelled before it finished).</summary>
+    None,
+    /// <summary>Being loaded.</summary>
+    Loading,
+    /// <summary>Done (possibly with nothing to show).</summary>
+    Loaded,
 }

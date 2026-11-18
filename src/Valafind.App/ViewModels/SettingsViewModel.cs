@@ -100,8 +100,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         Roots.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoRoots));
         MaxCpuPercent = settings.MaxCpuPercent;
         MaxDiskBusyPercent = settings.MaxDiskBusyPercent;
+        MaxGpuPercent = settings.MaxGpuPercent;
         PauseOnBattery = settings.PauseOnBattery;
-        SelectedDimensions = DimensionOptions.Contains(settings.EmbeddingDimensions) ? settings.EmbeddingDimensions : 256;
+        SelectedDimensions = DimensionOptions.Contains(settings.EmbeddingDimensions) ? settings.EmbeddingDimensions : 768;
         ModelDirectory = settings.ModelDirectory ?? string.Empty;
         StartAtLogin = SafeIsAutostart();
         AutomaticUpdates = settings.AutomaticUpdates;
@@ -163,6 +164,14 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>"25%".</summary>
     public string MaxDiskText => MaxDiskBusyPercent.ToString("0", CultureInfo.InvariantCulture) + "%";
+
+    /// <summary>Keep the GPU below this while the model runs on it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MaxGpuText))]
+    public partial double MaxGpuPercent { get; set; }
+
+    /// <summary>"30%".</summary>
+    public string MaxGpuText => MaxGpuPercent.ToString("0", CultureInfo.InvariantCulture) + "%";
 
     /// <summary>Pause indexing on battery power.</summary>
     [ObservableProperty] public partial bool PauseOnBattery { get; set; }
@@ -344,6 +353,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _settings.RootBookmarks = Roots.Where(_bookmarks.ContainsKey).ToDictionary(root => root, root => _bookmarks[root], StringComparer.Ordinal);
         _settings.MaxCpuPercent = Math.Clamp(MaxCpuPercent, 5, 100);
         _settings.MaxDiskBusyPercent = Math.Clamp(MaxDiskBusyPercent, 5, 100);
+        _settings.MaxGpuPercent = Math.Clamp(MaxGpuPercent, 5, 100);
         _settings.PauseOnBattery = PauseOnBattery;
         _settings.EmbeddingDimensions = SelectedDimensions;
         _settings.ModelDirectory = string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim();
@@ -394,13 +404,13 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private static (string?, List<string>, Dictionary<string, string>, double, double, bool, int, string?, bool, string?) Capture(ValafindSettings s) =>
-        (s.Hotkey, [.. s.Roots], new(s.RootBookmarks, StringComparer.Ordinal), s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery,
+    private static (string?, List<string>, Dictionary<string, string>, double, double, double, bool, int, string?, bool, string?) Capture(ValafindSettings s) =>
+        (s.Hotkey, [.. s.Roots], new(s.RootBookmarks, StringComparer.Ordinal), s.MaxCpuPercent, s.MaxDiskBusyPercent, s.MaxGpuPercent, s.PauseOnBattery,
             s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates, s.Language);
 
-    private static void Restore(ValafindSettings s, (string?, List<string>, Dictionary<string, string>, double, double, bool, int, string?, bool, string?) v) =>
-        (s.Hotkey, s.Roots, s.RootBookmarks, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory,
-            s.AutomaticUpdates, s.Language) = v;
+    private static void Restore(ValafindSettings s, (string?, List<string>, Dictionary<string, string>, double, double, double, bool, int, string?, bool, string?) v) =>
+        (s.Hotkey, s.Roots, s.RootBookmarks, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.MaxGpuPercent, s.PauseOnBattery, s.EmbeddingDimensions,
+            s.ModelDirectory, s.AutomaticUpdates, s.Language) = v;
 
     /// <summary>Inert host for design-time data.</summary>
     internal sealed class DesignHost : ISettingsHost

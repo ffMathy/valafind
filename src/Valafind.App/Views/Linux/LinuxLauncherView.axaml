@@ -255,7 +255,7 @@
     </Style>
   </views:LauncherViewBase.Styles>
 
-  <Border x:Name="Card" Width="1140" Height="706" ClipToBounds="True">
+  <Border x:Name="Card" Width="1220" Height="786" ClipToBounds="True">
     <DockPanel>
       <!-- Header bar -->
       <Border DockPanel.Dock="Top" Height="50" Padding="8,0" Background="{DynamicResource GnomeHeaderBrush}"
@@ -362,7 +362,7 @@
                       <Border Classes="row" Classes.selected="{Binding IsSelected}" Padding="16,11"
                               BorderThickness="0,0,0,1" BorderBrush="{DynamicResource VfDividerBrush}">
                         <Grid ColumnDefinitions="38,*,96" ColumnSpacing="14">
-                          <c:FileKindIcon Kind="{Binding Kind}" Width="38" Height="38" GlyphSize="20" StrokeThickness="1.8"
+                          <c:FileKindIcon Kind="{Binding Kind}" Thumbnail="{Binding Thumbnail}" Width="38" Height="38" GlyphSize="20" StrokeThickness="1.8"
                                           CornerRadius="9" VerticalAlignment="Center" />
                           <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                             <TextBlock Text="{Binding FileName}" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
@@ -394,7 +394,7 @@
           <!-- Details of the selected file (Tab hides it) -->
           <!-- Only next to results (not beside the hint / no-results / model messages); Tab hides it. -->
           <Panel Grid.Column="1" IsVisible="{Binding IsResultsVisible}">
-          <Border x:Name="DetailsPane" Width="360" Classes="boxed" Padding="18,16"
+          <Border x:Name="DetailsPane" Width="440" Classes="boxed" Padding="18,16"
                   IsVisible="{Binding IsPreviewVisible}">
             <DockPanel DataContext="{Binding SelectedResult}" x:DataType="vm:ResultItemViewModel"
                        IsVisible="{Binding $parent[views:LauncherViewBase].((vm:LauncherViewModel)DataContext).HasSelection}">
@@ -403,26 +403,19 @@
                 <Button Classes="vf pill" Content="{Binding Launcher.RevealLabel}" Command="{Binding Launcher.RevealSelectedCommand}" />
                 <Button Classes="vf pill" Content="{x:Static l:Strings.CopyPathTitleCase}" Command="{Binding Launcher.CopyPathCommand}" />
               </StackPanel>
-              <StackPanel DockPanel.Dock="Top" Spacing="14" Margin="0,0,0,14">
+              <StackPanel DockPanel.Dock="Top" Spacing="12" Margin="0,0,0,12">
+                <!-- Name, then where it is and what it is (the picture itself for pictures) -->
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                  <c:FileKindIcon Kind="{Binding Kind}" Width="48" Height="48" GlyphSize="24" StrokeThickness="1.8"
+                  <c:FileKindIcon Kind="{Binding Kind}" Thumbnail="{Binding Thumbnail}" Width="48" Height="48" GlyphSize="24" StrokeThickness="1.8"
                                   CornerRadius="12" VerticalAlignment="Top" />
-                  <TextBlock Grid.Column="1" Text="{Binding WrappableFileName}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap"
-                             MaxLines="2" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                </Grid>
-
-                <!-- Property rows -->
-                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="6"
-                      TextElement.FontSize="12.5">
-                  <TextBlock Text="{x:Static l:Strings.DetailLocation}" Foreground="{DynamicResource GnomeMetaBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding DisplayDirectory}" TextWrapping="Wrap" MaxLines="2"
-                             TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding FullDirectory}" />
-                  <TextBlock Grid.Row="1" Text="{x:Static l:Strings.DetailType}" Foreground="{DynamicResource GnomeMetaBrush}" />
-                  <TextBlock Grid.Row="1" Grid.Column="1"><Run Text="{Binding ExtensionLabel}" /><Run Text=" · " /><Run Text="{Binding GroupName}" /></TextBlock>
-                  <TextBlock Grid.Row="2" Text="{x:Static l:Strings.DetailSize}" Foreground="{DynamicResource GnomeMetaBrush}" />
-                  <TextBlock Grid.Row="2" Grid.Column="1" Classes="num" Text="{Binding SizeText}" />
-                  <TextBlock Grid.Row="3" Text="{x:Static l:Strings.DetailModified}" Foreground="{DynamicResource GnomeMetaBrush}" />
-                  <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DateText}" />
+                  <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding WrappableFileName}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap"
+                               MaxLines="2" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding DisplayDirectory}" FontSize="12.5" Foreground="{DynamicResource GnomeMetaBrush}"
+                               TextTrimming="PathSegmentEllipsis" ToolTip.Tip="{Binding FullDirectory}" />
+                    <TextBlock Text="{Binding MetaText}" FontSize="12.5" Foreground="{DynamicResource GnomeMetaBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
                 </Grid>
 
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
@@ -433,17 +426,34 @@
                              VerticalAlignment="Center" />
                 </Grid>
               </StackPanel>
-              <!-- Fills the remaining height and clips, so a long passage never runs into the buttons. -->
-              <Border ClipToBounds="True" VerticalAlignment="Top">
+              <!-- Fills the remaining height, so nothing runs into the buttons. Pictures: the picture, as large as fits.
+                   Other files: why it matched, then the start of the file's text in the rest of the height (scrolls). -->
+              <Panel>
+                <ScrollViewer x:Name="PictureScroller" Classes="filepicture" IsVisible="{Binding HasPreviewImage}">
+                  <Border Classes="filepicture" CornerRadius="8">
+                    <Image Source="{Binding PreviewImage}" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                  </Border>
+                </ScrollViewer>
+                <Grid RowDefinitions="Auto,*" RowSpacing="12" IsVisible="{Binding !HasPreviewImage}">
                   <StackPanel Spacing="6" IsVisible="{Binding HasSnippet}">
                     <TextBlock Classes="h2" Text="{x:Static l:Strings.WhyItMatched}" />
                     <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}" FontSize="13"
-                                            LineHeight="19" TextWrapping="Wrap" MaxLines="7" TextTrimming="CharacterEllipsis"
+                                            LineHeight="19" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis"
                                             Foreground="{DynamicResource GnomeSnippetBrush}"
                                             HighlightBackground="{DynamicResource GnomeHighlightBrush}"
                                             HighlightForeground="{DynamicResource VfTextBrush}" HighlightFontWeight="SemiBold" />
                   </StackPanel>
-              </Border>
+                  <DockPanel Grid.Row="1" IsVisible="{Binding HasPreviewText}">
+                    <TextBlock DockPanel.Dock="Top" Classes="h2" Text="{x:Static l:Strings.KeyHintPreview}" Margin="0,0,0,6" />
+                    <Border CornerRadius="8" ClipToBounds="True" Background="{DynamicResource VfTrackBrush}">
+                      <ScrollViewer x:Name="PreviewScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <TextBlock Classes="filetext" Classes.mono="{Binding IsPreviewMonospace}" Text="{Binding PreviewText}"
+                                   Margin="12,10" FontSize="12.5" LineHeight="18.5" Foreground="{DynamicResource GnomeSnippetBrush}" />
+                      </ScrollViewer>
+                    </Border>
+                  </DockPanel>
+                </Grid>
+              </Panel>
             </DockPanel>
           </Border>
           </Panel>

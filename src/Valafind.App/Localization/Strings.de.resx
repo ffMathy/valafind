@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>Maximale Datenträgerauslastung in Prozent</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>Maximale GPU-Last</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>Maximale GPU-Last in Prozent</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>Gilt, wenn das Modell auf der GPU läuft</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>Einstellungen …</value>
   </data>

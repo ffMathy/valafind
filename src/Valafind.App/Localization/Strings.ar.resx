@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>النسبة المئوية القصوى لانشغال القرص</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>الحد الأقصى لمعالج الرسومات</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>النسبة المئوية القصوى لاستخدام معالج الرسومات</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>يُطبَّق عندما يعمل النموذج على معالج الرسومات</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>الإعدادات…</value>
   </data>

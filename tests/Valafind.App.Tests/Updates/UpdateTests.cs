@@ -201,6 +201,47 @@ public sealed class SelfInstallerTests : IDisposable
     }
 
     [Fact]
+    public void Uninstall_GivesBackCloudFilesOnlyAfterTheRunningCopyQuit()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return;
+        }
+
+        var layout = InstallLayout.Create(TestApp.Identity, InstallLayout.CurrentPlatform, Path.Combine(root, "home"), Path.Combine(root, "local"), Path.Combine(root, "state"));
+        Directory.CreateDirectory(Path.GetDirectoryName(layout.Executable)!);
+        File.WriteAllText(layout.Executable, "installed");
+        var host = new RecordingHost();
+        var installer = new SelfInstaller(
+            TestApp.Identity, layout, new RunningApp(Path.Combine(root, "elsewhere"), null, true), host, new NullLog(), ReleaseVersion.TryParse("1.0.0"));
+
+        installer.Uninstall();
+
+        Assert.Equal(["stop", "release", "autostart"], host.Calls);
+    }
+
+    [Fact]
+    public void Uninstall_LeavesCloudFilesAloneWhenTheRunningCopyDoesNotQuit()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return;
+        }
+
+        var layout = InstallLayout.Create(TestApp.Identity, InstallLayout.CurrentPlatform, Path.Combine(root, "home"), Path.Combine(root, "local"), Path.Combine(root, "state"));
+        Directory.CreateDirectory(Path.GetDirectoryName(layout.Executable)!);
+        File.WriteAllText(layout.Executable, "installed");
+        var host = new RecordingHost { RefuseToStop = true };
+        var installer = new SelfInstaller(
+            TestApp.Identity, layout, new RunningApp(Path.Combine(root, "elsewhere"), null, true), host, new NullLog(), ReleaseVersion.TryParse("1.0.0"));
+
+        installer.Uninstall();
+
+        // It may still be using them: the next Valafind that starts gives them back.
+        Assert.DoesNotContain("release", host.Calls);
+    }
+
+    [Fact]
     public void OnStartup_LeavesBuildsThatAreNotSingleFileAlone()
     {
         var layout = InstallLayout.Create(TestApp.Identity, InstallLayout.CurrentPlatform, Path.Combine(root, "home"), Path.Combine(root, "local"), Path.Combine(root, "state"));
@@ -522,7 +563,29 @@ internal sealed class RecordingHost : IInstallHost
 
     public bool AutostartRemoved { get; private set; }
 
-    public void StopRunningInstance() => Stopped = true;
+    /// <summary>Calls in order: "stop", "autostart", "release".</summary>
+    public List<string> Calls { get; } = [];
 
-    public void RemoveAutostart() => AutostartRemoved = true;
+    /// <summary>Makes <see cref="StopRunningInstance"/> fail like a copy that does not quit.</summary>
+    public bool RefuseToStop { get; set; }
+
+    public void StopRunningInstance()
+    {
+        Calls.Add("stop");
+        if (RefuseToStop)
+            throw new InvalidOperationException("The running Valafind did not quit.");
+        Stopped = true;
+    }
+
+    public void RemoveAutostart()
+    {
+        Calls.Add("autostart");
+        AutostartRemoved = true;
+    }
+
+    public string? ReleaseExternalState()
+    {
+        Calls.Add("release");
+        return null;
+    }
 }

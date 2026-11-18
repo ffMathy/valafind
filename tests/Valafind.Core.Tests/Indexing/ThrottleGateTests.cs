@@ -10,6 +10,8 @@ internal sealed class FakeMonitor : ISystemPressureMonitor
     public double Cpu { get; set; }
     public double? DiskBusy { get; set; }
     public double? DiskBytes { get; set; }
+    public double? Gpu { get; set; }
+    public double? OwnGpu { get; set; }
     public bool OnBattery { get; set; }
     public bool Throw { get; set; }
     public int Samples;
@@ -19,7 +21,7 @@ internal sealed class FakeMonitor : ISystemPressureMonitor
         Interlocked.Increment(ref Samples);
         if (Throw)
             throw new InvalidOperationException("boom");
-        return new PressureSample(DateTimeOffset.UtcNow, Cpu, DiskBusy, DiskBytes, OnBattery);
+        return new PressureSample(DateTimeOffset.UtcNow, Cpu, DiskBusy, DiskBytes, OnBattery, Gpu, OwnGpu);
     }
 
     public void Dispose()
@@ -84,6 +86,44 @@ public class ThrottleGateTests
         rig.Monitor.DiskBusy = disk;
         for (var i = 0; i < 20; i++)
             Assert.Equal(IndexingState.Running, rig.Step());
+    }
+
+    [Fact]
+    public void A_busy_GPU_slows_indexing_only_while_the_model_runs_on_the_GPU()
+    {
+        using var rig = new Rig();
+        rig.Monitor.Cpu = 5;
+        rig.Monitor.Gpu = 100; // a game keeps the GPU busy
+        rig.Monitor.OwnGpu = 1;
+        rig.Options = rig.Options with { MaxGpuPercent = 30, SteerGpu = false };
+        for (var i = 0; i < 30; i++)
+        {
+            rig.Gate.Pace.ReportInFlight(rig.Gate.Pace.Concurrency);
+            Assert.Equal(IndexingState.Running, rig.Step());
+        }
+        Assert.Equal(PaceLimit.Cpu, rig.Gate.Pace.LimitedBy);
+        Assert.Equal(0, rig.Gate.Pace.GpuTargetPercent);
+
+        rig.Options = rig.Options with { SteerGpu = true };
+        for (var i = 0; i < 60; i++)
+        {
+            rig.Gate.Pace.ReportInFlight(rig.Gate.Pace.Concurrency);
+            Assert.Equal(IndexingState.Running, rig.Step()); // slows down, never pauses
+        }
+        Assert.Equal(PaceLimit.Gpu, rig.Gate.Pace.LimitedBy);
+        Assert.Equal(27, rig.Gate.Pace.GpuTargetPercent, 6);
+        Assert.Equal(IndexingPace.MinEffort, rig.Gate.Pace.Effort, 6);
+        Assert.Equal(99, rig.Gate.LastEffectiveSample!.GpuPercent!.Value, 6);
+    }
+
+    [Fact]
+    public void ThrottleOptionsFromSettingsCarriesTheGpuLimit()
+    {
+        var settings = new Valafind.Core.Configuration.ValafindSettings { MaxGpuPercent = 40 };
+        var cpuOnly = ThrottleOptions.From(settings);
+        Assert.Equal(40, cpuOnly.MaxGpuPercent);
+        Assert.False(cpuOnly.SteerGpu);
+        Assert.True(ThrottleOptions.From(settings, usesGpu: true).SteerGpu);
     }
 
     [Fact]

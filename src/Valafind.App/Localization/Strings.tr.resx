@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>En fazla disk meşguliyeti yüzdesi</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>En fazla GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>En fazla GPU yüzdesi</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>Model GPU üzerinde çalışırken uygulanır</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>Ayarlar…</value>
   </data>

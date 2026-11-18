@@ -29,6 +29,13 @@ public interface IEmbeddingModel : IDisposable
     IReadOnlyList<float[]> EmbedDocuments(IReadOnlyList<DocumentText> documents, CancellationToken cancellationToken = default);
 }
 
+/// <summary>An <see cref="IEmbeddingModel"/> that may run on the GPU; the throttle steers GPU utilisation only while it does.</summary>
+public interface IGpuAccelerated
+{
+    /// <summary>True when inference runs (or, once loaded, will run) on the GPU.</summary>
+    bool UsesGpu { get; }
+}
+
 /// <summary>A decoded picture or video frame: 8-bit RGB, row-major, no padding (<c>Rgb.Length == Width * Height * 3</c>),
 /// already turned upright (EXIF orientation / video rotation applied).</summary>
 public sealed record DecodedImage(int Width, int Height, byte[] Rgb)
@@ -151,7 +158,9 @@ public enum IndexPhase
 
 public sealed record FileFingerprint(long Size, DateTimeOffset ModifiedUtc);
 
-public sealed record FileEntry(string Path, long Size, DateTimeOffset ModifiedUtc, FileKind Kind, IndexPhase Phase);
+/// <param name="ContentPending">The file was online-only (a cloud placeholder) and could not be downloaded, so it is
+/// indexed by name only; its content is indexed once it can be read.</param>
+public sealed record FileEntry(string Path, long Size, DateTimeOffset ModifiedUtc, FileKind Kind, IndexPhase Phase, bool ContentPending = false);
 
 public sealed record ChunkRecord(int Index, int Start, int Length, string Text, float[] Vector);
 
@@ -218,8 +227,12 @@ public interface ISearchService
 /// <param name="DiskBusyPercent">Share of time any physical disk was busy 0–100, or null when the OS cannot tell us.</param>
 /// <param name="DiskBytesPerSecond">Read+write throughput across physical disks, or null when unknown.</param>
 /// <param name="OnBattery">True when running on battery power.</param>
+/// <param name="GpuPercent">Utilisation of the busiest GPU 0–100 (its busiest engine), or null when the OS or driver
+/// cannot tell us.</param>
+/// <param name="OwnGpuPercent">Valafind's own share of <paramref name="GpuPercent"/> on that GPU, or null when the
+/// platform cannot attribute GPU time to processes.</param>
 public sealed record PressureSample(DateTimeOffset At, double CpuPercent, double? DiskBusyPercent,
-    double? DiskBytesPerSecond, bool OnBattery);
+    double? DiskBytesPerSecond, bool OnBattery, double? GpuPercent = null, double? OwnGpuPercent = null);
 
 public interface ISystemPressureMonitor : IDisposable
 {

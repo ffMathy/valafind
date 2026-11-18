@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>최대 디스크 사용률(퍼센트)</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>최대 GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>최대 GPU 사용률</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>모델이 GPU에서 실행될 때 적용됩니다</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>설정…</value>
   </data>

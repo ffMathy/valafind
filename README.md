@@ -12,9 +12,9 @@ file, even when it is written in another language and named `scan_0042.pdf`. Eve
     <th>Linux</th>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/windows-launcher.png" alt="Windows: results on the left, the selected file's details and why it matched on the right"></td>
-    <td><img src="docs/screenshots/macos-launcher.png" alt="macOS floating bar: results grouped by kind, the top match previewed with the sentence that answers the question"></td>
-    <td><img src="docs/screenshots/linux-launcher.png" alt="Linux GNOME-style dialog: results with highlighted passages and the selected file's details"></td>
+    <td><img src="docs/screenshots/windows-launcher.png" alt="Windows: results on the left, the selected file's details, why it matched and a preview of the file on the right"></td>
+    <td><img src="docs/screenshots/macos-launcher.png" alt="macOS floating bar: results grouped by kind, a photo shown as its thumbnail, the top match previewed with the sentence that answers the question"></td>
+    <td><img src="docs/screenshots/linux-launcher.png" alt="Linux GNOME-style dialog: results with highlighted passages and the selected file's details and preview"></td>
   </tr>
 </table>
 
@@ -41,7 +41,7 @@ way of everything else starting at login. On macOS it asks the system's change l
 ran; on Windows and Linux it compares each file's size and modification date from the folder listing with the index,
 which costs no more than reading the folders, and only reads files that changed. Every folder is also re-checked once a day.
 
-<img src="docs/screenshots/settings.png" width="420" alt="Settings: global shortcut, indexed folders, CPU and disk limits, pause on battery">
+<img src="docs/screenshots/settings.png" width="420" alt="Settings: global shortcut, indexed folders, CPU, disk and GPU limits, pause on battery">
 
 ## Nothing leaves your computer
 
@@ -137,8 +137,20 @@ The desktop recognizes the app through the desktop entry the installer writes.
   30-second clips, spread over the file when it is longer than two minutes.
 - **Video**: eight frames spread over the video, plus up to two 30-second clips of its sound.
 - **Name only:** archives, legacy `.doc`/`.xls`/`.ppt`/`.msg`, iWork files, and media no decoder can read.
-- **Skipped:** hidden and app-data folders, `node_modules`, `.git`, build output, caches, the Trash, and cloud
-  placeholders that would trigger a download.
+- **Online-only cloud files** (OneDrive Files On-Demand, iCloud Drive, Dropbox, Google Drive, …): indexed like any
+  other file, then made online-only again, so they don't stay on your disk. Valafind asks the sync client to download
+  up to 1,000 of the next ones ahead (on Windows by marking them *Always keep on this device*), as long as they fit in
+  10 % of the free disk space, and indexes each one as it arrives while it carries on with your other files. The
+  requests are kept in the index database: after a restart, files that arrived meanwhile are indexed and every request
+  is undone. Files you keep on the device yourself stay downloaded.
+
+  Valafind never deletes, moves or writes your files. It frees a file's space again only when the sync client reports
+  it fully uploaded and no one has written to it since Valafind fetched it; a file you edited, pinned (or whose folder
+  you pinned) or that is still uploading stays on your device. When Valafind can't tell, it leaves the file as it is.
+  Uninstalling Valafind gives back the files it still has requested. Documents over 64 MB, media over 1 GB, and any
+  file that would leave less than 2 GB free are indexed by name until they are on your device. On macOS, a provider
+  that refuses to take a file back is not downloaded from again; its files are indexed by name.
+- **Skipped:** hidden and app-data folders, `node_modules`, `.git`, build output, caches and the Trash.
 
 Pictures, audio and video are also findable by their names. Audio and video use Media Foundation on Windows and
 AVFoundation on macOS. On Linux they need `ffmpeg` (`sudo apt install ffmpeg`, `sudo dnf install ffmpeg`, …); without

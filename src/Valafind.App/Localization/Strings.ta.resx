@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>அதிகபட்ச வட்டுப் பயன்பாட்டுச் சதவீதம்</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>அதிகபட்ச GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>அதிகபட்ச GPU சதவீதம்</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>மாதிரி GPU-வில் இயங்கும்போது பொருந்தும்</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>அமைப்புகள்…</value>
   </data>

@@ -2,7 +2,7 @@
 
 Every release that CI publishes on GitHub (not prereleases) is also sent to both stores by
 [`.github/workflows/store.yml`](../../.github/workflows/store.yml), which `ci.yml` calls after its `release` job. You can
-also run **Actions › Store release › Run workflow** with a released tag such as `v0.1.42` to send (or resend) that
+also run **Actions › Store release › Run workflow** with a released tag such as `v1.0.42` to send (or resend) that
 version.
 
 Each store's job is skipped until its repository variables are set (`MSSTORE_PRODUCT_ID` for the Microsoft Store,

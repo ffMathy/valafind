@@ -471,6 +471,15 @@
   <data name="SettingsMaxDiskA11y" xml:space="preserve">
     <value>గరిష్ఠ డిస్క్ వినియోగ శాతం</value>
   </data>
+  <data name="SettingsMaxGpu" xml:space="preserve">
+    <value>గరిష్ఠ GPU</value>
+  </data>
+  <data name="SettingsMaxGpuA11y" xml:space="preserve">
+    <value>గరిష్ఠ GPU శాతం</value>
+  </data>
+  <data name="SettingsMaxGpuHint" xml:space="preserve">
+    <value>మోడల్ GPUపై నడుస్తున్నప్పుడు వర్తిస్తుంది</value>
+  </data>
   <data name="SettingsMenu" xml:space="preserve">
     <value>సెట్టింగ్‌లు…</value>
   </data>

@@ -13,6 +13,10 @@
     <PackageReference Include="Avalonia.Skia" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Stored 300×200 with EXIF orientation 6; shared with the Core decoder tests. -->
+    <None Include="..\Valafind.Core.Tests\Fixtures\Media\rotated.jpg" Link="Fixtures\rotated.jpg" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- References the App project. In a module worktree the App compiles against temporary, uncommitted
          Core/Platform stubs (Services/_Pending*Stubs.cs); after integration it compiles against the real modules. -->
     <ProjectReference Include="..\..\src\Valafind.App\Valafind.App.csproj" />
