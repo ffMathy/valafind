@@ -275,8 +275,12 @@ internal sealed class FakeStatDiscovery(IReadOnlyList<string> roots, IReadOnlyLi
     /// <summary>Walks started (<see cref="EnumerateAllFilesWithStats"/> calls that began enumerating).</summary>
     public int Walks;
 
+    /// <summary>When each walk started (UTC).</summary>
+    public readonly ConcurrentQueue<DateTime> WalkStarts = new();
+
     public IEnumerable<DiscoveredFile> EnumerateAllFilesWithStats(CancellationToken cancellationToken)
     {
+        WalkStarts.Enqueue(DateTime.UtcNow);
         Interlocked.Increment(ref Walks);
         foreach (var path in EnumerateAllFiles(cancellationToken))
         {
