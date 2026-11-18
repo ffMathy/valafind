@@ -33,6 +33,12 @@ video**: everything you write and read is searchable before it starts on your ph
 comes last. The progress panel only appears while indexing is under way; once everything is indexed, the launcher just
 shows a small ✓ *Up to date*.
 
+While it runs, Valafind watches your folders and updates the index a few seconds after a file is added, changed, moved
+or deleted. Changes made while it wasn't running are picked up about 90 seconds after it starts, so it stays out of the
+way of everything else starting at login. On macOS it asks the system's change log (FSEvents) what changed since it last
+ran; on Windows and Linux it compares each file's size and modification date from the folder listing with the index,
+which costs no more than reading the folders, and only reads files that changed. Every folder is also re-checked once a day.
+
 <img src="docs/screenshots/settings.png" width="420" alt="Settings: global shortcut, indexed folders, CPU and disk limits, pause on battery">
 
 ## Nothing leaves your computer

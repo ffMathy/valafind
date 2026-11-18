@@ -12,7 +12,7 @@ namespace Valafind.Core.Indexing;
 /// Phase 2 (<see cref="EnumerateAllFiles"/>) walks every root breadth-first so shallow, more relevant folders come
 /// first. Symlinks/junctions are never followed and cloud placeholders that would trigger a download are skipped.
 /// </summary>
-public sealed class UserFileDiscovery : IFileDiscovery
+public sealed class UserFileDiscovery : IFileDiscovery, IFileStatDiscovery
 {
     internal const int MaxFrequentFiles = 10_000;
     private const int RecentFolderDepth = 3;
@@ -117,6 +117,11 @@ public sealed class UserFileDiscovery : IFileDiscovery
     /// <inheritdoc />
     public IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken) =>
         Walk(Roots, int.MaxValue, cancellationToken).Select(e => e.Path);
+
+    /// <inheritdoc />
+    public IEnumerable<DiscoveredFile> EnumerateAllFilesWithStats(CancellationToken cancellationToken) =>
+        Walk(Roots, int.MaxValue, cancellationToken)
+            .Select(e => new DiscoveredFile(e.Path, e.Length, new DateTimeOffset(e.LastWriteUtc, TimeSpan.Zero)));
 
     /// <summary>Breadth-first walk of one directory inside the roots (used for watcher-created directories and rescans).</summary>
     internal IEnumerable<string> EnumerateUnder(string directory, CancellationToken cancellationToken)

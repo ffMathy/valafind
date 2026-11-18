@@ -75,6 +75,31 @@ public sealed class SqliteIndexStoreReviewFixTests : IDisposable
     }
 
     [Fact]
+    public void Batch_entry_lookup_answers_in_input_order()
+    {
+        using var store = _db.OpenStore(policy: PathKeyPolicy.CaseInsensitiveNfc);
+        Add(store, P("/home/a/report.docx"));
+        Add(store, P("/home/a/notes.txt"));
+        IIndexedEntrySource source = store;
+
+        // More paths than one query takes, with misses, a different spelling and a repeat.
+        var paths = Enumerable.Range(0, 1200).Select(i => P($"/home/a/missing{i}.txt")).ToList();
+        paths.Insert(3, P("/home/a/Report.docx"));
+        paths.Insert(700, P("/home/a/notes.txt"));
+        paths.Add(P("/home/a/notes.txt"));
+        var entries = source.GetEntries(paths);
+
+        Assert.Equal(paths.Count, entries.Count);
+        Assert.Equal(P("/home/a/report.docx"), entries[3]!.Path); // the stored spelling
+        Assert.Equal(P("/home/a/notes.txt"), entries[700]!.Path);
+        Assert.Equal(P("/home/a/notes.txt"), entries[^1]!.Path);
+        Assert.Equal(100, entries[3]!.Size);
+        Assert.Equal(Entries.BaseTime, entries[3]!.ModifiedUtc);
+        Assert.Equal(3, entries.Count(e => e is not null));
+        Assert.Empty(source.GetEntries([]));
+    }
+
+    [Fact]
     public void Database_directory_and_files_are_private_on_unix()
     {
         if (OperatingSystem.IsWindows())

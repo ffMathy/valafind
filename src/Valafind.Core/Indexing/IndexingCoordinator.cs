@@ -39,6 +39,18 @@ public interface IIndexedEntrySource
 {
     /// <summary>The entry <paramref name="path"/> resolves to (by the store's key rules), or null.</summary>
     IndexedEntry? GetEntry(string path);
+
+    /// <summary>The entries <paramref name="paths"/> resolve to, in the same order (null where a path is not
+    /// indexed). One query for the whole list, so a walk over unchanged files costs one lookup per batch rather
+    /// than one per file.</summary>
+    IReadOnlyList<IndexedEntry?> GetEntries(IReadOnlyList<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        var result = new IndexedEntry?[paths.Count];
+        for (var i = 0; i < paths.Count; i++)
+            result[i] = GetEntry(paths[i]);
+        return result;
+    }
 }
 
 /// <summary>
@@ -71,6 +83,7 @@ public sealed class IndexingCoordinator : IIndexingService
     internal const string MetaLastFullScan = "phase2_last_full_scan_utc";
     internal const string MetaModelId = "indexing_model_id";
     internal const string MetaConfig = "indexing_config";
+    internal const string MetaChangeCheckpoint = "change_history_checkpoint";
 
     /// <summary>FAT stores mtimes with 2 s resolution, SMB/exFAT and some tools round to whole seconds.</summary>
     private static readonly TimeSpan CoarseTimestampTolerance = TimeSpan.FromSeconds(2);
@@ -79,6 +92,8 @@ public sealed class IndexingCoordinator : IIndexingService
     private const int DiscoveryGateEvery = 256;
     private const int DiscoveryChannelCapacity = 50_000;
     private const int SweepPage = 500;
+    /// <summary>Walked files checked against the index per store query.</summary>
+    private const int CheckBatchSize = 256;
     private const int ModelAttemptsPerBatch = 3;
 
     private readonly IFileDiscovery _discovery;
@@ -133,6 +148,19 @@ public sealed class IndexingCoordinator : IIndexingService
     private HashSet<string>? _frequentMedia;
     private bool _sweepUnsupportedLogged;
     private int _watchLimitLogged;
+
+    // Start-up check: changes made while Valafind was not running. It runs StartupCheckDelay after start (unless this
+    // session already walked every root), from the change history when there is one, else as a quiet walk.
+    private readonly IChangeHistory? _history;
+    private DateTimeOffset _startedAt;
+    private DateTimeOffset? _startupCheckAt;
+    private bool _fullScanThisSession;
+    // History checkpoints are saved only once the start-up check has run (an earlier one would skip the offline
+    // changes), and only after a quiet spell with nothing pending, so every change before it is in the index.
+    private bool _checkpointsAllowed;
+    private long _watcherEvents;
+    private long _checkpointedEvents = -1;
+    private (string Token, long Events, DateTimeOffset At)? _checkpointCandidate;
 
     private IndexStatus _status = IndexStatus.Initial;
     private bool _raisePending;
@@ -194,6 +222,7 @@ public sealed class IndexingCoordinator : IIndexingService
         _gate.SetUserPaused(settings.UserPaused);
         _gate.Changed += (_, _) => Publish();
         _workers = new IndexingWorkers(_gate.Pace);
+        _history = tuning.History;
         _statusTimer = _time.CreateTimer(_ => RaiseDeferred(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         if (model is null)
             _status = IndexStatus.Initial with { State = IndexingState.ModelUnavailable };
@@ -306,10 +335,15 @@ public sealed class IndexingCoordinator : IIndexingService
         using var priority = BackgroundPriority.EnterForCurrentThread();
         try
         {
+            _startedAt = _time.GetUtcNow();
             PrepareMeta();
             StartWatchers();
             RunPhase1(cancellationToken);
             RunPhase2(cancellationToken);
+            if (_fullScanThisSession)
+                _checkpointsAllowed = true; // every root was just walked: nothing older is missing
+            else
+                _startupCheckAt = _startedAt + _tuning.StartupCheckDelay;
             RunIncremental(cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -440,10 +474,11 @@ public sealed class IndexingCoordinator : IIndexingService
             Interlocked.Exchange(ref _allTotal, count);
             Interlocked.Exchange(ref _allDone, count);
             _discoveryComplete = true;
-            if (!IsFullScanDue())
-                return;
+            // Changes since the last run (and a due daily re-walk) are picked up by the start-up check, which waits
+            // StartupCheckDelay so it does not compete with everything else starting at login.
+            return;
         }
-        RunFullScan(complete ? IndexPhase.Incremental : IndexPhase.All, cancellationToken);
+        RunFullScan(IndexPhase.All, cancellationToken);
     }
 
     private bool IsFullScanDue()
@@ -476,7 +511,7 @@ public sealed class IndexingCoordinator : IIndexingService
         SetActivity(Activity.Working);
         IndexingLog.Phase2Started(_logger, _discovery.Roots.Count);
 
-        var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(DiscoveryChannelCapacity)
+        var channel = Channel.CreateBounded<DiscoveredFile>(new BoundedChannelOptions(DiscoveryChannelCapacity)
         {
             SingleReader = true,
             SingleWriter = true,
@@ -490,12 +525,16 @@ public sealed class IndexingCoordinator : IIndexingService
             {
                 WaitForGate(cancellationToken);
                 var n = 0;
-                foreach (var path in _discovery.EnumerateAllFiles(cancellationToken))
+                // Size and mtime from the directory listing when the discovery has them (Size -1: unknown).
+                var files = _discovery is IFileStatDiscovery withStats
+                    ? withStats.EnumerateAllFilesWithStats(cancellationToken)
+                    : _discovery.EnumerateAllFiles(cancellationToken).Select(p => new DiscoveredFile(p, -1, default));
+                foreach (var file in files)
                 {
                     if (++n % DiscoveryGateEvery == 0)
                         WaitForGate(cancellationToken);
-                    if (!channel.Writer.TryWrite(path))
-                        channel.Writer.WriteAsync(path, cancellationToken).AsTask().GetAwaiter().GetResult();
+                    if (!channel.Writer.TryWrite(file))
+                        channel.Writer.WriteAsync(file, cancellationToken).AsTask().GetAwaiter().GetResult();
                     Interlocked.Increment(ref walked);
                     if (visible)
                     {
@@ -536,16 +575,29 @@ public sealed class IndexingCoordinator : IIndexingService
         // Documents as they are found; pictures, audio and video afterwards, in that order (IndexOrder). Files the
         // watchers deferred before this pass started stay queued.
         _stage = IndexOrder.Documents;
+        var batch = new List<DiscoveredFile>(CheckBatchSize);
         try
         {
             try
             {
                 while (channel.Reader.WaitToReadAsync(cancellationToken).AsTask().GetAwaiter().GetResult())
                 {
-                    while (channel.Reader.TryRead(out var path))
+                    batch.Clear();
+                    while (batch.Count < CheckBatchSize && channel.Reader.TryRead(out var next))
+                        batch.Add(next);
+                    // Unchanged files (most of them, on every walk after the first) end here: no stat and no
+                    // lookup of their own. The rest are checked again by Dispatch with a fresh stat.
+                    var unchanged = FindUnchanged(batch);
+                    for (var i = 0; i < batch.Count; i++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         DrainPending(cancellationToken);
+                        if (unchanged[i])
+                        {
+                            CountDone();
+                            continue;
+                        }
+                        var path = batch[i].Path;
                         var rank = IndexOrder.Rank(path);
                         if (rank > IndexOrder.Documents)
                         {
@@ -603,11 +655,53 @@ public sealed class IndexingCoordinator : IIndexingService
         }
         if (walkSucceeded)
         {
+            _fullScanThisSession = true;
             TrySetMeta(MetaPhase2Count, total.ToString(CultureInfo.InvariantCulture));
             TrySetMeta(MetaPhase2Complete, "1");
             TrySetMeta(MetaLastFullScan, _time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture));
             SweepStale(null, cancellationToken);
         }
+    }
+
+    /// <summary>Which files of a walk batch are unchanged, judged by the size and mtime the directory listing
+    /// reported and one store query for the whole batch. False where that is not known (no listing stats, no batch
+    /// lookup, a store error): those files take the per-file check in <see cref="Prepare"/>.</summary>
+    private bool[] FindUnchanged(List<DiscoveredFile> batch)
+    {
+        var unchanged = new bool[batch.Count];
+        if (_store is not IIndexedEntrySource source)
+            return unchanged;
+        var indices = new List<int>(batch.Count);
+        var paths = new List<string>(batch.Count);
+        for (var i = 0; i < batch.Count; i++)
+        {
+            if (batch[i].Size > 0)
+            {
+                indices.Add(i);
+                paths.Add(batch[i].Path);
+            }
+        }
+        if (paths.Count == 0)
+            return unchanged;
+
+        IReadOnlyList<IndexedEntry?> entries;
+        try
+        {
+            entries = source.GetEntries(paths);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            IndexingLog.FingerprintFailed(_logger, e, paths[0]);
+            return unchanged;
+        }
+        for (var j = 0; j < indices.Count && j < entries.Count; j++)
+        {
+            var file = batch[indices[j]];
+            if (entries[j] is { } entry && !IsDifferentSpelling(entry.Path, file.Path) &&
+                IsUnchanged(new FileFingerprint(entry.Size, entry.ModifiedUtc), file.Size, file.ModifiedUtc))
+                unchanged[indices[j]] = true;
+        }
+        return unchanged;
     }
 
     /// <summary>Removes index entries (all, or those under <paramref name="directory"/>) whose file vanished, became
@@ -758,28 +852,141 @@ public sealed class IndexingCoordinator : IIndexingService
         var handles = new[] { cancellationToken.WaitHandle, _pendingSignal };
         while (!cancellationToken.IsCancellationRequested)
         {
+            if (_startupCheckAt is { } due && _time.GetUtcNow() >= due)
+            {
+                RunStartupCheck(cancellationToken);
+                _phase = IndexPhase.Incremental;
+            }
+
             if (_pending.Count == 0)
             {
                 SetActivity(Activity.Idle);
                 _gate.SetIdle(true);
                 ReleaseMediaModel();
             }
+            UpdateCheckpoint(cancellationToken);
 
             var wait = _pending.NextDueIn() ?? _tuning.IdlePoll;
             if (wait > _tuning.IdlePoll)
                 wait = _tuning.IdlePoll;
+            var now = _time.GetUtcNow();
+            if (_startupCheckAt is { } checkAt && checkAt - now < wait)
+                wait = checkAt - now;
+            if (_checkpointCandidate is { } candidate && candidate.At + _tuning.CheckpointSettle - now < wait)
+                wait = candidate.At + _tuning.CheckpointSettle - now;
             if (wait > TimeSpan.Zero)
                 WaitHandle.WaitAny(handles, wait);
             cancellationToken.ThrowIfCancellationRequested();
 
             DrainPending(cancellationToken);
 
-            if (IsFullScanDue())
+            if (_startupCheckAt is null && IsFullScanDue())
             {
                 RunFullScan(IndexPhase.Incremental, cancellationToken);
                 _phase = IndexPhase.Incremental;
             }
         }
+    }
+
+    /// <summary>Catches up with changes made while Valafind was not running: replays the change history since the
+    /// saved checkpoint when the platform keeps one (macOS), otherwise (or when it cannot answer, or the daily re-walk
+    /// is due anyway) walks every root quietly. The walk costs a stat and an index lookup per unchanged file.</summary>
+    private void RunStartupCheck(CancellationToken cancellationToken)
+    {
+        _startupCheckAt = null;
+        var checkpoint = TryGetMeta(MetaChangeCheckpoint);
+        if (_history is not null && checkpoint is not null && !IsFullScanDue())
+        {
+            long changes = 0;
+            bool replayed;
+            try
+            {
+                replayed = _history.TryReplay(checkpoint, _discovery.Roots, (path, kind) =>
+                {
+                    Interlocked.Increment(ref changes);
+                    OnHistoryChange(path, kind);
+                }, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                IndexingLog.HistoryReplayFailed(_logger, e);
+                replayed = false;
+            }
+            if (replayed)
+            {
+                IndexingLog.HistoryReplayed(_logger, Interlocked.Read(ref changes));
+                _checkpointsAllowed = true;
+                return;
+            }
+            IndexingLog.HistoryUnavailable(_logger);
+        }
+        RunFullScan(IndexPhase.Incremental, cancellationToken);
+        _checkpointsAllowed = true;
+    }
+
+    /// <summary>A change from the history: queued like a watcher event. FSEvents can name a directory above the
+    /// roots when it lost detail there; that becomes a rescan of every root below it.</summary>
+    private void OnHistoryChange(string path, ChangeKind kind)
+    {
+        if (FindRoot(path) is not null)
+        {
+            OnWatcherEvent(path, kind);
+            return;
+        }
+        if (kind != ChangeKind.Rescan)
+            return;
+        var comparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        var above = Path.EndsInDirectorySeparator(path) ? path : path + Path.DirectorySeparatorChar;
+        foreach (var root in _discovery.Roots)
+        {
+            if (root.StartsWith(above, comparison))
+                OnWatcherEvent(root, ChangeKind.Rescan);
+        }
+    }
+
+    /// <summary>Saves a history checkpoint once everything that happened before it is in the index: it is captured
+    /// when nothing is pending and saved <see cref="CoordinatorTuning.CheckpointSettle"/> later if no watcher event
+    /// arrived meanwhile (one that did may predate it). Nothing is saved while no new event arrived since the last
+    /// one, so an idle machine does not write.</summary>
+    private void UpdateCheckpoint(CancellationToken cancellationToken)
+    {
+        if (_history is null || !_checkpointsAllowed)
+            return;
+        var events = Interlocked.Read(ref _watcherEvents);
+        if (events == _checkpointedEvents || _pending.Count > 0)
+        {
+            _checkpointCandidate = null;
+            return;
+        }
+        var now = _time.GetUtcNow();
+        if (_checkpointCandidate is not { } candidate || candidate.Events != events)
+        {
+            string? token = null;
+            try
+            {
+                token = _history.Capture(_discovery.Roots);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                IndexingLog.HistoryReplayFailed(_logger, e);
+            }
+            if (token is null)
+                _checkpointedEvents = events; // no usable history for these roots: the start-up check walks
+            _checkpointCandidate = token is null ? null : (token, events, now);
+            return;
+        }
+        if (now - candidate.At < _tuning.CheckpointSettle)
+            return;
+        _workers.WaitIdle(cancellationToken);
+        _checkpointCandidate = null;
+        if (Interlocked.Read(ref _watcherEvents) != candidate.Events || _pending.Count > 0)
+            return;
+        if (TryStore(() => _store.SetMeta(MetaChangeCheckpoint, candidate.Token), "meta write"))
+            _checkpointedEvents = candidate.Events;
     }
 
     /// <summary>Handles every watcher change whose debounce elapsed.</summary>
@@ -1483,6 +1690,7 @@ public sealed class IndexingCoordinator : IIndexingService
             if (_discovery is UserFileDiscovery user && user.IsExcludedByNameOnly(path))
                 return;
             _pending.Add(path, kind);
+            Interlocked.Increment(ref _watcherEvents);
             _gate.SetIdle(false);
             _pendingSignal.Set();
         }
@@ -1777,6 +1985,17 @@ internal sealed record CoordinatorTuning(
     /// <summary>The pace controller (null: one sized for this machine, see <see cref="IndexingPace.DefaultMaxConcurrency"/>).</summary>
     public IndexingPace? Pace { get; init; }
 
+    /// <summary>How long after start the check for changes made while Valafind was not running begins (it stays out of
+    /// the way of everything else starting at login).</summary>
+    public TimeSpan StartupCheckDelay { get; init; } = TimeSpan.FromSeconds(90);
+
+    /// <summary>Quiet time before a change-history checkpoint is saved: longer than the watchers' own latency, so no
+    /// event older than the checkpoint can still be on its way.</summary>
+    public TimeSpan CheckpointSettle { get; init; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>The persistent change log the start-up check replays (macOS FSEvents); null: it walks.</summary>
+    public IChangeHistory? History { get; init; } = OperatingSystem.IsMacOS() ? FsEventsHistory.Instance : null;
+
     /// <summary>Batch size 2: a model batch cannot be cancelled once started, and two chunks take about a second on
     /// a laptop CPU, which bounds how long a query can wait behind indexing.</summary>
     public static CoordinatorTuning Default { get; } = new(
@@ -1874,4 +2093,13 @@ internal static partial class IndexingLog
 
     [LoggerMessage(28, LogLevel.Debug, "Embedding the content of {Path} failed; it stays findable by name")]
     public static partial void MediaFailed(ILogger logger, Exception exception, string path);
+
+    [LoggerMessage(29, LogLevel.Information, "Start-up check: {Count} changes since the last run from the change history")]
+    public static partial void HistoryReplayed(ILogger logger, long count);
+
+    [LoggerMessage(30, LogLevel.Information, "Start-up check: change history unavailable; walking the indexed folders")]
+    public static partial void HistoryUnavailable(ILogger logger);
+
+    [LoggerMessage(31, LogLevel.Warning, "Reading the change history failed")]
+    public static partial void HistoryReplayFailed(ILogger logger, Exception exception);
 }

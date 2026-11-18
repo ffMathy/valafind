@@ -93,7 +93,22 @@ internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, 
         }
     }
 
+    /// <summary>Single-path lookups (<see cref="GetEntry"/>) and batch lookups (<see cref="GetEntries"/>) so far.</summary>
+    public int EntryLookups, BatchLookups;
+
     public IndexedEntry? GetEntry(string path)
+    {
+        Interlocked.Increment(ref EntryLookups);
+        return Find(path);
+    }
+
+    public IReadOnlyList<IndexedEntry?> GetEntries(IReadOnlyList<string> paths)
+    {
+        Interlocked.Increment(ref BatchLookups);
+        return paths.Select(Find).ToList();
+    }
+
+    private IndexedEntry? Find(string path)
     {
         lock (_lock)
         {
@@ -216,5 +231,45 @@ internal sealed class FakeDiscovery(IReadOnlyList<string> roots, IReadOnlyList<s
             cancellationToken.ThrowIfCancellationRequested();
             yield return path;
         }
+    }
+}
+
+/// <summary><see cref="FakeDiscovery"/> that also reports each file's size and mtime the way a directory listing does.</summary>
+internal sealed class FakeStatDiscovery(IReadOnlyList<string> roots, IReadOnlyList<string> all) : IFileDiscovery, IFileStatDiscovery
+{
+    public IReadOnlyList<string> Roots { get; } = roots;
+    public bool IsExcluded(string path) => false;
+    public IEnumerable<string> EnumerateFrequentFiles(CancellationToken cancellationToken) => [];
+    public IEnumerable<string> EnumerateAllFiles(CancellationToken cancellationToken) => all.Where(File.Exists);
+
+    public IEnumerable<DiscoveredFile> EnumerateAllFilesWithStats(CancellationToken cancellationToken)
+    {
+        foreach (var path in EnumerateAllFiles(cancellationToken))
+        {
+            var info = new FileInfo(path);
+            yield return new DiscoveredFile(path, info.Length, new DateTimeOffset(info.LastWriteTimeUtc, TimeSpan.Zero));
+        }
+    }
+}
+
+/// <summary>Change history whose checkpoints are "cp-1", "cp-2", …; a replay reports <see cref="Changes"/> and
+/// returns <see cref="CanReplay"/>.</summary>
+internal sealed class FakeHistory : IChangeHistory
+{
+    private int _captures;
+    public bool CanReplay { get; set; } = true;
+    public List<(string Path, ChangeKind Kind)> Changes { get; } = [];
+    public List<string> Replayed { get; } = [];
+    public int Captures => Volatile.Read(ref _captures);
+
+    public string? Capture(IReadOnlyList<string> roots) => "cp-" + Interlocked.Increment(ref _captures);
+
+    public bool TryReplay(string checkpoint, IReadOnlyList<string> roots, Action<string, ChangeKind> onChange, CancellationToken cancellationToken)
+    {
+        lock (Replayed)
+            Replayed.Add(checkpoint);
+        foreach (var (path, kind) in Changes)
+            onChange(path, kind);
+        return CanReplay;
     }
 }

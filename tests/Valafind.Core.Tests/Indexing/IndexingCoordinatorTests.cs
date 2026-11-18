@@ -16,6 +16,8 @@ public class IndexingCoordinatorTests
         ModelBackoffUnit = TimeSpan.FromMilliseconds(1),
         Throttle = new ThrottleOptions(30, 25, TimeSpan.Zero, true, TimeSpan.FromMilliseconds(25)),
         Pace = new IndexingPace(maxConcurrency: 1, processorCount: 1), // one file at a time: these tests check order
+        StartupCheckDelay = TimeSpan.Zero, // a restart catches up right away
+        History = null, // walk on every platform; ChangeHistoryTests cover the replay
     };
 
     private static IndexingCoordinator Create(IFileDiscovery discovery, FakeStore store, FakeModel? model, FakeMonitor? monitor = null,
