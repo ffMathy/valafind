@@ -101,6 +101,9 @@ internal sealed class CloudPrefetcher : IDisposable
         Failed,
     }
 
+    /// <summary>Signalled when a requested file is given back (room for another request).</summary>
+    public WaitHandle Changed => _changed;
+
     /// <summary>Files requested and not yet released.</summary>
     public int Count
     {

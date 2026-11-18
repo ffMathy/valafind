@@ -26,8 +26,16 @@ internal sealed class FakeCloud : ICloudFiles
 
     public bool CanDownload(string path, long size, bool isMedia) => Allowed;
 
+    /// <summary>When set, one-at-a-time downloads wait for it (a slow connection).</summary>
+    public ManualResetEventSlim? DownloadGate { get; set; }
+
+    /// <summary>One-at-a-time downloads started (they may still be waiting at <see cref="DownloadGate"/>).</summary>
+    public int DownloadsStarted;
+
     public IDisposable? Download(string path, long size, CancellationToken cancellationToken)
     {
+        Interlocked.Increment(ref DownloadsStarted);
+        DownloadGate?.Wait(cancellationToken);
         lock (OnlineOnly)
         {
             Downloads.Add(path);

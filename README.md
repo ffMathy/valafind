@@ -140,7 +140,8 @@ The desktop recognizes the app through the desktop entry the installer writes.
 - **Online-only cloud files** (OneDrive Files On-Demand, iCloud Drive, Dropbox, Google Drive, …): indexed like any
   other file, then made online-only again, so they don't stay on your disk. Valafind asks the sync client to download
   up to 1,000 of the next ones ahead (on Windows by marking them *Always keep on this device*), as long as they fit in
-  10 % of the free disk space, and indexes each one as it arrives while it carries on with your other files. The
+  10 % of the free disk space, and indexes each one as it arrives. Cloud files have a queue of their own: the files
+  already on your computer are indexed meanwhile and never wait for a download. The
   requests are kept in the index database: after a restart, files that arrived meanwhile are indexed and every request
   is undone. Files you keep on the device yourself stay downloaded.
 
