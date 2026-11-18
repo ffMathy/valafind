@@ -98,8 +98,8 @@ public class StartupCheckTests
         await WaitFor(() => coordinator.Status is { State: IndexingState.UpToDate, AllDone: 600 }, "walk finished");
 
         Assert.Equal(1, reader.Reads);
-        // 600 files in batches of at most 256: at least three queries, never one per file.
-        Assert.InRange(store.BatchLookups, 3, 600 / 10);
+        // 600 files in batches of 256: three queries (a slow walk may send a part-filled batch after a second).
+        Assert.InRange(store.BatchLookups, 3, 10);
         // Only the edited file took the per-file check (fresh stat and lookup) before it was indexed.
         Assert.Equal(1, store.EntryLookups);
     }

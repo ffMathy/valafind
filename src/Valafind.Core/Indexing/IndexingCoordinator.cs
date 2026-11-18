@@ -92,8 +92,10 @@ public sealed class IndexingCoordinator : IIndexingService
     private const int DiscoveryGateEvery = 256;
     private const int DiscoveryChannelCapacity = 50_000;
     private const int SweepPage = 500;
-    /// <summary>Walked files checked against the index per store query.</summary>
+    /// <summary>Walked files handed from the walk to the indexer at once, and checked against the index in one store
+    /// query. A batch that is not full yet goes out after <see cref="DiscoveryBatchMaxAge"/> anyway.</summary>
     private const int CheckBatchSize = 256;
+    private static readonly TimeSpan DiscoveryBatchMaxAge = TimeSpan.FromSeconds(1);
     private const int ModelAttemptsPerBatch = 3;
 
     private readonly IFileDiscovery _discovery;
@@ -511,7 +513,9 @@ public sealed class IndexingCoordinator : IIndexingService
         SetActivity(Activity.Working);
         IndexingLog.Phase2Started(_logger, _discovery.Roots.Count);
 
-        var channel = Channel.CreateBounded<DiscoveredFile>(new BoundedChannelOptions(DiscoveryChannelCapacity)
+        // Batches rather than single files: the indexer checks each batch with one store query, however fast it
+        // drains the channel compared with how fast the walk fills it.
+        var channel = Channel.CreateBounded<List<DiscoveredFile>>(new BoundedChannelOptions(DiscoveryChannelCapacity / CheckBatchSize)
         {
             SingleReader = true,
             SingleWriter = true,
@@ -529,12 +533,25 @@ public sealed class IndexingCoordinator : IIndexingService
                 var files = _discovery is IFileStatDiscovery withStats
                     ? withStats.EnumerateAllFilesWithStats(cancellationToken)
                     : _discovery.EnumerateAllFiles(cancellationToken).Select(p => new DiscoveredFile(p, -1, default));
+                var pending = new List<DiscoveredFile>(CheckBatchSize);
+                var pendingSince = 0L;
+                void Flush()
+                {
+                    if (pending.Count == 0)
+                        return;
+                    if (!channel.Writer.TryWrite(pending))
+                        channel.Writer.WriteAsync(pending, cancellationToken).AsTask().GetAwaiter().GetResult();
+                    pending = new List<DiscoveredFile>(CheckBatchSize);
+                }
                 foreach (var file in files)
                 {
                     if (++n % DiscoveryGateEvery == 0)
                         WaitForGate(cancellationToken);
-                    if (!channel.Writer.TryWrite(file))
-                        channel.Writer.WriteAsync(file, cancellationToken).AsTask().GetAwaiter().GetResult();
+                    if (pending.Count == 0)
+                        pendingSince = _time.GetTimestamp();
+                    pending.Add(file);
+                    if (pending.Count >= CheckBatchSize || _time.GetElapsedTime(pendingSince) >= DiscoveryBatchMaxAge)
+                        Flush();
                     Interlocked.Increment(ref walked);
                     if (visible)
                     {
@@ -542,6 +559,7 @@ public sealed class IndexingCoordinator : IIndexingService
                         Publish();
                     }
                 }
+                Flush();
                 walkSucceeded = true;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -575,37 +593,36 @@ public sealed class IndexingCoordinator : IIndexingService
         // Documents as they are found; pictures, audio and video afterwards, in that order (IndexOrder). Files the
         // watchers deferred before this pass started stay queued.
         _stage = IndexOrder.Documents;
-        var batch = new List<DiscoveredFile>(CheckBatchSize);
         try
         {
             try
             {
                 while (channel.Reader.WaitToReadAsync(cancellationToken).AsTask().GetAwaiter().GetResult())
                 {
-                    batch.Clear();
-                    while (batch.Count < CheckBatchSize && channel.Reader.TryRead(out var next))
-                        batch.Add(next);
-                    // Unchanged files (most of them, on every walk after the first) end here: no stat and no
-                    // lookup of their own. The rest are checked again by Dispatch with a fresh stat.
-                    var unchanged = FindUnchanged(batch);
-                    for (var i = 0; i < batch.Count; i++)
+                    while (channel.Reader.TryRead(out var batch))
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        DrainPending(cancellationToken);
-                        if (unchanged[i])
+                        // Unchanged files (most of them, on every walk after the first) end here: no stat and no
+                        // lookup of their own. The rest are checked again by Dispatch with a fresh stat.
+                        var unchanged = FindUnchanged(batch);
+                        for (var i = 0; i < batch.Count; i++)
                         {
-                            CountDone();
-                            continue;
-                        }
-                        var path = batch[i].Path;
-                        var rank = IndexOrder.Rank(path);
-                        if (rank > IndexOrder.Documents)
-                        {
-                            _deferred.Add(rank, path, entryPhase);
-                            continue;
-                        }
+                            cancellationToken.ThrowIfCancellationRequested();
+                            DrainPending(cancellationToken);
+                            if (unchanged[i])
+                            {
+                                CountDone();
+                                continue;
+                            }
+                            var path = batch[i].Path;
+                            var rank = IndexOrder.Rank(path);
+                            if (rank > IndexOrder.Documents)
+                            {
+                                _deferred.Add(rank, path, entryPhase);
+                                continue;
+                            }
 
-                        Dispatch(path, entryPhase, cancellationToken, CountDone);
+                            Dispatch(path, entryPhase, cancellationToken, CountDone);
+                        }
                     }
                 }
                 // Every document before the first picture.
