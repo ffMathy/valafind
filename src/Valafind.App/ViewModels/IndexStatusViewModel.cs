@@ -200,6 +200,24 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>Disk above the user's limit.</summary>
     [ObservableProperty] public partial bool IsDiskHigh { get; private set; }
 
+    /// <summary>True when the platform reports GPU utilisation, so the GPU meter is shown.</summary>
+    [ObservableProperty] public partial bool HasGpu { get; private set; }
+
+    /// <summary>GPU meter 0..1 (the busiest GPU).</summary>
+    [ObservableProperty] public partial double GpuFraction { get; private set; }
+
+    /// <summary>"42%".</summary>
+    [ObservableProperty] public partial string GpuText { get; private set; } = "—";
+
+    /// <summary>GPU above the user's limit.</summary>
+    [ObservableProperty] public partial bool IsGpuHigh { get; private set; }
+
+    /// <summary>The GPU meter's target marker, 0..1 (a little under the GPU limit); NaN hides it.</summary>
+    [ObservableProperty] public partial double GpuTargetFraction { get; private set; } = double.NaN;
+
+    /// <summary>"Target 27%" (tooltip of the GPU meter), empty without a marker.</summary>
+    [ObservableProperty] public partial string GpuTargetText { get; private set; } = string.Empty;
+
     /// <summary>Compact one-liner for the macOS footer: "Indexing while idle 41%".</summary>
     [ObservableProperty] public partial string CompactText { get; private set; } = string.Empty;
 
@@ -234,7 +252,8 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <param name="status">Raw status from the indexing service.</param>
     /// <param name="maxCpuPercent">User CPU threshold (for "high" colouring).</param>
     /// <param name="maxDiskBusyPercent">User disk threshold.</param>
-    public void Update(IndexStatus status, double maxCpuPercent, double maxDiskBusyPercent)
+    /// <param name="maxGpuPercent">User GPU threshold.</param>
+    public void Update(IndexStatus status, double maxCpuPercent, double maxDiskBusyPercent, double maxGpuPercent = 100)
     {
         ArgumentNullException.ThrowIfNull(status);
         Raw = status;
@@ -295,14 +314,22 @@ public sealed partial class IndexStatusViewModel : ObservableObject
             var diskTarget = IndexingPace.TargetFor(maxDiskBusyPercent);
             DiskTargetFraction = sample.DiskBusyPercent is not null ? diskTarget / 100 : double.NaN;
             DiskTargetText = sample.DiskBusyPercent is not null ? Loc.Format(Strings.IndexTargetTooltip, DisplayFormat.Percent(diskTarget / 100)) : string.Empty;
+            HasGpu = sample.GpuPercent is not null;
+            var gpu = Math.Clamp(sample.GpuPercent ?? 0, 0, 100);
+            GpuFraction = gpu / 100;
+            GpuText = HasGpu ? Math.Round(gpu).ToString("0", inv) + "%" : "—";
+            IsGpuHigh = HasGpu && gpu > maxGpuPercent;
+            var gpuTarget = IndexingPace.TargetFor(maxGpuPercent);
+            GpuTargetFraction = HasGpu ? gpuTarget / 100 : double.NaN;
+            GpuTargetText = HasGpu ? Loc.Format(Strings.IndexTargetTooltip, DisplayFormat.Percent(gpuTarget / 100)) : string.Empty;
         }
         else
         {
-            CpuFraction = DiskFraction = 0;
-            CpuText = DiskText = "—";
-            IsCpuHigh = IsDiskHigh = false;
-            CpuTargetFraction = DiskTargetFraction = double.NaN;
-            CpuTargetText = DiskTargetText = string.Empty;
+            CpuFraction = DiskFraction = GpuFraction = 0;
+            CpuText = DiskText = GpuText = "—";
+            IsCpuHigh = IsDiskHigh = IsGpuHigh = HasGpu = false;
+            CpuTargetFraction = DiskTargetFraction = GpuTargetFraction = double.NaN;
+            CpuTargetText = DiskTargetText = GpuTargetText = string.Empty;
         }
 
         // State.
