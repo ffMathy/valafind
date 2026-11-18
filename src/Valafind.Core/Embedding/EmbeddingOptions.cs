@@ -29,7 +29,7 @@ public sealed class EmbeddingOptions
     public string ModelFile { get; set; } = DefaultModelFile;
 
     /// <summary>Matryoshka output size: 768, 512, 256 or 128.</summary>
-    public int Dimensions { get; set; } = 256;
+    public int Dimensions { get; set; } = 768;
 
     /// <summary>Token budget per input including the task prompt and BOS/EOS (hard cap <see cref="HardMaxTokens"/>).
     /// Longer inputs are truncated.</summary>
