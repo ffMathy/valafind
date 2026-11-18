@@ -639,4 +639,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>목표 {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>폴더 없음</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>설정에서 검색할 폴더를 선택하세요</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>아직 폴더가 없습니다 — Valafind가 검색할 폴더를 추가하세요</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS에서는 App Store 앱이 사용자가 선택한 폴더만 읽을 수 있으므로 Valafind는 여기에 나열된 폴더만 검색합니다. 전체를 검색하려면 홈 폴더를 추가하세요.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>로그인하면 Windows가 Valafind를 시작합니다. 설정 › 앱 › 시작 프로그램에서 변경하세요.</value>
+  </data>
 </root>

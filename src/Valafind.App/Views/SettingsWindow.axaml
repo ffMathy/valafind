@@ -188,7 +188,7 @@
         </StackPanel>
         <Border Classes="card">
           <StackPanel>
-            <!-- Empty state: the home folder is what gets indexed. -->
+            <!-- Empty state: the home folder is what gets indexed (in the macOS App Sandbox, nothing until folders are added). -->
             <Border Classes="item" IsVisible="{Binding HasNoRoots}">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                 <Border Classes="chip">
@@ -343,8 +343,14 @@
             <Border Classes="divider" />
             <Border Classes="item">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                <TextBlock Classes="title" Text="{x:Static l:Strings.SettingsStartAtLogin}" VerticalAlignment="Center" />
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Classes="title" Text="{x:Static l:Strings.SettingsStartAtLogin}" />
+                  <!-- Microsoft Store copies: Windows runs the package's startup task, switched in Windows Settings. -->
+                  <TextBlock Classes="hint" Text="{x:Static vm:SettingsViewModel.StartAtLoginManagedText}"
+                             IsVisible="{Binding IsStartAtLoginManagedBySystem}" />
+                </StackPanel>
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding StartAtLogin}"
+                              IsVisible="{Binding !IsStartAtLoginManagedBySystem}"
                               AutomationProperties.Name="{x:Static l:Strings.SettingsStartAtLogin}" />
               </Grid>
             </Border>

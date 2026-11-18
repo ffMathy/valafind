@@ -639,4 +639,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>लक्ष्य {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>कोई फ़ोल्डर नहीं</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>सेटिंग्स में खोजने के लिए फ़ोल्डर चुनें</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>अभी कोई फ़ोल्डर नहीं — वे फ़ोल्डर जोड़ें जिनमें Valafind को खोजना है</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS App Store ऐप्स को केवल आपके चुने हुए फ़ोल्डर पढ़ने देता है, इसलिए Valafind सिर्फ़ यहाँ सूचीबद्ध फ़ोल्डरों में खोजता है। पूरा खोजने के लिए अपना होम फ़ोल्डर जोड़ें।</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>आपके लॉग इन करने पर Windows Valafind शुरू करता है। इसे सेटिंग्स › ऐप्स › स्टार्टअप में बदलें।</value>
+  </data>
 </root>

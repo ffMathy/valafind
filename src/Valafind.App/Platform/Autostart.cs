@@ -2,13 +2,16 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using Microsoft.Win32;
+using Valafind.App.Updates;
+using Valafind.Core.Configuration;
 
 namespace Valafind.App.Platform;
 
 /// <summary>
 /// Starts Valafind with <c>--background</c> when the user logs in. Windows: the HKCU Run key. macOS: a per-user
 /// LaunchAgent (<c>~/Library/LaunchAgents/app.valafind.plist</c>). Linux: an XDG autostart entry
-/// (<c>$XDG_CONFIG_HOME/autostart/valafind.desktop</c>). Nothing requires elevation.
+/// (<c>$XDG_CONFIG_HOME/autostart/valafind.desktop</c>). Nothing requires elevation. Store copies differ: the Mac App
+/// Store copy is a login item (SMAppService), and Windows runs the Microsoft Store package's startup task.
 /// </summary>
 public static class Autostart
 {
@@ -17,18 +20,29 @@ public static class Autostart
     internal const string MacLabel = "app.valafind";
     private const string WindowsRunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
+    /// <summary>
+    /// True when Windows, not Valafind, starts Valafind at login: the Microsoft Store package declares a startup task
+    /// (packaging/store/windows/AppxManifest.xml), and a package's writes to the Run key stay inside the package. Users
+    /// switch it in Settings › Apps › Startup.
+    /// </summary>
+    public static bool IsManagedBySystem => OperatingSystem.IsWindows() && StoreInstall.IsActive;
+
     /// <summary>True when an autostart entry for Valafind exists and is not disabled.</summary>
     public static bool IsEnabled()
     {
         try
         {
+            if (IsManagedBySystem)
+                return false;
+            if (OperatingSystem.IsMacOSVersionAtLeast(13) && AppPaths.InAppSandbox)
+                return MacLoginItem.IsEnabled();
             if (OperatingSystem.IsWindows())
                 return WindowsIsEnabled();
             if (OperatingSystem.IsMacOS())
                 return File.Exists(MacPlistPath);
             return LinuxIsEnabled(LinuxDesktopFilePath);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException or InvalidOperationException or DllNotFoundException)
         {
             return false;
         }
@@ -40,6 +54,15 @@ public static class Autostart
     /// <exception cref="InvalidOperationException">The executable path cannot be determined.</exception>
     public static void SetEnabled(bool enabled)
     {
+        if (IsManagedBySystem)
+            return;
+        if (OperatingSystem.IsMacOSVersionAtLeast(13) && AppPaths.InAppSandbox)
+        {
+            // A sandboxed app cannot write ~/Library/LaunchAgents; it becomes a login item instead.
+            MacLoginItem.SetEnabled(enabled);
+            return;
+        }
+
         if (OperatingSystem.IsWindows())
         {
             WindowsSetEnabled(enabled);

@@ -639,4 +639,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Target {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>No folders</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Choose the folders to search in Settings</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>No folders yet — add the folders Valafind should search</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS lets App Store apps read only the folders you choose, so Valafind searches just the folders listed here. Add your home folder to search all of it.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows starts Valafind when you log in. Change this in Settings › Apps › Startup.</value>
+  </data>
 </root>

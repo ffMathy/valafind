@@ -504,6 +504,23 @@ public sealed class LauncherViewModelTests
         Assert.Equal("Everything in ~/Documents, /media/u/Photos", vm.IndexScopeDetail);
     }
 
+    [Fact]
+    public void InTheAppSandbox_NoFoldersMeansChoosingSome()
+    {
+        var settings = new ValafindSettings();
+        using var vm = new LauncherViewModel(UiFlavor.Mac, settings, TimeProvider.System, static a => a(), "/Users/me", LinuxAppDir)
+        {
+            FoldersNeedGrant = true,
+        };
+        Assert.Equal("No folders", vm.IndexScopeText);
+        Assert.Equal("No folders", vm.IndexScopeShortText);
+        Assert.Equal("Choose the folders to search in Settings", vm.IndexScopeDetail);
+
+        settings.Roots = ["/Users/me/Documents"];
+        vm.RefreshIndexScope();
+        Assert.Equal("Documents", vm.IndexScopeText);
+    }
+
     private sealed class RecordingSearch(Func<string, CancellationToken, Task<IReadOnlyList<SearchResult>>> handler) : ISearchService
     {
         public Func<IReadOnlyList<SearchResult>, CancellationToken, Task<IReadOnlyList<SearchResult>>>? Explain { get; init; }

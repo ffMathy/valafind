@@ -33,6 +33,14 @@ public interface ISettingsHost
     /// <summary>Enables/disables start at login.</summary>
     void SetAutostartEnabled(bool enabled);
 
+    /// <summary>True when the system, not Valafind, switches start at login (the Microsoft Store package's startup
+    /// task); the window then says where to change it instead of offering the switch.</summary>
+    bool IsAutostartManagedBySystem => false;
+
+    /// <summary>macOS App Sandbox: a bookmark that keeps access to the folder <paramref name="path"/>, which the user
+    /// just picked, after Valafind restarts (see <see cref="FolderAccess"/>); null elsewhere.</summary>
+    string? RememberFolderAccess(string path) => null;
+
     /// <summary>Applies saved settings live (hotkey re-registration, core restart, …). Completes with a hotkey error
     /// message, or null when the hotkey registered. Registration can take seconds (Wayland portal), so it is async.</summary>
     Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after);
@@ -62,10 +70,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly string _originalLanguage;
     private readonly bool _macOS;
     private readonly string _home;
+    private readonly bool _foldersNeedGrant;
+    private readonly Dictionary<string, string> _bookmarks;
 
     /// <summary>Creates the view model over the live <paramref name="settings"/> instance.</summary>
     public SettingsViewModel(ValafindSettings settings, ISettingsHost host)
-        : this(settings, host, OperatingSystem.IsMacOS(), AppPaths.Home)
+        : this(settings, host, OperatingSystem.IsMacOS(), AppPaths.UserHome, FolderAccess.IsRequired)
     {
     }
 
@@ -73,12 +83,16 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <param name="host">Application services.</param>
     /// <param name="macOS">Apply macOS hotkey rules (tests can simulate macOS).</param>
     /// <param name="home">The home folder (indexed when no folders are listed).</param>
-    internal SettingsViewModel(ValafindSettings settings, ISettingsHost host, bool macOS, string home)
+    /// <param name="foldersNeedGrant">The macOS App Sandbox: only folders the user picked are indexed, and each needs
+    /// a bookmark to stay readable after a restart.</param>
+    internal SettingsViewModel(ValafindSettings settings, ISettingsHost host, bool macOS, string home, bool foldersNeedGrant = false)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _host = host ?? throw new ArgumentNullException(nameof(host));
         _macOS = macOS;
         _home = home;
+        _foldersNeedGrant = foldersNeedGrant;
+        _bookmarks = new Dictionary<string, string>(settings.RootBookmarks, StringComparer.Ordinal);
         _originalDimensions = settings.EmbeddingDimensions;
 
         Hotkey = settings.EffectiveHotkey;
@@ -112,17 +126,24 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Platform default chord, shown as a hint.</summary>
     public static string DefaultHotkeyText => Loc.Format(Strings.SettingsDefaultHotkey, ValafindSettings.DefaultHotkey);
 
-    /// <summary>Indexed folders; empty means the home folder.</summary>
+    /// <summary>Indexed folders; empty means the home folder (nothing in the macOS App Sandbox).</summary>
     public ObservableCollection<string> Roots { get; }
 
     /// <summary>True when no folder is listed, i.e. the home folder is indexed.</summary>
     public bool HasNoRoots => Roots.Count == 0;
 
-    /// <summary>Empty-state row: "Your home folder (/home/me)".</summary>
-    public string RootsEmptyText => Loc.Format(Strings.SettingsHomeFolderRow, _home);
+    /// <summary>Empty-state row: "Your home folder (/home/me)", or in the macOS App Sandbox, a prompt to add folders.</summary>
+    public string RootsEmptyText => _foldersNeedGrant ? Strings.SettingsNoFoldersRow : Loc.Format(Strings.SettingsHomeFolderRow, _home);
 
     /// <summary>Explains what is (not) covered and how to add more.</summary>
-    public static string RootsHint => Strings.SettingsRootsHint;
+    public string RootsHint => _foldersNeedGrant ? Strings.SettingsRootsHintSandbox : Strings.SettingsRootsHint;
+
+    /// <summary>True when Windows switches start at login (Microsoft Store copies), so the switch is replaced by
+    /// <see cref="StartAtLoginManagedText"/>.</summary>
+    public bool IsStartAtLoginManagedBySystem => _host.IsAutostartManagedBySystem;
+
+    /// <summary>Says where to change start at login when Windows manages it.</summary>
+    public static string StartAtLoginManagedText => Strings.SettingsStartAtLoginWindowsStore;
 
     /// <summary>Where the log files are written.</summary>
     public string LogDirectory => _host.LogDirectory;
@@ -258,8 +279,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         if (PickFolderAsync is null)
             return;
         var path = await PickFolderAsync(Strings.PickFolderToIndex).ConfigureAwait(true);
-        if (!string.IsNullOrWhiteSpace(path) && !Roots.Contains(path, StringComparer.Ordinal))
-            Roots.Add(path);
+        if (string.IsNullOrWhiteSpace(path) || Roots.Contains(path, StringComparer.Ordinal))
+            return;
+        // In the sandbox the open panel's access ends when Valafind quits; a bookmark made now keeps it.
+        if (_foldersNeedGrant && _host.RememberFolderAccess(path) is { } bookmark)
+            _bookmarks[path] = bookmark;
+        Roots.Add(path);
     }
 
     [RelayCommand]
@@ -316,6 +341,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             ? null
             : Hotkey.Trim();
         _settings.Roots = [.. Roots];
+        _settings.RootBookmarks = Roots.Where(_bookmarks.ContainsKey).ToDictionary(root => root, root => _bookmarks[root], StringComparer.Ordinal);
         _settings.MaxCpuPercent = Math.Clamp(MaxCpuPercent, 5, 100);
         _settings.MaxDiskBusyPercent = Math.Clamp(MaxDiskBusyPercent, 5, 100);
         _settings.PauseOnBattery = PauseOnBattery;
@@ -338,7 +364,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
         try
         {
-            if (StartAtLogin != SafeIsAutostart())
+            if (!IsStartAtLoginManagedBySystem && StartAtLogin != SafeIsAutostart())
                 _host.SetAutostartEnabled(StartAtLogin);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or PlatformNotSupportedException)
@@ -368,11 +394,13 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private static (string?, List<string>, double, double, bool, int, string?, bool, string?) Capture(ValafindSettings s) =>
-        (s.Hotkey, [.. s.Roots], s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates, s.Language);
+    private static (string?, List<string>, Dictionary<string, string>, double, double, bool, int, string?, bool, string?) Capture(ValafindSettings s) =>
+        (s.Hotkey, [.. s.Roots], new(s.RootBookmarks, StringComparer.Ordinal), s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery,
+            s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates, s.Language);
 
-    private static void Restore(ValafindSettings s, (string?, List<string>, double, double, bool, int, string?, bool, string?) v) =>
-        (s.Hotkey, s.Roots, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates, s.Language) = v;
+    private static void Restore(ValafindSettings s, (string?, List<string>, Dictionary<string, string>, double, double, bool, int, string?, bool, string?) v) =>
+        (s.Hotkey, s.Roots, s.RootBookmarks, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.PauseOnBattery, s.EmbeddingDimensions, s.ModelDirectory,
+            s.AutomaticUpdates, s.Language) = v;
 
     /// <summary>Inert host for design-time data.</summary>
     internal sealed class DesignHost : ISettingsHost

@@ -639,4 +639,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Цель {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Нет папок</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Выберите папки для поиска в настройках</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Папок пока нет — добавьте папки, в которых Valafind должен искать</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS разрешает приложениям из App Store читать только выбранные вами папки, поэтому Valafind ищет лишь в перечисленных здесь папках. Добавьте домашнюю папку, чтобы искать по всей ней.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows запускает Valafind при входе в систему. Изменить это можно в разделе Параметры › Приложения › Автозагрузка.</value>
+  </data>
 </root>

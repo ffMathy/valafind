@@ -84,6 +84,19 @@ public sealed class AppHost : IAsyncDisposable
         var firstRun = !File.Exists(AppPaths.SettingsFile);
         var settings = ValafindSettings.Load();
         Localization.Loc.Apply(settings.Language);
+        // Mac App Store copies: regain the folders the user granted before anything indexes them.
+        if (FolderAccess.Restore(settings, loggerFactory.CreateLogger(typeof(FolderAccess))) && !firstRun)
+        {
+            try
+            {
+                settings.Save();
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Log.PlatformCallFailed(loggerFactory.CreateLogger<AppHost>(), "save the regained folders", e);
+            }
+        }
+
         var flavor = UiFlavors.Detect();
         var services = new ServiceCollection()
             .AddSingleton(loggerFactory)
@@ -92,6 +105,7 @@ public sealed class AppHost : IAsyncDisposable
             .AddSingleton(sp => new LauncherViewModel(flavor, sp.GetRequiredService<ValafindSettings>())
             {
                 IsModelBundled = CoreServicesFactory.IsModelBundled,
+                FoldersNeedGrant = FolderAccess.IsRequired,
             })
             .BuildServiceProvider();
         return new AppHost(services, instance, startupCommand, firstRun);
@@ -140,8 +154,15 @@ public sealed class AppHost : IAsyncDisposable
         StartUpdater();
 
         var background = _startupCommand == Program.BackgroundCommand;
-        if (_startupCommand is "show" or "toggle" || (_firstRun && !background))
+        if (FolderAccess.IsRequired && _settings.Roots.Count == 0 && !background)
+        {
+            // Mac App Store copy without folders: it indexes nothing until the user adds some, so ask right away.
+            Dispatcher.UIThread.Post(ShowSettings, DispatcherPriority.Background);
+        }
+        else if (_startupCommand is "show" or "toggle" || (_firstRun && !background))
+        {
             Dispatcher.UIThread.Post(ShowLauncher, DispatcherPriority.Background);
+        }
         if (_firstRun)
         {
             // Persist the defaults so the welcome (first-run launcher) appears once, not on every start.
@@ -794,6 +815,10 @@ public sealed class AppHost : IAsyncDisposable
         public bool IsAutostartEnabled() => Autostart.IsEnabled();
 
         public void SetAutostartEnabled(bool enabled) => Autostart.SetEnabled(enabled);
+
+        public bool IsAutostartManagedBySystem => Autostart.IsManagedBySystem;
+
+        public string? RememberFolderAccess(string path) => FolderAccess.Remember(path, host._log);
 
         public async Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after)
         {

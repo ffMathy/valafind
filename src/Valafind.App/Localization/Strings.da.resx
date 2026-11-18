@@ -639,4 +639,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Mål {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Ingen mapper</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Vælg de mapper, der skal søges i, under Indstillinger</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Ingen mapper endnu — tilføj de mapper, Valafind skal søge i</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS lader kun App Store-apps læse de mapper, du vælger, så Valafind søger kun i mapperne her. Tilføj din hjemmemappe for at søge i det hele.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows starter Valafind, når du logger ind. Skift det under Indstillinger › Apps › Start.</value>
+  </data>
 </root>

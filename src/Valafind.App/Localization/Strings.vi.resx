@@ -639,4 +639,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Mục tiêu {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Không có thư mục</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Chọn các thư mục cần tìm trong Cài đặt</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Chưa có thư mục nào — hãy thêm các thư mục mà Valafind cần tìm</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS chỉ cho phép ứng dụng App Store đọc những thư mục bạn chọn, nên Valafind chỉ tìm trong các thư mục được liệt kê ở đây. Thêm thư mục nhà của bạn để tìm trong toàn bộ thư mục đó.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows khởi động Valafind khi bạn đăng nhập. Thay đổi điều này trong Cài đặt › Ứng dụng › Khởi động.</value>
+  </data>
 </root>

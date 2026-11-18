@@ -18,22 +18,30 @@ Each store's job is skipped until its repository variables are set (`MSSTORE_PRO
 Store copies never install or update themselves from GitHub (`StoreInstall` detects an MSIX package identity on Windows
 and the App Sandbox on macOS); the store updates them.
 
-## Before the first Mac App Store submission
+## How store copies differ
 
-The Mac App Store requires the App Sandbox, in which Valafind as it is now cannot do its job:
+**Mac App Store.** The App Sandbox lets an app read only its own container and the folders the user picks in an open
+panel, and only until it quits. So the store copy:
 
-1. **File access.** A sandboxed app reads only its own container and the folders the user picks in an open panel. As
-   built today, Valafind would index its empty container instead of the home folder. Store copies on macOS need to ask
-   for the folders to index (Avalonia's `StorageProvider.OpenFolderPickerAsync`), keep that access across restarts with
-   security-scoped bookmarks (`IStorageBookmarkItem.SaveBookmarkAsync` and `StorageProvider.OpenFolderBookmarkAsync`;
-   the entitlements already allow app-scope bookmarks), and index only those. `mdfind`, `qlmanage` and `ffmpeg` run as
-   sandboxed child processes and see the same folders only.
-2. **Start at login.** A sandboxed app cannot write `~/Library/LaunchAgents`, so the setting would write into the
-   container and do nothing. `SMAppService.mainApp` (macOS 13 and later) is the sandbox-friendly replacement.
+- indexes **only the folders listed in Settings** (no home-folder default), and opens Settings at start while there are
+  none; the launcher shows "No folders" until then;
+- makes a read-only, security-scoped bookmark for every folder the user adds
+  ([`FolderAccess`](../../src/Valafind.App/Platform/FolderAccess.cs),
+  [`MacSandbox.cs`](../../src/Valafind.App/Platform/MacOS/MacSandbox.cs)), keeps it in `settings.json`
+  (`RootBookmarks`), and regains every folder from it at start. A folder that was deleted is dropped from the list; one
+  that was moved is followed;
+- starts at login as a login item (`SMAppService.mainAppService`, System Settings › General › Login Items), off until
+  the user turns it on, as App Review guideline 2.4.5 requires.
 
-On Windows the package's startup task starts Valafind at login with `--background`; the in-app setting writes the `Run`
-key, which a packaged app keeps to itself, so it has no effect there and should point users to **Settings › Apps ›
-Startup** instead. Everything else works in a full-trust MSIX package as it does today.
+Things to try on a Mac with a TestFlight build before the first submission, since they cannot be tested elsewhere:
+adding a folder, quitting and restarting (the folder must still be indexed), the login item, and the helpers Valafind
+starts as child processes, which inherit the sandbox: `mdfind` (recent documents), `qlmanage` (previews), `open`
+(opening and revealing files) and `ffmpeg` (only a fallback; AVFoundation decodes media).
+
+**Microsoft Store.** The package runs with full trust, so indexing works as in the GitHub build. Windows starts Valafind
+at login through the package's startup task (with `--background`); the settings window says to change that in
+**Settings › Apps › Startup** instead of offering its own switch, because a package's writes to the `Run` key stay
+inside the package.
 
 ## Microsoft Store
 
