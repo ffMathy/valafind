@@ -1,5 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Valafind.Core.Abstractions;
+using Valafind.Core.Indexing;
+using Valafind.Core.Platform;
 using Valafind.Core.Storage;
 using Xunit;
 using static Valafind.Core.Tests.Storage.Entries;
@@ -49,6 +51,31 @@ public sealed class ContentPendingStoreTests : IDisposable
             Assert.False(entry.ContentPending);
             store.UpsertFile(File(P("/f/b")) with { ContentPending = true }, [Chunk(0, Vectors.Axis(Dims, 1))]);
             Assert.True(store.GetEntry(P("/f/b"))!.ContentPending);
+        }
+    }
+
+    [Fact]
+    public void RequestedCloudDownloadsSurviveReopeningAndAModelChange()
+    {
+        var at = new DateTimeOffset(2026, 11, 18, 12, 0, 0, TimeSpan.Zero);
+        using (var store = _db.OpenStore())
+        {
+            ICloudDownloadJournal journal = store;
+            journal.AddDownload(new CloudDownload(P("/cloud/a.txt"), 10, IndexPhase.All, new CloudMark(2), at));
+            journal.AddDownload(new CloudDownload(P("/cloud/b.txt"), 20, IndexPhase.Frequent, new CloudMark(CloudMark.Untouched), at.AddSeconds(1)));
+            journal.AddDownload(new CloudDownload(P("/cloud/c.txt"), 30, IndexPhase.All, new CloudMark(0), at.AddSeconds(2)));
+            journal.RemoveDownload(P("/cloud/c.txt"));
+        }
+
+        // A new model drops the vectors, but the downloads are still Valafind's to give back.
+        using (var store = _db.OpenStore(modelId: "another-model"))
+        {
+            var downloads = ((ICloudDownloadJournal)store).LoadDownloads();
+            Assert.Equal(2, downloads.Count);
+            Assert.Equal(new CloudDownload(P("/cloud/a.txt"), 10, IndexPhase.All, new CloudMark(2), at), downloads[0]);
+            Assert.Equal(P("/cloud/b.txt"), downloads[1].Path);
+            Assert.Equal(CloudMark.Untouched, downloads[1].Mark.State);
+            Assert.Equal(IndexPhase.Frequent, downloads[1].Phase);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Data.Sqlite;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Indexing;
+using Valafind.Core.Platform;
 
 namespace Valafind.Core.Storage;
 
@@ -23,7 +24,7 @@ namespace Valafind.Core.Storage;
 /// <para>Privacy: the database holds plain text copied from the user's documents, so on Unix its directory is created
 /// 0700 and the database, -wal and -shm files 0600 regardless of the umask (existing ones are tightened on open).</para>
 /// </remarks>
-public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexedEntrySource
+public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexedEntrySource, ICloudDownloadJournal
 {
     private const UnixFileMode PrivateDirectoryMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
     private const UnixFileMode PrivateFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
@@ -233,6 +234,13 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
                 text    TEXT    NOT NULL,
                 vector  BLOB    NOT NULL);
             CREATE UNIQUE INDEX IF NOT EXISTS chunks_file_idx ON chunks(file_id, idx);
+            CREATE TABLE IF NOT EXISTS cloud_downloads(
+                path_key      TEXT    PRIMARY KEY,
+                path          TEXT    NOT NULL,
+                size          INTEGER NOT NULL,
+                phase         INTEGER NOT NULL,
+                state         INTEGER NOT NULL,
+                requested_utc INTEGER NOT NULL);
             """, tx);
         // Schema 1 → 2: online-only files indexed by name until their content can be read.
         if (!HasColumn(db, tx, "files", "content_pending"))
@@ -845,6 +853,55 @@ public sealed class SqliteIndexStore : IIndexStore, IIndexedPathSource, IIndexed
     {
         ArgumentNullException.ThrowIfNull(key);
         return WithReader(db => ReadMeta(db, key, null));
+    }
+
+    /// <inheritdoc />
+    IReadOnlyList<CloudDownload> ICloudDownloadJournal.LoadDownloads() => WithReader(db =>
+    {
+        using var cmd = db.CreateCommand();
+        cmd.CommandText = "SELECT path, size, phase, state, requested_utc FROM cloud_downloads ORDER BY requested_utc;";
+        using var reader = cmd.ExecuteReader();
+        var list = new List<CloudDownload>();
+        while (reader.Read())
+        {
+            list.Add(new CloudDownload(reader.GetString(0), reader.GetInt64(1), (IndexPhase)reader.GetInt32(2),
+                new CloudMark(reader.GetInt32(3)), new DateTimeOffset(reader.GetInt64(4), TimeSpan.Zero)));
+        }
+        return (IReadOnlyList<CloudDownload>)list;
+    });
+
+    /// <inheritdoc />
+    void ICloudDownloadJournal.AddDownload(CloudDownload download)
+    {
+        ArgumentNullException.ThrowIfNull(download);
+        lock (_writeGate)
+        {
+            using var cmd = RequireWriter().CreateCommand();
+            cmd.CommandText = """
+                INSERT OR REPLACE INTO cloud_downloads(path_key, path, size, phase, state, requested_utc)
+                VALUES ($key, $path, $size, $phase, $state, $at);
+                """;
+            cmd.Parameters.AddWithValue("$key", _paths.KeyForPath(download.Path));
+            cmd.Parameters.AddWithValue("$path", download.Path);
+            cmd.Parameters.AddWithValue("$size", download.Size);
+            cmd.Parameters.AddWithValue("$phase", (int)download.Phase);
+            cmd.Parameters.AddWithValue("$state", download.Mark.State);
+            cmd.Parameters.AddWithValue("$at", download.RequestedUtc.UtcTicks);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    /// <inheritdoc />
+    void ICloudDownloadJournal.RemoveDownload(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        lock (_writeGate)
+        {
+            using var cmd = RequireWriter().CreateCommand();
+            cmd.CommandText = "DELETE FROM cloud_downloads WHERE path_key = $key;";
+            cmd.Parameters.AddWithValue("$key", _paths.KeyForPath(path));
+            cmd.ExecuteNonQuery();
+        }
     }
 
     /// <inheritdoc />

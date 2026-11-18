@@ -12,7 +12,9 @@ namespace Valafind.Core.Platform;
 /// iCloud) and of File Provider clients under ~/Library/CloudStorage (OneDrive, Dropbox, Google Drive, Box, …).
 /// </summary>
 /// <remarks>
-/// <para><see cref="Download"/> reads the first byte, which makes the system download the whole file. Disposing the
+/// <para><see cref="RequestDownload"/> asks the system to download the file in the background
+/// (<c>-[NSFileManager startDownloadingUbiquitousItemAtURL:error:]</c>); <see cref="Download"/> (the fallback, one file
+/// at a time) reads the first byte, which makes the system download the whole file. Disposing the
 /// result evicts it again ("Remove Download" in Finder): first through
 /// <c>-[NSFileManager evictUbiquitousItemAtURL:error:]</c>, then through <c>fileproviderctl evict</c>. Eviction is
 /// confirmed by checking that the file is dataless again.</para>
@@ -81,6 +83,42 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
         if (!read.Result || _isDataless(path))
             return null;
         return new Lease(this, path);
+    }
+
+    public CloudMark? RequestDownload(string path)
+    {
+        if (!_isDataless(path) || RefusesEviction(path))
+            return null;
+        return StartDownloading(path) ? new CloudMark(0) : null;
+    }
+
+    public void Release(string path, CloudMark mark)
+    {
+        if (File.Exists(path) && !_isDataless(path))
+            Evict(path);
+    }
+
+    /// <summary><c>[[NSFileManager defaultManager] startDownloadingUbiquitousItemAtURL:url error:&amp;error]</c>: the
+    /// system downloads the file in the background.</summary>
+    internal static bool StartDownloading(string path)
+    {
+        if (!EnsureObjc())
+            return false;
+        var pool = objc_autoreleasePoolPush();
+        try
+        {
+            var manager = Msg(Class("NSFileManager"), "defaultManager");
+            var url = FileUrl(path);
+            if (manager == 0 || url == 0)
+                return false;
+            nint error = 0;
+            return ((delegate* unmanaged<nint, nint, nint, nint*, byte>)s_msgSend)(
+                manager, Selector("startDownloadingUbiquitousItemAtURL:error:"), url, &error) != 0;
+        }
+        finally
+        {
+            objc_autoreleasePoolPop(pool);
+        }
     }
 
     /// <summary>Makes <paramref name="path"/> online-only again. True when it is dataless afterwards.</summary>
@@ -162,7 +200,7 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
         }
     }
 
-    /// <summary>True when the Objective-C runtime and the NSFileManager eviction method are there.</summary>
+    /// <summary>True when the Objective-C runtime and the NSFileManager download and eviction methods are there.</summary>
     internal static bool FileManagerEvictionAvailable()
     {
         if (!EnsureObjc())
@@ -171,14 +209,17 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
         try
         {
             var manager = Msg(Class("NSFileManager"), "defaultManager");
-            return manager != 0 && ((delegate* unmanaged<nint, nint, nint, byte>)s_msgSend)(
-                manager, Selector("respondsToSelector:"), Selector("evictUbiquitousItemAtURL:error:")) != 0;
+            return manager != 0 && RespondsTo(manager, "evictUbiquitousItemAtURL:error:") &&
+                   RespondsTo(manager, "startDownloadingUbiquitousItemAtURL:error:");
         }
         finally
         {
             objc_autoreleasePoolPop(pool);
         }
     }
+
+    private static bool RespondsTo(nint receiver, string selector) =>
+        ((delegate* unmanaged<nint, nint, nint, byte>)s_msgSend)(receiver, Selector("respondsToSelector:"), Selector(selector)) != 0;
 
     private static bool EvictWithFileProviderCtl(string path)
     {

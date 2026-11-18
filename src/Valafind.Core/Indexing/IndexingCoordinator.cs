@@ -89,6 +89,7 @@ public sealed class IndexingCoordinator : IIndexingService
     private readonly IMediaEmbeddingModel? _mediaModel;
     private readonly IMediaDecoder? _mediaDecoder;
     private readonly ICloudFiles _cloud;
+    private readonly CloudPrefetcher? _prefetch;
     private readonly IIndexStore _store;
     private readonly ILogger<IndexingCoordinator> _logger;
     private readonly TimeProvider _time;
@@ -185,11 +186,13 @@ public sealed class IndexingCoordinator : IIndexingService
         _mediaDecoder = mediaDecoder;
         _cloud = tuning.Cloud ?? CloudFiles.Current;
         _store = store;
+        _pathComparer = OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        if (store is ICloudDownloadJournal journal)
+            _prefetch = new CloudPrefetcher(_cloud, journal, time ?? TimeProvider.System, tuning.Prefetch ?? CloudPrefetchOptions.Default, _pathComparer);
         _logger = logger;
         _time = time ?? TimeProvider.System;
         _tuning = tuning;
         _settings = settings;
-        _pathComparer = OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
         _deferred = new DeferredFiles(_pathComparer);
         _pending = new PendingChanges(_time, tuning.Debounce, _pathComparer, path => FindRoot(path), tuning.PendingCapacity);
         _lastRootRescan = new Dictionary<string, DateTimeOffset>(_pathComparer);
@@ -310,6 +313,7 @@ public sealed class IndexingCoordinator : IIndexingService
         try
         {
             PrepareMeta();
+            ReleaseEarlierDownloads(cancellationToken);
             StartWatchers();
             RunPhase1(cancellationToken);
             RunPhase2(cancellationToken);
@@ -420,8 +424,9 @@ public sealed class IndexingCoordinator : IIndexingService
                 {
                     Interlocked.Increment(ref _frequentDone);
                     Publish();
-                });
+                }, ahead: true);
             }
+            DrainPrefetched(cancellationToken);
             _workers.WaitIdle(cancellationToken);
         }
         finally
@@ -556,10 +561,11 @@ public sealed class IndexingCoordinator : IIndexingService
                             continue;
                         }
 
-                        Dispatch(path, entryPhase, cancellationToken, CountDone);
+                        Dispatch(path, entryPhase, cancellationToken, CountDone, ahead: true);
                     }
                 }
                 // Every document before the first picture.
+                DrainPrefetched(cancellationToken);
                 _workers.WaitIdle(cancellationToken);
             }
             finally
@@ -584,8 +590,9 @@ public sealed class IndexingCoordinator : IIndexingService
                     cancellationToken.ThrowIfCancellationRequested();
                     DrainPending(cancellationToken);
                     // A watcher change is not part of the walk's count.
-                    Dispatch(path, phase, cancellationToken, phase == entryPhase ? CountDone : null);
+                    Dispatch(path, phase, cancellationToken, phase == entryPhase ? CountDone : null, ahead: true);
                 }
+                DrainPrefetched(cancellationToken);
                 _workers.WaitIdle(cancellationToken);
             }
         }
@@ -959,13 +966,36 @@ public sealed class IndexingCoordinator : IIndexingService
     /// <summary>Checks <paramref name="path"/> on this (the dispatcher) thread, which is cheap: a stat and a fingerprint
     /// lookup. Only a file that needs work goes to a worker, so a walk over unchanged files does not occupy (or count
     /// towards the pace of) the workers. <paramref name="onDone"/> runs once the file is handled, on either thread.</summary>
-    private void Dispatch(string path, IndexPhase phase, CancellationToken cancellationToken, Action? onDone = null)
+    /// <param name="ahead">Part of a pass: an online-only file is requested from the sync client
+    /// (<see cref="CloudPrefetcher"/>) and indexed once it has arrived, while the pass goes on with the next files.</param>
+    private void Dispatch(string path, IndexPhase phase, CancellationToken cancellationToken, Action? onDone = null, bool ahead = false)
     {
+        if (ahead)
+            DispatchArrived(cancellationToken);
         if (Prepare(path, out _) is not { } prepared)
         {
             onDone?.Invoke();
             return;
         }
+        if (ahead && prepared.OnlineOnly && _prefetch is { } prefetch && CanDownload(path, prepared.Size))
+        {
+            while (true)
+            {
+                var result = prefetch.TryHold(path, prepared.Size, phase, onDone);
+                if (result == CloudPrefetcher.HoldResult.Held)
+                    return;
+                if (result == CloudPrefetcher.HoldResult.Failed)
+                    break;
+                // Limits reached: index what has arrived until requested files are released.
+                prefetch.WaitForChange(cancellationToken);
+                DispatchArrived(cancellationToken);
+            }
+        }
+        RunIndex(prepared, phase, onDone, release: null, cancellationToken);
+    }
+
+    private void RunIndex(PreparedFile prepared, IndexPhase phase, Action? onDone, string? release, CancellationToken cancellationToken)
+    {
         _workers.Run(() =>
         {
             try
@@ -974,9 +1004,102 @@ public sealed class IndexingCoordinator : IIndexingService
             }
             finally
             {
-                onDone?.Invoke();
+                try
+                {
+                    if (release is not null)
+                        _prefetch?.Release(release);
+                }
+                finally
+                {
+                    onDone?.Invoke();
+                }
             }
         }, cancellationToken);
+    }
+
+    /// <summary>Indexes the requested online-only files that have arrived, and gives each back afterwards. Files that
+    /// did not arrive in time are given back first and then read directly (<see cref="ICloudFiles.Download"/>).</summary>
+    private void DispatchArrived(CancellationToken cancellationToken)
+    {
+        if (_prefetch is not { } prefetch)
+            return;
+        var arrived = prefetch.TakeArrived(out var stalled);
+        foreach (var entry in stalled)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            IndexingLog.DownloadStalled(_logger, entry.Path);
+            prefetch.Release(entry.Path);
+            if (Prepare(entry.Path, out _) is { } prepared)
+                RunIndex(prepared, entry.Download.Phase, entry.OnDone, release: null, cancellationToken);
+            else
+                entry.OnDone?.Invoke();
+        }
+        foreach (var entry in arrived)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (Prepare(entry.Path, out _) is { } prepared)
+            {
+                RunIndex(prepared, entry.Download.Phase, entry.OnDone, release: entry.Path, cancellationToken);
+            }
+            else
+            {
+                prefetch.Release(entry.Path);
+                entry.OnDone?.Invoke();
+            }
+        }
+    }
+
+    /// <summary>Waits until every requested online-only file of the running pass has arrived and is on a worker.</summary>
+    private void DrainPrefetched(CancellationToken cancellationToken)
+    {
+        if (_prefetch is not { } prefetch)
+            return;
+        while (true)
+        {
+            DispatchArrived(cancellationToken);
+            if (prefetch.Waiting == 0)
+                return;
+            prefetch.WaitForChange(cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Downloads requested by an earlier run and not yet given back (Valafind was stopped, or the computer restarted,
+    /// while they were requested): the ones that arrived meanwhile are indexed and every one is given back, so no file
+    /// stays downloaded or pinned because of Valafind.
+    /// </summary>
+    private void ReleaseEarlierDownloads(CancellationToken cancellationToken)
+    {
+        if (_prefetch is not { } prefetch)
+            return;
+        IReadOnlyList<CloudDownload> downloads;
+        try
+        {
+            downloads = prefetch.Adopt();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            IndexingLog.DownloadJournalFailed(_logger, e);
+            return;
+        }
+        if (downloads.Count == 0)
+            return;
+        IndexingLog.ReleasingEarlierDownloads(_logger, downloads.Count);
+        foreach (var download in downloads)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var path = download.Path;
+            if (!prefetch.HasArrived(path) || !File.Exists(path) || _discovery.IsExcluded(path))
+            {
+                prefetch.Release(path);
+                continue;
+            }
+            if (Prepare(path, out _) is { } prepared)
+                RunIndex(prepared, download.Phase, onDone: null, release: path, cancellationToken);
+            else
+                prefetch.Release(path);
+        }
+        _workers.WaitIdle(cancellationToken);
     }
 
     /// <summary>Stat and fingerprint check. Returns null when nothing is left to do (<paramref name="upToDate"/> tells
@@ -1780,6 +1903,8 @@ public sealed class IndexingCoordinator : IIndexingService
         }
 
         _workers.Dispose();
+        // Requested downloads stay requested (and recorded) while Valafind is stopped; the next start gives them back.
+        _prefetch?.Dispose();
         _gate.Dispose();
         await _statusTimer.DisposeAsync().ConfigureAwait(false);
         _pendingSignal.Dispose();
@@ -1825,6 +1950,9 @@ internal sealed record CoordinatorTuning(
 
     /// <summary>Online-only cloud file support (null: <see cref="CloudFiles.Current"/>).</summary>
     public ICloudFiles? Cloud { get; init; }
+
+    /// <summary>Limits for downloading online-only files ahead (null: <see cref="CloudPrefetchOptions.Default"/>).</summary>
+    public CloudPrefetchOptions? Prefetch { get; init; }
 
     /// <summary>Batch size 2: a model batch cannot be cancelled once started, and two chunks take about a second on
     /// a laptop CPU, which bounds how long a query can wait behind indexing.</summary>
@@ -1926,4 +2054,13 @@ internal static partial class IndexingLog
 
     [LoggerMessage(29, LogLevel.Debug, "{Path} is online-only and could not be downloaded; indexed by name until it can be read")]
     public static partial void OnlineOnlyNameOnly(ILogger logger, string path);
+
+    [LoggerMessage(30, LogLevel.Debug, "{Path} was requested from the cloud but did not arrive in time; reading it directly")]
+    public static partial void DownloadStalled(ILogger logger, string path);
+
+    [LoggerMessage(31, LogLevel.Information, "Giving back {Count} cloud files requested before the last restart")]
+    public static partial void ReleasingEarlierDownloads(ILogger logger, int count);
+
+    [LoggerMessage(32, LogLevel.Warning, "Could not read the list of requested cloud downloads")]
+    public static partial void DownloadJournalFailed(ILogger logger, Exception exception);
 }

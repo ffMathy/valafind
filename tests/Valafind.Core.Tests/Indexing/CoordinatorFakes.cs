@@ -1,11 +1,37 @@
 using System.Collections.Concurrent;
 using Valafind.Core.Abstractions;
 using Valafind.Core.Indexing;
+using Valafind.Core.Platform;
 
 namespace Valafind.Core.Tests.Indexing;
 
-internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, IIndexedPathSource, IIndexedEntrySource
+internal sealed class FakeStore(StringComparer? comparer = null) : IIndexStore, IIndexedPathSource, IIndexedEntrySource, ICloudDownloadJournal
 {
+    public readonly Dictionary<string, CloudDownload> Downloads = new(StringComparer.Ordinal);
+
+    public IReadOnlyList<CloudDownload> LoadDownloads()
+    {
+        lock (Downloads)
+            return [.. Downloads.Values.OrderBy(d => d.RequestedUtc)];
+    }
+
+    public void AddDownload(CloudDownload download)
+    {
+        lock (Downloads)
+            Downloads[download.Path] = download;
+    }
+
+    public void RemoveDownload(string path)
+    {
+        lock (Downloads)
+            Downloads.Remove(path);
+    }
+
+    public int DownloadCount
+    {
+        get { lock (Downloads) return Downloads.Count; }
+    }
+
     private readonly Lock _lock = new();
     public readonly Dictionary<string, (FileEntry Entry, IReadOnlyList<ChunkRecord> Chunks)> Files = new(comparer ?? StringComparer.Ordinal);
     private readonly StringComparison _comparison =

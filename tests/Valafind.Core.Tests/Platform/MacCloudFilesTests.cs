@@ -108,4 +108,23 @@ public class MacCloudFilesTests
         Assert.True(cloud.CanDownload(tree.File("Documents/mine.txt", "x"), 1, isMedia: false)); // iCloud is separate
         Assert.Equal("content", File.ReadAllText(path));
     }
+
+    [Fact]
+    public void RequestingADownloadOfALocalFileChangesNothing()
+    {
+        if (!OperatingSystem.IsMacOS())
+        {
+            Assert.Skip("macOS only.");
+            return;
+        }
+        using var tree = new TempTree();
+        var path = tree.File("plain.txt", "local");
+        var cloud = new MacCloudFiles();
+
+        Assert.Null(cloud.RequestDownload(path)); // not dataless: nothing to request
+        MacCloudFiles.StartDownloading(path); // not in iCloud: refused or a no-op, never harmful
+        cloud.Release(path, new CloudMark(0));
+
+        Assert.Equal("local", File.ReadAllText(path));
+    }
 }

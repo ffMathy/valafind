@@ -38,6 +38,58 @@ internal sealed class FakeCloud : ICloudFiles
         return new Lease(this, path);
     }
 
+    // ------------------------------------------------------------------ requests ahead
+
+    /// <summary>Files requested with <see cref="RequestDownload"/> and not yet released.</summary>
+    public readonly HashSet<string> Requested = new(StringComparer.Ordinal);
+    public readonly List<string> RequestLog = [];
+    public readonly List<string> Released = [];
+    public int PeakRequested;
+    public bool RefuseRequests { get; set; }
+
+    /// <summary>Requested files arrive right away (the sync client is fast); otherwise they arrive on <see cref="ArriveAll"/>.</summary>
+    public bool ArriveImmediately { get; set; }
+
+    public CloudMark? RequestDownload(string path)
+    {
+        lock (OnlineOnly)
+        {
+            if (RefuseRequests)
+                return null;
+            Requested.Add(path);
+            RequestLog.Add(path);
+            PeakRequested = Math.Max(PeakRequested, Requested.Count);
+            if (ArriveImmediately)
+                OnlineOnly.Remove(path);
+        }
+        return new CloudMark(0);
+    }
+
+    public void ArriveAll()
+    {
+        lock (OnlineOnly)
+        {
+            foreach (var path in Requested)
+                OnlineOnly.Remove(path);
+        }
+    }
+
+    public void Release(string path, CloudMark mark)
+    {
+        lock (OnlineOnly)
+        {
+            Released.Add(path);
+            Requested.Remove(path);
+            if (File.Exists(path))
+                OnlineOnly.Add(path); // online-only again
+        }
+    }
+
+    public int RequestedCount
+    {
+        get { lock (OnlineOnly) return Requested.Count; }
+    }
+
     public void NoteRead(string path)
     {
         if (IsOnlineOnly(path, 0))

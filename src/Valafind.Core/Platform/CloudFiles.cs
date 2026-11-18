@@ -22,6 +22,24 @@ internal interface ICloudFiles
     /// space again (the file goes back to online-only) unless the user has pinned it to this device. Null when the
     /// file could not be downloaded; the file is then left as it was.</summary>
     IDisposable? Download(string path, long size, CancellationToken cancellationToken);
+
+    /// <summary>Asks the sync client to download an online-only file in the background (on Windows: "Always keep on
+    /// this device"). Returns what <see cref="Release"/> needs to put the file back as it was, or null when the request
+    /// could not be made (the caller then downloads it with <see cref="Download"/> when it gets to it).</summary>
+    CloudMark? RequestDownload(string path);
+
+    /// <summary>Undoes <see cref="RequestDownload"/>: restores the file's original setting and, when it was downloaded,
+    /// makes it online-only again. Safe to call more than once.</summary>
+    void Release(string path, CloudMark mark);
+}
+
+/// <summary>What <see cref="ICloudFiles.RequestDownload"/> changed, kept (in the index database) until
+/// <see cref="ICloudFiles.Release"/> undoes it, across restarts.</summary>
+/// <param name="State">Platform-specific: on Windows the file's original pin state, or <see cref="Untouched"/>.</param>
+internal readonly record struct CloudMark(int State)
+{
+    /// <summary>Nothing was changed (the user had already pinned the file to this device): nothing to undo.</summary>
+    public const int Untouched = -1;
 }
 
 /// <summary>The cloud-file support of the current OS.</summary>
@@ -30,6 +48,7 @@ internal static class CloudFiles
     // Windows file attributes not in the FileAttributes enum.
     internal const FileAttributes RecallOnOpen = (FileAttributes)0x00040000;
     internal const FileAttributes Pinned = (FileAttributes)0x00080000;
+    internal const FileAttributes Unpinned = (FileAttributes)0x00100000;
     internal const FileAttributes RecallOnDataAccess = (FileAttributes)0x00400000;
 
     /// <summary>Attributes that mark a Windows file whose content is not on this device.</summary>
@@ -77,6 +96,12 @@ internal sealed class NoCloudFiles : ICloudFiles
     public bool CanDownload(string path, long size, bool isMedia) => false;
 
     public IDisposable? Download(string path, long size, CancellationToken cancellationToken) => null;
+
+    public CloudMark? RequestDownload(string path) => null;
+
+    public void Release(string path, CloudMark mark)
+    {
+    }
 }
 
 /// <summary>
@@ -92,6 +117,8 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
     private const string CldApi = "cldapi.dll";
     private const uint CfOpenFileFlagExclusive = 0x1;
     private const uint CfOpenFileFlagWriteAccess = 0x2;
+    private const int CfPinStateUnspecified = 0;
+    private const int CfPinStatePinned = 1;
     private const int CfPinStateUnpinned = 2;
     private const int DehydrateAttempts = 4;
     private static readonly TimeSpan DehydrateRetryDelay = TimeSpan.FromSeconds(1);
@@ -150,6 +177,71 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
         return (before & CloudFiles.Pinned) != 0 ? EmptyLease.Instance : new Lease(path);
     }
 
+    public CloudMark? RequestDownload(string path)
+    {
+        if (s_unavailable)
+            return null;
+        try
+        {
+            var attributes = File.GetAttributes(path);
+            if ((attributes & CloudFiles.RecallOnDataAccess) == 0)
+                return null; // not a placeholder whose content is missing
+            if ((attributes & CloudFiles.Pinned) != 0)
+                return new CloudMark(CloudMark.Untouched); // the user keeps it on this device; it is coming anyway
+            var original = (attributes & CloudFiles.Unpinned) != 0 ? CfPinStateUnpinned : CfPinStateUnspecified;
+            // Pinning makes the sync client download the file in the background, many at a time.
+            return SetPinState(path, CfPinStatePinned) ? new CloudMark(original) : null;
+        }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
+        {
+            s_unavailable = true;
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    public void Release(string path, CloudMark mark)
+    {
+        if (mark.State == CloudMark.Untouched || s_unavailable)
+            return;
+        try
+        {
+            if (!File.Exists(path))
+                return;
+            // A pinned file cannot be dehydrated: restore the original pin state first.
+            SetPinState(path, mark.State is CfPinStateUnpinned ? CfPinStateUnpinned : CfPinStateUnspecified);
+            if ((File.GetAttributes(path) & CloudFiles.RecallOnDataAccess) == 0)
+                FreeUpSpace(path);
+        }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
+        {
+            s_unavailable = true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+        }
+    }
+
+    private static bool SetPinState(string path, int state)
+    {
+        foreach (var access in new[] { FileAccess.Read, FileAccess.ReadWrite })
+        {
+            try
+            {
+                using var handle = File.OpenHandle(path, FileMode.Open, access, FileShare.ReadWrite | FileShare.Delete);
+                if (CfSetPinState(handle, state, 0, 0) >= 0)
+                    return true;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+        return false;
+    }
+
     /// <summary>Makes <paramref name="path"/> online-only again.</summary>
     internal static void FreeUpSpace(string path)
     {
@@ -190,10 +282,9 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
     {
         try
         {
-            using var handle = File.OpenHandle(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
-            _ = CfSetPinState(handle, CfPinStateUnpinned, 0, 0);
+            SetPinState(path, CfPinStateUnpinned);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or Win32Exception)
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or Win32Exception)
         {
         }
     }
