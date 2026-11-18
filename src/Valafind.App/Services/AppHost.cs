@@ -442,7 +442,7 @@ public sealed class AppHost : IAsyncDisposable
         {
             var sw = Stopwatch.StartNew();
             core = await Task.Run(() => CoreServicesFactory.Create(modelDir, _settings, _loggerFactory), ct).ConfigureAwait(true);
-            Log.CoreReady(_log, sw.ElapsedMilliseconds, core.Model.ModelId);
+            Log.CoreReady(_log, sw.ElapsedMilliseconds, core.Model.ModelId, core.Device);
         }
         catch (OperationCanceledException)
         {

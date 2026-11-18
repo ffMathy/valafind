@@ -14,6 +14,9 @@
     <!-- Embeddings (local inference only) -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.32.0" />
     <PackageVersion Include="Microsoft.ML.Tokenizers" Version="3.0.0" />
+    <!-- GPU inference without vendor toolkits (D3D12 / Vulkan / Metal). Pinned: 0.6.0 aborts the process when a session
+         is created (with ORT 1.31 and 1.32 alike), and it adds a preview D3D12 Agility SDK that needs Developer Mode. -->
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime.EP.WebGpu" Version="0.5.0" />
     <!-- Media decoding (same SkiaSharp as Avalonia's renderer, so the app ships one copy) -->
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />

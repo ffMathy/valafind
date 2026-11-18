@@ -138,10 +138,13 @@ Pictures, audio and video are also findable by their names. Audio and video use 
 AVFoundation on macOS. On Linux they need `ffmpeg` (`sudo apt install ffmpeg`, `sudo dnf install ffmpeg`, …); without
 it, audio other than WAV and video are indexed by name only.
 
-Embedding one text chunk takes about half a second on two CPU threads, a picture about three seconds, a minute of audio
-about ten and a video about twenty. Valafind runs as many of these at once as your CPU limit leaves room for, but a large
-home folder can still take days of *idle* time to index fully. That is why your everyday files and your documents go
-first.
+With a graphics card, the model runs on the GPU (WebGPU: Direct3D 12 on Windows, Vulkan on Linux, Metal on Apple
+silicon; no CUDA or other toolkit needed). On a GTX 1070 that takes about 70 ms per text chunk, a third of a second per
+picture and well under a second per 30-second audio clip, 10 to 20 times faster than the CPU. Without a usable GPU it runs on the
+CPU: about a second per text chunk on two threads, five seconds per picture and seven per audio clip. Valafind runs as many
+of these at once as your CPU limit leaves room for, but on the CPU a large home folder can still take days of *idle* time
+to index fully. That is why your everyday files and your documents go first. `"UseGpu": false` in `settings.json` keeps
+the model on the CPU; the log's *Core services ready* line says where it runs.
 </details>
 
 <details>
@@ -185,6 +188,15 @@ Tests that need the real model, such as tokenizer and embedding parity (text, pi
 
 ```bash
 VALAFIND_TEST_MODEL_DIR=~/.local/share/valafind/models/embeddinggemma-2 dotnet test --solution Valafind.slnx
+```
+
+Add `VALAFIND_TEST_GPU=1` to also check that the GPU (WebGPU) produces the same vectors as the CPU.
+
+`tools/Valafind.Bench` times every stage of indexing (extraction, chunking, embedding, media decoding) per file, on a
+sample of your own files or on a fixed workload, on the CPU or the GPU:
+
+```bash
+dotnet run -c Release --project tools/Valafind.Bench -- --micro --provider gpu --compare <model folder>
 ```
 
 - `VALAFIND_UI=windows|mac|linux` switches the launcher design.
