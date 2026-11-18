@@ -100,7 +100,7 @@ public sealed class EmbeddingUnitTests
     {
         var o = new EmbeddingOptions { ModelDirectory = "/m" };
         Assert.Equal("onnx/model_quantized.onnx", o.ModelFile);
-        Assert.Equal(256, o.Dimensions);
+        Assert.Equal(768, o.Dimensions);
         Assert.Equal(512, o.MaxTokens);
         Assert.Equal(2, o.IntraOpThreads);
         Assert.Equal(8, o.BatchSize);
