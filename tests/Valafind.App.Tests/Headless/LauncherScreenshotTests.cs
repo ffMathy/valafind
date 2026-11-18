@@ -187,7 +187,7 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
             }
         }, TestContext.Current.CancellationToken);
 
-    private static WriteableBitmap Render(UiFlavor flavor, LauncherViewModel vm, ThemeVariant theme, out LauncherViewBase view,
+    internal static WriteableBitmap Render(UiFlavor flavor, LauncherViewModel vm, ThemeVariant theme, out LauncherViewBase view,
         FlowDirection flowDirection = FlowDirection.LeftToRight)
     {
         view = LauncherWindow.CreateView(flavor);
@@ -232,7 +232,7 @@ public sealed class LauncherScreenshotTests(HeadlessFixture fixture)
     private static int CountRows(LauncherViewBase view) =>
         view.FindControl<ItemsControl>("ResultsList")?.ItemCount ?? -1;
 
-    private static void Save(Bitmap frame, string name)
+    internal static void Save(Bitmap frame, string name)
     {
         var dir = Environment.GetEnvironmentVariable(ScreenshotDirVariable);
         if (string.IsNullOrWhiteSpace(dir))

@@ -212,7 +212,8 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
             {
                 window.Show();
                 var panel = Assert.Single(view.GetVisualDescendants().OfType<Valafind.App.Views.Common.IndexPanelView>());
-                Assert.False(((Control)panel.Content!).IsVisible, "panel hidden when up to date");
+                // Hidden as a whole (not just its content), so the margin around it goes too and the body meets the footer.
+                Assert.False(panel.IsVisible, "panel hidden when up to date");
 
                 var texts = view.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible)
                     .Select(t => t.Inlines?.Text ?? t.Text ?? string.Empty).ToList();
@@ -223,7 +224,7 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
                 // Back to indexing: the panel returns and the quiet check goes away.
                 vm.UpdateStatus(new Valafind.Core.Abstractions.IndexStatus(Valafind.Core.Abstractions.IndexingState.Running,
                     Valafind.Core.Abstractions.IndexPhase.All, 6214, 6214, 1000, 446120, true, null, null));
-                Assert.True(((Control)panel.Content!).IsVisible);
+                Assert.True(panel.IsVisible);
             }
             finally
             {

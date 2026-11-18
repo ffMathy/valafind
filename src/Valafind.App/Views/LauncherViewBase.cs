@@ -81,7 +81,15 @@ public abstract class LauncherViewBase : UserControl
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(LauncherViewModel.SelectedIndex))
+        {
             Dispatcher.UIThread.Post(ScrollSelectionIntoView, DispatcherPriority.Background);
+            // A newly selected file's preview starts at its top.
+            foreach (var name in (string[])["PreviewScroller", "PictureScroller"])
+            {
+                if (this.FindControl<ScrollViewer>(name) is { } preview)
+                    preview.Offset = default;
+            }
+        }
     }
 
     private void ScrollSelectionIntoView()

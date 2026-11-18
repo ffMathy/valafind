@@ -192,7 +192,7 @@
     </Style>
   </views:LauncherViewBase.Styles>
 
-  <Border x:Name="Card" Width="700" BorderThickness="1" BorderBrush="{DynamicResource MacCardBorderBrush}" ClipToBounds="True">
+  <Border x:Name="Card" Width="800" BorderThickness="1" BorderBrush="{DynamicResource MacCardBorderBrush}" ClipToBounds="True">
     <StackPanel>
       <!-- Search field -->
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="18,16,18,14">
@@ -243,9 +243,9 @@
       </DockPanel>
 
       <!-- Body: results + preview -->
-      <Border Height="344" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
+      <Border Height="424" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource VfDividerBrush}">
         <Panel>
-          <Grid x:Name="Body" ColumnDefinitions="312,*" Classes.nopreview="{Binding !IsPreviewVisible}"
+          <Grid x:Name="Body" ColumnDefinitions="336,*" Classes.nopreview="{Binding !IsPreviewVisible}"
                 IsVisible="{Binding IsResultsVisible}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
               <ItemsControl x:Name="ResultsList" ItemsSource="{Binding Results}" Margin="8">
@@ -261,7 +261,7 @@
                                  Foreground="{DynamicResource VfSubtleBrush}" Margin="10,6,10,2" />
                       <Border Classes="row" Classes.selected="{Binding IsSelected}" Padding="10,6" CornerRadius="8">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                          <c:FileKindIcon Kind="{Binding Kind}" Width="26" Height="26" GlyphSize="26" StrokeThickness="1.5" ShowTile="False" />
+                          <c:FileKindIcon Kind="{Binding Kind}" Thumbnail="{Binding Thumbnail}" Width="26" Height="26" GlyphSize="26" StrokeThickness="1.5" ShowTile="False" />
                           <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding FileName}" FontSize="13" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
                             <TextBlock Classes="meta" Text="{Binding BreadcrumbCaption}" FontSize="11"
@@ -288,15 +288,20 @@
                   <Button Classes="vf action" Content="{x:Static l:Strings.ShowInFinder}" Command="{Binding Launcher.RevealSelectedCommand}" />
                   <Button Classes="vf action" Content="{x:Static l:Strings.QuickLook}" Command="{Binding Launcher.QuickLookSelectedCommand}" />
                 </StackPanel>
-                <StackPanel Spacing="12">
+                <StackPanel DockPanel.Dock="Top" Spacing="12" Margin="0,0,0,12">
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                     <Border Width="44" Height="52" CornerRadius="6" Background="{DynamicResource MacPaperBrush}"
-                            BoxShadow="0 0 0 0.5 #2E000000, 0 2 6 0 #1A000000" Padding="0,0,0,6">
+                            BoxShadow="0 0 0 0.5 #2E000000, 0 2 6 0 #1A000000">
                       <Panel>
-                        <c:FileKindIcon Kind="{Binding Kind}" Width="20" Height="20" GlyphSize="20" ShowTile="False"
-                                        VerticalAlignment="Top" Margin="0,8,0,0" />
-                        <TextBlock Text="{Binding ExtensionLabel}" FontSize="9" FontWeight="Bold" LetterSpacing="0.4"
-                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" Foreground="{DynamicResource VfSubtleBrush}" />
+                        <Panel Margin="0,0,0,6" IsVisible="{Binding !HasThumbnail}">
+                          <c:FileKindIcon Kind="{Binding Kind}" Width="20" Height="20" GlyphSize="20" ShowTile="False"
+                                          VerticalAlignment="Top" Margin="0,8,0,0" />
+                          <TextBlock Text="{Binding ExtensionLabel}" FontSize="9" FontWeight="Bold" LetterSpacing="0.4"
+                                     HorizontalAlignment="Center" VerticalAlignment="Bottom" Foreground="{DynamicResource VfSubtleBrush}" />
+                        </Panel>
+                        <!-- Pictures: the picture itself instead of the paper icon -->
+                        <c:FileKindIcon Kind="{Binding Kind}" Thumbnail="{Binding Thumbnail}" ShowTile="False" CornerRadius="6"
+                                        IsVisible="{Binding HasThumbnail}" />
                       </Panel>
                     </Border>
                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
@@ -316,20 +321,42 @@
                     <TextBlock Grid.Column="2" Classes="num" Text="{Binding ScoreText}" FontSize="11" FontWeight="SemiBold"
                                VerticalAlignment="Center" />
                   </Grid>
-
-                  <Border Background="{DynamicResource MacPaperBrush}" CornerRadius="10" BoxShadow="0 0 0 0.5 #1F000000"
-                          Padding="14,12" IsVisible="{Binding HasSnippet}">
-                    <StackPanel Spacing="6">
-                      <TextBlock Text="{x:Static l:Strings.WhyItMatched}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VfSubtleBrush}" />
-                      <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}"
-                                              FontSize="12.5" LineHeight="19.4" TextWrapping="Wrap" MaxLines="6"
-                                              TextTrimming="CharacterEllipsis"
-                                              HighlightBackground="{DynamicResource MacHighlightBrush}" HighlightFontWeight="SemiBold" />
-                      <TextBlock Text="{Binding Launcher.MatchExplanation}" FontSize="11" TextWrapping="Wrap"
-                                 Foreground="{DynamicResource VfSubtleBrush}" />
-                    </StackPanel>
-                  </Border>
                 </StackPanel>
+                <!-- Fills the remaining height. Pictures: the picture, as large as fits. Other files: why it matched, then
+                     the start of the file's text (scrolls with the wheel). -->
+                <Panel>
+                  <ScrollViewer x:Name="PictureScroller" Classes="filepicture" IsVisible="{Binding HasPreviewImage}">
+                    <Border Classes="filepicture">
+                      <Image Source="{Binding PreviewImage}" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                    </Border>
+                  </ScrollViewer>
+                  <Grid RowDefinitions="Auto,*" RowSpacing="8" IsVisible="{Binding !HasPreviewImage}">
+                    <Border Background="{DynamicResource MacPaperBrush}" CornerRadius="10" BoxShadow="0 0 0 0.5 #1F000000"
+                            Padding="14,12" IsVisible="{Binding HasSnippet}">
+                      <StackPanel Spacing="6">
+                        <TextBlock Text="{x:Static l:Strings.WhyItMatched}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource VfSubtleBrush}" />
+                        <c:HighlightedTextBlock Source="{Binding Snippet}" Highlights="{Binding Highlights}"
+                                                FontSize="12.5" LineHeight="19.4" TextWrapping="Wrap" MaxLines="3"
+                                                TextTrimming="CharacterEllipsis"
+                                                HighlightBackground="{DynamicResource MacHighlightBrush}" HighlightFontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Launcher.MatchExplanation}" FontSize="11" TextWrapping="Wrap" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource VfSubtleBrush}"
+                                   IsVisible="{Binding !HasPreviewText}" />
+                      </StackPanel>
+                    </Border>
+                    <Border Grid.Row="1" Background="{DynamicResource MacPaperBrush}" CornerRadius="10" BoxShadow="0 0 0 0.5 #1F000000"
+                            ClipToBounds="True" IsVisible="{Binding HasPreviewText}">
+                      <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Margin="14,12,14,0" Text="{x:Static l:Strings.KeyHintPreview}" FontSize="11"
+                                   FontWeight="SemiBold" Foreground="{DynamicResource VfSubtleBrush}" />
+                        <ScrollViewer x:Name="PreviewScroller" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                          <TextBlock Classes="filetext" Classes.mono="{Binding IsPreviewMonospace}" Text="{Binding PreviewText}"
+                                     Margin="14,6,14,12" FontSize="12" LineHeight="18" />
+                        </ScrollViewer>
+                      </DockPanel>
+                    </Border>
+                  </Grid>
+                </Panel>
               </DockPanel>
             </Border>
           </Grid>
