@@ -43,6 +43,28 @@ public sealed class IndexStatusViewModelTests
         Assert.Equal(0.225, vm.DiskTargetFraction, 3);
         Assert.Equal("Target 22%", vm.DiskTargetText);
         Assert.Equal("Pause indexing", vm.PauseMenuText);
+        Assert.False(vm.HasGpu, "no GPU reading: the GPU meter is hidden");
+        Assert.Equal("—", vm.GpuText);
+        Assert.True(double.IsNaN(vm.GpuTargetFraction));
+    }
+
+    [Fact]
+    public void GpuMeterShowsUtilisationAgainstTheGpuLimit()
+    {
+        var vm = new IndexStatusViewModel();
+        vm.Update(new IndexStatus(IndexingState.Running, IndexPhase.All, 6214, 6214, 182_930, 446_120, true,
+            new PressureSample(At, 14, 10, null, false, GpuPercent: 42.4), null), 30, 25, 30);
+
+        Assert.True(vm.HasGpu);
+        Assert.Equal("42%", vm.GpuText);
+        Assert.Equal(0.424, vm.GpuFraction, 3);
+        Assert.True(vm.IsGpuHigh);
+        Assert.Equal(0.27, vm.GpuTargetFraction, 3);
+        Assert.Equal("Target 27%", vm.GpuTargetText);
+
+        vm.Update(vm.Raw with { LastSample = new PressureSample(At, 14, 10, null, false, GpuPercent: 5) }, 30, 25, 30);
+        Assert.False(vm.IsGpuHigh);
+        Assert.Equal("5%", vm.GpuText);
     }
 
     [Fact]

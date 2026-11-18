@@ -204,6 +204,9 @@
   <data name="IndexDisk" xml:space="preserve">
     <value>القرص</value>
   </data>
+  <data name="IndexGpu" xml:space="preserve">
+    <value>معالج الرسومات</value>
+  </data>
   <data name="IndexFilesCount" xml:space="preserve">
     <value>عدد الملفات: {0}</value>
   </data>
