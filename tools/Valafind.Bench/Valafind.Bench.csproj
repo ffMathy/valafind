@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Indexing benchmark: times every stage of the per-file pipeline (extract, chunk + tokenise, embed, media decode and
+    embed) on a sample of real files or a fixed workload, on the CPU or the GPU, so slow files can be explained. Built
+    with the solution so it keeps compiling; never shipped. Run it with "dotnet run -c Release" on this project and
+    pass "help" to list the options (the README's Development section has an example).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Valafind.Core\Valafind.Core.csproj" />
+  </ItemGroup>
+</Project>

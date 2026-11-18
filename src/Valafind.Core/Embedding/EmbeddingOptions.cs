@@ -1,5 +1,18 @@
 namespace Valafind.Core.Embedding;
 
+/// <summary>Where <see cref="EmbeddingGemmaModel"/> runs inference.</summary>
+public enum EmbeddingDevice
+{
+    /// <summary>The GPU when one is usable (see <see cref="EmbeddingGemmaModel.ActiveDevice"/>), otherwise the CPU.</summary>
+    Auto = 0,
+
+    /// <summary>Always the CPU.</summary>
+    Cpu = 1,
+
+    /// <summary>The GPU; loading fails when none is usable.</summary>
+    Gpu = 2,
+}
+
 /// <summary>Configuration for <see cref="EmbeddingGemmaModel"/>.</summary>
 public sealed class EmbeddingOptions
 {
@@ -21,6 +34,14 @@ public sealed class EmbeddingOptions
     /// <summary>Token budget per input including the task prompt and BOS/EOS (hard cap <see cref="HardMaxTokens"/>).
     /// Longer inputs are truncated.</summary>
     public int MaxTokens { get; set; } = 512;
+
+    /// <summary>Where inference runs. <see cref="EmbeddingDevice.Auto"/>: the GPU when one is usable, else the CPU.</summary>
+    public EmbeddingDevice Device { get; set; } = EmbeddingDevice.Cpu;
+
+    /// <summary>File that exists only while a GPU session runs its first inference (null: none). Some GPU kernels abort
+    /// the process instead of failing; when a start finds this file left behind by the same build, <see cref="EmbeddingDevice.Auto"/>
+    /// stays on the CPU instead of crashing again.</summary>
+    public string? GpuCrashMarker { get; set; }
 
     /// <summary>ONNX Runtime intra-op threads. Keep low: indexing runs in the background.</summary>
     public int IntraOpThreads { get; set; } = 2;

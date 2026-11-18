@@ -33,6 +33,10 @@ public sealed class ValafindSettings
     /// <summary>Matryoshka output size: 768, 512, 256 or 128. Changing it re-embeds everything.</summary>
     public int EmbeddingDimensions { get; set; } = 256;
 
+    /// <summary>Run the embedding model on the GPU when one is usable (WebGPU: D3D12, Vulkan or Metal), else the CPU.
+    /// Off: always the CPU. Takes effect on the next start.</summary>
+    public bool UseGpu { get; set; } = true;
+
     /// <summary>Directory holding EmbeddingGemma (tokenizer.model + onnx/model*.onnx). Null = auto-locate.</summary>
     public string? ModelDirectory { get; set; }
 

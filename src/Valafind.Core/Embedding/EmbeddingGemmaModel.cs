@@ -6,7 +6,8 @@ namespace Valafind.Core.Embedding;
 
 /// <summary>
 /// <see cref="IEmbeddingModel"/> and <see cref="IMediaEmbeddingModel"/> backed by Google's EmbeddingGemma 2 (ONNX export
-/// by onnx-community) running on ONNX Runtime's CPU provider: text, pictures, audio and video in one vector space.
+/// by onnx-community) running on ONNX Runtime, on the GPU through the WebGPU provider when <see cref="EmbeddingOptions.Device"/>
+/// allows it and one is usable, otherwise on the CPU: text, pictures, audio and video in one vector space.
 /// Entirely offline: the tokenizer and models are read from <see cref="EmbeddingOptions.ModelDirectory"/> and nothing is
 /// ever downloaded.
 /// </summary>
@@ -78,6 +79,8 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
     private readonly string? _audioPath;
     private readonly int _maxTokens;
     private readonly int _intraOpThreads;
+    private readonly EmbeddingDevice _device;
+    private readonly string? _gpuCrashMarker;
     private readonly int _batchSize;
     private readonly int _imageSoftTokens;
     private readonly int _videoFrameSoftTokens;
@@ -88,7 +91,8 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
     private int _preemptedRuns;
     private volatile ITextTokenizer? _tokenizer;
     private volatile InferenceSession? _session;
-    private SessionOptions? _sessionOptions;
+    private readonly Dictionary<InferenceSession, SessionOptions> _sessionOptions = []; // per session, under _loadLock
+    private OrtEpDevice? _gpu; // the device the text model runs on (null: CPU), written under _loadLock
     private InferenceSession? _visionSession; // read with Volatile.Read, written under _loadLock
     private InferenceSession? _audioSession;
     private int _outputWidth;
@@ -108,6 +112,8 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
         _modelDirectory = Path.GetFullPath(options.ModelDirectory);
         _maxTokens = options.MaxTokens;
         _intraOpThreads = options.IntraOpThreads;
+        _device = options.Device;
+        _gpuCrashMarker = string.IsNullOrWhiteSpace(options.GpuCrashMarker) ? null : Path.GetFullPath(options.GpuCrashMarker);
         _batchSize = options.BatchSize;
         _imageSoftTokens = options.ImageSoftTokens;
         _videoFrameSoftTokens = options.VideoFrameSoftTokens;
@@ -302,9 +308,14 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
 
     /// <summary>Runs the text model on padded <paramref name="sequences"/>; <paramref name="media"/> fills the
     /// placeholder tokens (null: text only).</summary>
-    private float[][] RunTextModel(IReadOnlyList<int[]> sequences, MediaFeatures? media, bool interactive, CancellationToken cancellationToken)
+    private float[][] RunTextModel(IReadOnlyList<int[]> sequences, MediaFeatures? media, bool interactive, CancellationToken cancellationToken) =>
+        RunTextModelOn(GetSession(), sequences, media, body => Scheduled(body, interactive, cancellationToken));
+
+    /// <summary>Builds the inputs for <paramref name="sequences"/> and hands one ORT run on <paramref name="session"/> to
+    /// <paramref name="run"/> (the scheduler, or a direct call while the session is being verified).</summary>
+    private float[][] RunTextModelOn(InferenceSession session, IReadOnlyList<int[]> sequences, MediaFeatures? media,
+        Func<Func<RunOptions, float[][]>, float[][]> run)
     {
-        var session = GetSession();
         var padId = GetTokenizer().PadId;
         var batch = sequences.Count;
         var seqLen = sequences.Max(s => s.Length);
@@ -340,7 +351,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
                 values.Add(OrtValue.CreateTensorValueFromMemory(features, [features.Length / _featureWidth, _featureWidth]));
             }
 
-            return Scheduled(runOptions =>
+            return run(runOptions =>
             {
                 var results = new float[batch][];
                 using var outputs = session.Run(runOptions, names, values, [SentenceEmbeddingName]);
@@ -353,7 +364,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
                 for (var b = 0; b < batch; b++)
                     results[b] = Matryoshka.TruncateAndNormalize(data.Slice(b * width, width), Dimensions);
                 return results;
-            }, interactive, cancellationToken);
+            });
         }
         finally
         {
@@ -482,13 +493,7 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
             throw new ArgumentException("The audio clip is too short to embed.", nameof(clip));
         cancellationToken.ThrowIfCancellationRequested();
 
-        using var featuresValue = OrtValue.CreateTensorValueFromMemory(input.Features, [1, input.Frames, AudioFeatureExtractor.MelBins]);
-        using var maskValue = OrtValue.CreateTensorValueFromMemory(input.Mask, [1, input.Frames]);
-        var features = Scheduled(runOptions =>
-        {
-            using var outputs = audio.Run(runOptions, [InputFeaturesName, InputFeaturesMaskName], [featuresValue, maskValue], [audio.OutputNames[0]]);
-            return ReadFeatures(outputs[0]);
-        }, interactive: false, cancellationToken);
+        var features = Scheduled(runOptions => RunAudioUnscheduled(audio, input, runOptions), interactive: false, cancellationToken);
 
         var rows = features.Length / _featureWidth;
         if (rows == 0)
@@ -516,15 +521,82 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
         return result;
     }
 
-    private float[] RunVision(InferenceSession vision, VisionPatches patches, CancellationToken cancellationToken)
+    private float[] RunAudioUnscheduled(InferenceSession audio, AudioFeatures input, RunOptions? runOptions = null)
+    {
+        using var featuresValue = OrtValue.CreateTensorValueFromMemory(input.Features, [1, input.Frames, AudioFeatureExtractor.MelBins]);
+        using var maskValue = OrtValue.CreateTensorValueFromMemory(input.Mask, [1, input.Frames]);
+        using var defaultOptions = runOptions is null ? new RunOptions() : null;
+        using var outputs = audio.Run(runOptions ?? defaultOptions!, [InputFeaturesName, InputFeaturesMaskName], [featuresValue, maskValue], [audio.OutputNames[0]]);
+        return ReadFeatures(outputs[0]);
+    }
+
+    private float[] RunVision(InferenceSession vision, VisionPatches patches, CancellationToken cancellationToken) =>
+        Scheduled(runOptions => RunVisionUnscheduled(vision, patches, runOptions), interactive: false, cancellationToken);
+
+    private float[] RunVisionUnscheduled(InferenceSession vision, VisionPatches patches, RunOptions? runOptions = null)
     {
         using var pixels = OrtValue.CreateTensorValueFromMemory(patches.PixelValues, [1, patches.Patches, VisionPreprocessor.PatchPixels]);
         using var positions = OrtValue.CreateTensorValueFromMemory(patches.PositionIds, [1, patches.Patches, 2]);
-        return Scheduled(runOptions =>
+        using var defaultOptions = runOptions is null ? new RunOptions() : null;
+        using var outputs = vision.Run(runOptions ?? defaultOptions!, [PixelValuesName, PixelPositionIdsName], [pixels, positions], [vision.OutputNames[0]]);
+        return ReadFeatures(outputs[0]);
+    }
+
+    /// <summary>
+    /// Runs a first inference on a freshly created GPU session. Some GPU kernels do not fail with an error but abort the
+    /// whole process, which nothing in-process can catch; the marker file (<see cref="EmbeddingOptions.GpuCrashMarker"/>)
+    /// is present while this runs, so after such a crash the next start finds it and stays on the CPU.
+    /// </summary>
+    private void VerifyOnGpu(Action firstRun)
+    {
+        var marker = _gpuCrashMarker;
+        try
         {
-            using var outputs = vision.Run(runOptions, [PixelValuesName, PixelPositionIdsName], [pixels, positions], [vision.OutputNames[0]]);
-            return ReadFeatures(outputs[0]);
-        }, interactive: false, cancellationToken);
+            if (marker is not null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
+                File.WriteAllText(marker, GpuMarkerStamp);
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            marker = null; // no guard this time; the check itself still runs
+        }
+        try
+        {
+            firstRun();
+        }
+        finally
+        {
+            // Reached after success and after an ordinary (catchable) failure alike; only a process abort skips it.
+            if (marker is not null)
+            {
+                try
+                {
+                    File.Delete(marker);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+    }
+
+    /// <summary>What a crash marker records: a newer Valafind or GPU provider tries the GPU again.</summary>
+    internal static string GpuMarkerStamp =>
+        $"{typeof(EmbeddingGemmaModel).Assembly.GetName().Version} webgpu {typeof(Microsoft.ML.OnnxRuntime.EP.WebGpu.WebGpuEp).Assembly.GetName().Version}";
+
+    /// <summary>True when a previous process died during <see cref="VerifyOnGpu"/> with this same build.</summary>
+    private bool GpuCrashedBefore()
+    {
+        try
+        {
+            return _gpuCrashMarker is { } marker && File.Exists(marker) && File.ReadAllText(marker).Trim() == GpuMarkerStamp;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     private float[] ReadFeatures(OrtValue output)
@@ -545,16 +617,25 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
             _scheduler.EnterExclusive();
             try
             {
-                _visionSession?.Dispose();
-                _visionSession = null;
-                _audioSession?.Dispose();
-                _audioSession = null;
+                CloseSession(ref _visionSession);
+                CloseSession(ref _audioSession);
             }
             finally
             {
                 _scheduler.Exit(null);
             }
         }
+    }
+
+    /// <summary>Disposes a media session and its options. Called under <see cref="_loadLock"/>.</summary>
+    private void CloseSession(ref InferenceSession? field)
+    {
+        if (field is not { } session)
+            return;
+        session.Dispose();
+        if (_sessionOptions.Remove(session, out var options))
+            options.Dispose();
+        Volatile.Write(ref field, null);
     }
 
     /// <summary>True while an encoder is loaded (tests).</summary>
@@ -579,22 +660,46 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (field is not null)
                 return field;
-            var created = new InferenceSession(path, _sessionOptions!);
-            try
+            InferenceSession? created = null;
+            if (_gpu is { } gpu)
             {
-                var names = created.InputMetadata.Keys.ToHashSet(StringComparer.Ordinal);
-                if (!names.SetEquals(inputs))
-                    throw new InvalidDataException($"Encoder inputs [{string.Join(", ", names)}] are not [{string.Join(", ", inputs)}].");
-                if (created.OutputNames.Count != 1)
-                    throw new InvalidDataException($"Encoder has {created.OutputNames.Count} outputs; expected one.");
+                try
+                {
+                    created = OpenValidatedMediaSession(path, inputs, gpu);
+                    var opened = created;
+                    if (path == _visionPath)
+                        VerifyOnGpu(() => RunVisionUnscheduled(opened, VisionPreprocessor.Preprocess(new DecodedImage(64, 64, new byte[64 * 64 * 3]), _videoFrameSoftTokens)));
+                    else
+                        VerifyOnGpu(() => RunAudioUnscheduled(opened, AudioFeatureExtractor.Extract(new float[AudioClip.SampleRate])));
+                }
+                catch (Exception e) when (_device == EmbeddingDevice.Auto && IsGpuFailure(e))
+                {
+                    // This encoder does not run on the GPU (the text model does): keep it on the CPU.
+                    CloseSession(ref created);
+                }
             }
-            catch
-            {
-                created.Dispose();
-                throw;
-            }
+            created ??= OpenValidatedMediaSession(path, inputs, null);
             Volatile.Write(ref field, created);
             return created;
+        }
+    }
+
+    private InferenceSession OpenValidatedMediaSession(string path, string[] inputs, OrtEpDevice? gpu)
+    {
+        InferenceSession? created = OpenSession(path, gpu);
+        try
+        {
+            var names = created.InputMetadata.Keys.ToHashSet(StringComparer.Ordinal);
+            if (!names.SetEquals(inputs))
+                throw new InvalidDataException($"Encoder inputs [{string.Join(", ", names)}] are not [{string.Join(", ", inputs)}].");
+            if (created.OutputNames.Count != 1)
+                throw new InvalidDataException($"Encoder has {created.OutputNames.Count} outputs; expected one.");
+            return created;
+        }
+        catch
+        {
+            CloseSession(ref created);
+            throw;
         }
     }
 
@@ -758,35 +863,107 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
             if (_session is not null)
                 return _session;
 
-            var options = new SessionOptions
+            OrtEpDevice? gpu = null;
+            if (_device == EmbeddingDevice.Auto && GpuCrashedBefore())
             {
-                IntraOpNumThreads = _intraOpThreads,
-                InterOpNumThreads = 1,
-                ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
-                GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
-                LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR,
-            };
+                GpuUnavailableReason = $"Valafind stopped unexpectedly while first using the GPU; staying on the CPU (delete '{_gpuCrashMarker}' to retry)";
+            }
+            else if (_device != EmbeddingDevice.Cpu)
+            {
+                gpu = WebGpuDevice.Find(out var reason);
+                if (gpu is null)
+                {
+                    if (_device == EmbeddingDevice.Gpu)
+                        throw new NotSupportedException($"No usable GPU: {reason}");
+                    GpuUnavailableReason = reason;
+                }
+            }
+
+            if (gpu is not null)
+            {
+                try
+                {
+                    return CreateTextSession(gpu);
+                }
+                catch (Exception e) when (_device == EmbeddingDevice.Auto && IsGpuFailure(e))
+                {
+                    GpuUnavailableReason = $"GPU session failed: {e.Message}";
+                }
+            }
+            return CreateTextSession(null);
+        }
+    }
+
+    private static bool IsGpuFailure(Exception e) =>
+        e is OnnxRuntimeException or InvalidDataException or EntryPointNotFoundException or DllNotFoundException or NotSupportedException;
+
+    /// <summary>Opens and validates the text model on the CPU or <paramref name="gpu"/>. Called under <see cref="_loadLock"/>.</summary>
+    private InferenceSession CreateTextSession(OrtEpDevice? gpu)
+    {
+        var created = OpenSession(_modelPath, gpu);
+        try
+        {
+            ValidateSignature(created);
+            if (gpu is not null)
+            {
+                var tokenizer = GetTokenizer();
+                VerifyOnGpu(() => RunTextModelOn(created, [[tokenizer.BosId, tokenizer.EosId]], null, body =>
+                {
+                    using var runOptions = new RunOptions();
+                    return body(runOptions);
+                }));
+            }
+        }
+        catch
+        {
+            InferenceSession? failed = created;
+            CloseSession(ref failed);
+            throw;
+        }
+        _gpu = gpu;
+        ActiveDevice = gpu is null ? "CPU" : WebGpuDevice.Describe(gpu);
+        _session = created;
+        return created;
+    }
+
+    /// <summary>
+    /// Opens one ONNX file on the CPU or <paramref name="gpu"/>, with its own session options (kept in
+    /// <see cref="_sessionOptions"/> until disposal).
+    /// </summary>
+    private InferenceSession OpenSession(string path, OrtEpDevice? gpu)
+    {
+        var options = new SessionOptions
+        {
+            IntraOpNumThreads = _intraOpThreads,
+            InterOpNumThreads = 1,
+            ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
+            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL,
+            LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_ERROR,
+        };
+        try
+        {
             // Idle ORT pool threads must sleep, not spin: spinning burns CPU between ops and batches, and that CPU is
             // invisible to the throttle gate (it subtracts the process's own usage).
             options.AddSessionConfigEntry(IntraOpSpinningKey, "0");
             options.AddSessionConfigEntry(InterOpSpinningKey, "0");
-            InferenceSession? created = null;
-            try
-            {
-                created = new InferenceSession(_modelPath, options);
-                ValidateSignature(created);
-                _sessionOptions = options;
-                _session = created;
-                return created;
-            }
-            catch
-            {
-                created?.Dispose();
-                options.Dispose();
-                throw;
-            }
+            if (gpu is not null)
+                WebGpuDevice.Append(options, gpu, WebGpuDevice.CpuNodes(File.ReadAllBytes(path)));
+            var session = new InferenceSession(path, options);
+            _sessionOptions[session] = options;
+            return session;
+        }
+        catch
+        {
+            options.Dispose();
+            throw;
         }
     }
+
+    /// <summary>Where inference runs once loaded: "CPU" or "GPU: vendor (WebGPU)"; null before the model is loaded.</summary>
+    public string? ActiveDevice { get; private set; }
+
+    /// <summary>Why <see cref="EmbeddingDevice.Auto"/> fell back to the CPU, or null.</summary>
+    public string? GpuUnavailableReason { get; private set; }
 
     private void ValidateSignature(InferenceSession session)
     {
@@ -826,8 +1003,9 @@ public sealed class EmbeddingGemmaModel : IEmbeddingModel, IInteractiveEmbedding
                 _audioSession = null;
                 _session?.Dispose();
                 _session = null;
-                _sessionOptions?.Dispose();
-                _sessionOptions = null;
+                foreach (var options in _sessionOptions.Values)
+                    options.Dispose();
+                _sessionOptions.Clear();
                 _tokenizer = null;
             }
             finally

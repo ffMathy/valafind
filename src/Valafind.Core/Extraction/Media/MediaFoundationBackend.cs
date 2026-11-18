@@ -28,6 +28,12 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
     private const int MaxFramesPerSeek = 900;
 
     private static readonly Guid MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING = new("fb394f3d-ccf1-42ee-bbb3-f9b845d5681d");
+
+    /// <summary>A sampled frame may come from up to half the gap to its neighbours before the requested time (so the
+    /// key frame a seek lands on usually qualifies without decoding the frames after it), but no more than this.</summary>
+    internal static readonly TimeSpan MaxFrameTolerance = TimeSpan.FromSeconds(2);
+
+    private static readonly TimeSpan MinFrameTolerance = TimeSpan.FromMilliseconds(20);
     private static readonly Guid MF_MT_MAJOR_TYPE = new("48eba18e-f8c9-4687-bf11-0a74c9f96a8f");
     private static readonly Guid MF_MT_SUBTYPE = new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5");
     private static readonly Guid MF_MT_AUDIO_NUM_CHANNELS = new("37e48bf5-645e-4c5b-89de-ada9e29b696a");
@@ -244,10 +250,10 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
             var stride = (int?)GetUInt32(current, MF_MT_DEFAULT_STRIDE) ?? frameWidth * 4;
 
             var frames = new List<DecodedImage?>(times.Count);
-            foreach (var time in times)
+            for (var i = 0; i < times.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                frames.Add(ReadFrameAt(reader, time, ref frameWidth, ref frameHeight, ref stride, rotation, width, height, cancellationToken));
+                frames.Add(ReadFrameAt(reader, times[i], FrameTolerance(times, i), ref frameWidth, ref frameHeight, ref stride, rotation, width, height, cancellationToken));
             }
 
             return frames;
@@ -264,12 +270,29 @@ internal sealed unsafe partial class MediaFoundationBackend : IAvBackend
     private static (int Channels, int Rate) AudioFormat(nint mediaType) =>
         ((int)(GetUInt32(mediaType, MF_MT_AUDIO_NUM_CHANNELS) ?? 0), (int)(GetUInt32(mediaType, MF_MT_AUDIO_SAMPLES_PER_SECOND) ?? 0));
 
-    private static DecodedImage? ReadFrameAt(nint reader, TimeSpan time, ref int frameWidth, ref int frameHeight, ref int stride, int rotation,
-        int width, int height, CancellationToken cancellationToken)
+    /// <summary>
+    /// How far before <c>times[index]</c> its frame may be: half the gap to the nearest other sampled time, between
+    /// <see cref="MinFrameTolerance"/> and <see cref="MaxFrameTolerance"/>. Frames a few seconds apart in a long video
+    /// show the same scene, while decoding forward from a key frame to the exact time costs a full decode and colour
+    /// conversion of every frame in between (dozens per sample in 4K, 60 fps phone video: seconds each).
+    /// </summary>
+    internal static TimeSpan FrameTolerance(IReadOnlyList<TimeSpan> times, int index)
+    {
+        var gap = TimeSpan.MaxValue;
+        if (index > 0)
+            gap = times[index] - times[index - 1];
+        if (index + 1 < times.Count && times[index + 1] - times[index] < gap)
+            gap = times[index + 1] - times[index];
+        var half = gap == TimeSpan.MaxValue ? MaxFrameTolerance : gap / 2;
+        return half < MinFrameTolerance ? MinFrameTolerance : half > MaxFrameTolerance ? MaxFrameTolerance : half;
+    }
+
+    private static DecodedImage? ReadFrameAt(nint reader, TimeSpan time, TimeSpan frameTolerance, ref int frameWidth, ref int frameHeight,
+        ref int stride, int rotation, int width, int height, CancellationToken cancellationToken)
     {
         Seek(reader, time);
-        // Seeking lands on the key frame before `time`; decode forward to the first frame at or after it.
-        var tolerance = TimeSpan.FromMilliseconds(20).Ticks;
+        // Seeking lands on the key frame before `time`; decode forward to the first frame within the tolerance of it.
+        var tolerance = frameTolerance.Ticks;
         for (var i = 0; i < MaxFramesPerSeek; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
