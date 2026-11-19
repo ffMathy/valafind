@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>检查更新…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>重启以更新</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>清除搜索</value>
   </data>
@@ -413,6 +416,9 @@
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>检查更新</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>重启以更新</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>默认：{0}</value>

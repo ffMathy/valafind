@@ -190,6 +190,15 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.Equal(1, host.LogFolderOpened);
     }
 
+    [Fact]
+    public void UpdateButtonChecksForUpdatesUntilAnUpdateIsReady()
+    {
+        var host = new FakeHost();
+        var vm = new SettingsViewModel(new ValafindSettings(), host);
+        Assert.False(vm.IsUpdateReady);
+        Assert.Equal(Valafind.App.Localization.Strings.SettingsCheckForUpdates, vm.UpdateButtonText);
+    }
+
     private sealed class FakeHost : ISettingsHost
     {
         public string? Detected { get; set; }
@@ -201,6 +210,8 @@ public sealed class SettingsViewModelTests : IDisposable
         public string LogDirectory => "/data/logs";
         public int LogFolderOpened { get; private set; }
         public void OpenLogFolder() => LogFolderOpened++;
+        public int RestartsToUpdate { get; private set; }
+        public void RestartToUpdate() => RestartsToUpdate++;
         public string? DetectModel() => Detected;
         public bool IsAutostartEnabled() => Autostart;
         public void SetAutostartEnabled(bool enabled) => Autostart = enabled;

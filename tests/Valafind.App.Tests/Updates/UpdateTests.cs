@@ -242,6 +242,39 @@ public sealed class SelfInstallerTests : IDisposable
     }
 
     [Fact]
+    public void OnStartup_ShowsTheCopyThatRunsWhenADownloadIsOpenedWithoutArguments()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return;
+        }
+
+        var app = new AppIdentity
+        {
+            Name = "Demo",
+            LinuxExecutableName = "demo",
+            Description = "Demo app",
+            GitHubOwner = "owner",
+            GitHubRepository = "demo",
+            ExecutableAssetName = TestApp.Identity.ExecutableAssetName,
+            DesktopEntryId = "demo",
+            BundleIdentifier = "app.demo",
+            EnvironmentPrefix = "DEMO_TEST",
+            LaunchArguments = ["--show"],
+        };
+        var layout = InstallLayout.Create(app, InstallLayout.CurrentPlatform, Path.Combine(root, "home"), Path.Combine(root, "local"), Path.Combine(root, "state"));
+        // The older installed copy does not quit in time, so this download cannot install and runs where it is: it must
+        // still open its window rather than sit invisibly in the tray.
+        var installer = new SelfInstaller(
+            app, layout, new RunningApp(Path.Combine(root, "downloads", "demo"), null, true), new RecordingHost { RefuseToStop = true }, new NullLog(), ReleaseVersion.TryParse("2.0.0"));
+
+        var result = installer.OnStartup([]);
+
+        Assert.False(result.Exit);
+        Assert.Equal(["--show"], result.Arguments);
+    }
+
+    [Fact]
     public void OnStartup_LeavesBuildsThatAreNotSingleFileAlone()
     {
         var layout = InstallLayout.Create(TestApp.Identity, InstallLayout.CurrentPlatform, Path.Combine(root, "home"), Path.Combine(root, "local"), Path.Combine(root, "state"));

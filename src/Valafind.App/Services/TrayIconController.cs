@@ -13,6 +13,7 @@ internal sealed class TrayIconController : IDisposable
     private readonly TrayIcon _tray;
     private readonly NativeMenuItem _open;
     private readonly NativeMenuItem _pause;
+    private readonly NativeMenuItem _updates;
     private bool _disposed;
 
     public TrayIconController(Application app, Action open, Action togglePause, Action settings, Action checkForUpdates, Action quit)
@@ -24,8 +25,8 @@ internal sealed class TrayIconController : IDisposable
         _pause.Click += (_, _) => togglePause();
         var settingsItem = new NativeMenuItem(Strings.SettingsMenu);
         settingsItem.Click += (_, _) => settings();
-        var updatesItem = new NativeMenuItem(Strings.CheckForUpdatesMenu);
-        updatesItem.Click += (_, _) => checkForUpdates();
+        _updates = new NativeMenuItem(Strings.CheckForUpdatesMenu);
+        _updates.Click += (_, _) => checkForUpdates();
         var quitItem = new NativeMenuItem(Strings.QuitValafind);
         quitItem.Click += (_, _) => quit();
 
@@ -34,7 +35,7 @@ internal sealed class TrayIconController : IDisposable
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(_pause);
         menu.Items.Add(settingsItem);
-        menu.Items.Add(updatesItem);
+        menu.Items.Add(_updates);
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(quitItem);
 
@@ -60,6 +61,9 @@ internal sealed class TrayIconController : IDisposable
         using var stream = AssetLoader.Open(new Uri("avares://Valafind/Assets/" + name));
         return new WindowIcon(stream);
     }
+
+    /// <summary>A newer version is downloaded: the updates item now restarts into it.</summary>
+    public void SetUpdateReady() => _updates.Header = Strings.RestartToUpdateMenu;
 
     /// <summary>Shows the hotkey next to "Open Valafind".</summary>
     public void SetHotkey(string chord, bool registered)
