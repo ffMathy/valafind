@@ -331,12 +331,12 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
                 {
                     Margin = new Thickness(0, 22, 0, 0), FontFamily = font, FontSize = 21, Foreground = new SolidColorBrush(Color.Parse("#5B606A")),
                     LineHeight = 32, TextWrapping = TextWrapping.Wrap,
-                    Text = "Semantic search for documents, photos, audio and video that runs entirely on your computer.",
+                    Text = "Semantic search for documents, photos, audio and video. Runs entirely on your computer, on Windows, macOS and Linux.",
                 },
                 new StackPanel
                 {
                     Margin = new Thickness(0, 26, 0, 0), Orientation = Orientation.Horizontal, Spacing = 10,
-                    Children = { Badge("100%", " local"), Badge(string.Empty, "Photos, audio, video"), Badge(string.Empty, "Win, Mac, Linux") },
+                    Children = { Badge("100%", " local"), Badge(string.Empty, "Docs, photos, audio, video"), Badge(string.Empty, "Open source") },
                 },
             },
         };
