@@ -534,6 +534,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind Settings</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Show in Files</value>
   </data>

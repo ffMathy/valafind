@@ -534,6 +534,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind کی ترتیبات</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>ورژن</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>فائلیں میں دکھائیں</value>
   </data>

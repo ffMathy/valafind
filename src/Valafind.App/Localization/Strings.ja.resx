@@ -534,6 +534,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind の設定</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>バージョン</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>「ファイル」に表示</value>
   </data>

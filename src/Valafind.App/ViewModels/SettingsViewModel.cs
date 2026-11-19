@@ -209,6 +209,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     private readonly Updater? _updater;
 
+    /// <summary>The version of Valafind that is running, e.g. "7.1.0".</summary>
+    public string AppVersion => (_updater?.CurrentVersion ?? ReleaseVersion.Current()).ToString();
+
     /// <summary>What the updater is doing, or why this copy cannot update itself.</summary>
     public string UpdateStatus => _updater?.StatusText ?? Strings.UpdateChecksGitHub;
 

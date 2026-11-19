@@ -534,6 +534,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind அமைப்புகள்</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>பதிப்பு</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>கோப்புகளில் காட்டு</value>
   </data>
