@@ -102,6 +102,49 @@ internal static class CloudFiles
     }
 }
 
+/// <summary>
+/// How a Windows file Valafind pinned is given back, in two steps that never wait for the sync client:
+/// <list type="number">
+/// <item>Pinned (as Valafind left it): mark it unpinned ("Free up space"). The sync client frees it itself, and only
+/// once it is uploaded.</item>
+/// <item>Unpinned: once it is online-only again, put back its original pin setting.</item>
+/// </list>
+/// A file written to since the request is someone's work in progress: it keeps (or gets back) its original setting,
+/// never "free up space", and stays on the device. So does one that never arrived, or whose folder is kept on the
+/// device. A pin the user changed meanwhile is left as it is.
+/// </summary>
+internal static class CloudPinPolicy
+{
+    internal const int Unspecified = 0;
+    internal const int Pinned = 1;
+    internal const int Unpinned = 2;
+    internal const int Inherit = 4;
+
+    /// <param name="SetPin">The pin state to set, or null.</param>
+    /// <param name="Done">True when nothing is left to do once <paramref name="SetPin"/> is set; false when the file
+    /// must be looked at again later (the sync client has not freed it yet).</param>
+    internal readonly record struct Step(int? SetPin, bool Done);
+
+    /// <param name="pinState">The file's pin state now.</param>
+    /// <param name="original">Its pin state before Valafind pinned it.</param>
+    /// <param name="onlineOnly">Its content is not on the device (never arrived, or freed).</param>
+    /// <param name="modified">Written to since Valafind pinned it.</param>
+    /// <param name="inPinnedFolder">Its folder is kept on the device.</param>
+    internal static Step Decide(int pinState, int original, bool onlineOnly, bool modified, bool inPinnedFolder)
+    {
+        var keep = modified && original == Unpinned ? Unspecified : original;
+        return pinState switch
+        {
+            Pinned when modified || onlineOnly || inPinnedFolder => new Step(keep, Done: true),
+            Pinned => new Step(Unpinned, Done: original == Unpinned), // step 1
+            Unpinned when original != Unpinned && modified => new Step(keep, Done: true),
+            Unpinned when original != Unpinned && onlineOnly => new Step(original, Done: true), // step 2
+            Unpinned when original != Unpinned => new Step(null, Done: false), // not freed yet
+            _ => new Step(null, Done: true), // changed by the user since: theirs
+        };
+    }
+}
+
 /// <summary>No cloud placeholders (Linux: sync clients there keep full copies).</summary>
 internal sealed class NoCloudFiles : ICloudFiles
 {
@@ -118,22 +161,19 @@ internal sealed class NoCloudFiles : ICloudFiles
 
 /// <summary>
 /// Windows Cloud Files placeholders (OneDrive Files On-Demand and other sync clients built on the Cloud Files API).
-/// <see cref="Download"/> hydrates the file with <c>CfHydratePlaceholder</c>; disposing the result dehydrates it again
-/// with <c>CfDehydratePlaceholder</c>, the same thing "Free up space" in Explorer does. When the file cannot be
-/// dehydrated right away (another program has it open) it is marked unpinned instead, which tells the sync client to
-/// free its space as soon as it can.
+/// <see cref="RequestDownload"/> pins a file ("Always keep on this device") so the sync client downloads it, and
+/// <see cref="Download"/> hydrates one directly (<c>CfHydratePlaceholder</c>). Files are given back the way
+/// "Free up space" in Explorer does it: they are marked unpinned and the sync client frees them itself, only once they
+/// are uploaded. Valafind never drops a file's data on its own: dehydrating needs the sync client's cooperation, and
+/// waiting for it from Valafind's side could hang (an exclusive handle blocks the client's own access to the file).
 /// </summary>
 [SupportedOSPlatform("windows")]
 internal sealed partial class WindowsCloudFiles : ICloudFiles
 {
     private const string CldApi = "cldapi.dll";
-    private const uint CfOpenFileFlagExclusive = 0x1;
-    private const uint CfOpenFileFlagWriteAccess = 0x2;
     private const int CfPinStateUnspecified = 0;
     private const int CfPinStatePinned = 1;
     private const int CfPinStateUnpinned = 2;
-    private const int DehydrateAttempts = 4;
-    private static readonly TimeSpan DehydrateRetryDelay = TimeSpan.FromSeconds(1);
 
     /// <summary>Allowed time for a download: a minute plus one second per 256 KB (a slow 2 Mbit/s line).</summary>
     internal static TimeSpan DownloadTimeout(long size) => TimeSpan.FromMinutes(1) + TimeSpan.FromSeconds(size / (256.0 * 1024));
@@ -236,30 +276,14 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
                 return true; // gone, or no longer a placeholder: nothing of ours is left on it
             if (mark.FileId != 0 && state.FileId != mark.FileId)
                 return true; // another file has taken this path since: not ours to touch
-            if (state.PinState != CfPinStatePinned)
-                return true; // the pin was changed since the request (by the user): keep their choice
 
-            // Written to since the request (the user edited it): put the pin back but never back to "free up space",
-            // and leave the file on this device.
+            var onlineOnly = (File.GetAttributes(path) & CloudFiles.RecallOnDataAccess) != 0;
             var modified = WrittenSince(path, requestedUtc);
-            var original = modified && mark.State == CfPinStateUnpinned ? CfPinStateUnspecified : mark.State;
-            if (!SetPinState(path, original))
-                return false; // in use: try again after the next restart
-            if (modified || (File.GetAttributes(path) & CloudFiles.RecallOnDataAccess) != 0)
-                return true; // edited, or never arrived: nothing to free
-            // Uninstalling (final) may wait a few seconds; otherwise one try, and the release thread tries again later.
-            if (FreeUpSpace(path, requestedUtc, final ? DehydrateAttempts : 1) != FreeResult.Busy)
-                return true;
-            if (final)
-            {
-                // In use, and no retry will come: leave the original pin and let the sync client free it once it can
-                // (it frees only uploaded files), as "Free up space" would.
-                AskToFreeWhenSafe(path, requestedUtc);
-                return true;
-            }
-            // In use: pin it again so the retry after the next restart still recognises it as ours to free.
-            SetPinState(path, CfPinStatePinned);
-            return false;
+            var step = CloudPinPolicy.Decide(state.PinState, mark.State, onlineOnly, modified,
+                state.PinState == CfPinStatePinned && !modified && !onlineOnly && IsInPinnedFolder(path));
+            if (step.SetPin is { } pin && !SetPinState(path, pin))
+                return final; // in use: try again later
+            return step.Done || final;
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
         {
@@ -268,7 +292,7 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            return false;
+            return final;
         }
     }
 
@@ -289,84 +313,12 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
         return false;
     }
 
-    internal enum FreeResult
-    {
-        /// <summary>Online-only again.</summary>
-        Freed,
-        /// <summary>Left downloaded on purpose: not provably safe to free (changes not uploaded, edited, pinned).</summary>
-        Kept,
-        /// <summary>Another program has the file open: try again later.</summary>
-        Busy,
-    }
-
-    /// <summary>Makes <paramref name="path"/> online-only again, but only when that cannot lose anything.</summary>
-    /// <param name="notWrittenSince">The file must not have been written to after this time.</param>
-    /// <param name="attempts">Tries while another program has the file open, a second apart. One (the default) never
-    /// sleeps: the caller retries later instead (Valafind's release thread), so no thread is held up.</param>
-    internal static FreeResult FreeUpSpace(string path, DateTimeOffset notWrittenSince, int attempts = 1)
-    {
-        try
-        {
-            if (IsInPinnedFolder(path))
-                return FreeResult.Kept; // the user keeps this folder on the device
-            for (var attempt = 1; attempt <= attempts; attempt++)
-            {
-                var result = TryDehydrate(path, notWrittenSince);
-                if (result != FreeResult.Busy)
-                    return result;
-                if (attempt < attempts)
-                    Thread.Sleep(DehydrateRetryDelay); // antivirus scans freshly downloaded files
-            }
-            return FreeResult.Busy;
-        }
-        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException)
-        {
-            s_unavailable = true;
-            return FreeResult.Kept;
-        }
-    }
-
-    private static FreeResult TryDehydrate(string path, DateTimeOffset notWrittenSince)
-    {
-        // An exclusive handle: no one else can open, read or write the file until it is closed, so what is checked
-        // below still holds when the data is dropped.
-        if (CfOpenFileWithOplock(path, CfOpenFileFlagExclusive | CfOpenFileFlagWriteAccess, out var protectedHandle) < 0)
-            return FreeResult.Busy;
-        try
-        {
-            // The Win32 handle stays valid only while the protected handle is referenced: when another program opens
-            // the file, the oplock breaks and the platform closes it. Without the reference its value could by then
-            // belong to another file.
-            if (CfReferenceProtectedHandle(protectedHandle) == 0)
-                return FreeResult.Busy;
-            try
-            {
-                var handle = CfGetWin32HandleFromProtectedHandle(protectedHandle);
-                if (handle == 0 || !TryGetState(handle, out var state))
-                    return FreeResult.Kept;
-                // Only a file the sync client has fully uploaded (in sync, no modified ranges) loses nothing when its
-                // local data goes; a file someone pinned or wrote to since is kept.
-                if (!state.InSync || state.ModifiedDataSize != 0 || state.PinState == CfPinStatePinned || WrittenSince(path, notWrittenSince))
-                    return FreeResult.Kept;
-                return CfDehydratePlaceholder(handle, 0, -1, 0, 0) >= 0 ? FreeResult.Freed : FreeResult.Kept;
-            }
-            finally
-            {
-                CfReleaseProtectedHandle(protectedHandle);
-            }
-        }
-        finally
-        {
-            CfCloseHandle(protectedHandle);
-        }
-    }
-
-    /// <summary>Marks the file "Free up space" (unpinned), so the sync client frees it once it can (only after it is
-    /// uploaded), unless the user has a say in it already, it has changes, or it was written to since.</summary>
+    /// <summary>Marks the file "Free up space" (unpinned): the sync client frees it itself, and only once it is uploaded.
+    /// Not when the user has a say in it already (pinned, or in a pinned folder) or it was written to since.</summary>
     private static void AskToFreeWhenSafe(string path, DateTimeOffset notWrittenSince)
     {
         if (TryGetState(path, out var state) && state.PinState is CfPinStateUnspecified or CfPinStateInherit &&
-            state.InSync && state.ModifiedDataSize == 0 && !WrittenSince(path, notWrittenSince) && !IsInPinnedFolder(path))
+            !WrittenSince(path, notWrittenSince) && !IsInPinnedFolder(path))
             SetPinState(path, CfPinStateUnpinned);
     }
 
@@ -453,9 +405,7 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
                 return;
-            // Not freed right away because another program has it open: ask the sync client to free it when it can.
-            if (FreeUpSpace(path, startedUtc) == FreeResult.Busy)
-                AskToFreeWhenSafe(path, startedUtc);
+            AskToFreeWhenSafe(path, startedUtc);
         }
     }
 
@@ -474,23 +424,11 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
     [LibraryImport(CldApi)]
     private static partial int CfHydratePlaceholder(SafeFileHandle fileHandle, long startingOffset, long length, uint hydrateFlags, nint overlapped);
 
-    [LibraryImport(CldApi)]
-    private static partial int CfDehydratePlaceholder(nint fileHandle, long startingOffset, long length, uint dehydrateFlags, nint overlapped);
 
-    [LibraryImport(CldApi, StringMarshalling = StringMarshalling.Utf16)]
-    private static partial int CfOpenFileWithOplock(string filePath, uint flags, out nint protectedHandle);
 
-    [LibraryImport(CldApi)]
-    private static partial nint CfGetWin32HandleFromProtectedHandle(nint protectedHandle);
 
-    [LibraryImport(CldApi)]
-    private static partial byte CfReferenceProtectedHandle(nint protectedHandle);
 
-    [LibraryImport(CldApi)]
-    private static partial void CfReleaseProtectedHandle(nint protectedHandle);
 
-    [LibraryImport(CldApi)]
-    private static partial void CfCloseHandle(nint fileHandle);
 
     [LibraryImport(CldApi)]
     private static partial int CfSetPinState(SafeFileHandle fileHandle, int pinState, uint pinFlags, nint overlapped);

@@ -11,8 +11,10 @@ namespace Valafind.Core.Tests.Indexing;
 /// already on this device.</summary>
 public class CloudLaneTests
 {
-    private static CoordinatorTuning Tuning(FakeCloud cloud, CloudPrefetchOptions? prefetch = null, int workers = 2) => CoordinatorTuning.Default with
+    private static CoordinatorTuning Tuning(FakeCloud cloud, CloudPrefetchOptions? prefetch = null, int workers = 2,
+        TimeSpan? releaseTimeout = null) => CoordinatorTuning.Default with
     {
+        CloudReleaseTimeout = releaseTimeout ?? TimeSpan.FromMilliseconds(300),
         Debounce = TimeSpan.FromMilliseconds(100),
         IdlePoll = TimeSpan.FromMilliseconds(200),
         ModelBackoffUnit = TimeSpan.FromMilliseconds(1),
@@ -28,10 +30,11 @@ public class CloudLaneTests
     };
 
     private static IndexingCoordinator Create(IReadOnlyList<string> roots, IReadOnlyList<string> files, FakeStore store, FakeCloud cloud,
-        IDocumentReader reader, CloudPrefetchOptions? prefetch = null, int workers = 2)
+        IDocumentReader reader, CloudPrefetchOptions? prefetch = null, int workers = 2, TimeSpan? releaseTimeout = null)
     {
         var coordinator = new IndexingCoordinator(new FakeDiscovery(roots, [], files), reader, new FakeChunker(), new FakeModel(),
-            store, new FakeMonitor(), new ValafindSettings(), NullLogger<IndexingCoordinator>.Instance, null, Tuning(cloud, prefetch, workers));
+            store, new FakeMonitor(), new ValafindSettings(), NullLogger<IndexingCoordinator>.Instance, null,
+            Tuning(cloud, prefetch, workers, releaseTimeout));
         coordinator.OverrideThrottle(TimeSpan.FromMinutes(5));
         return coordinator;
     }
@@ -78,8 +81,9 @@ public class CloudLaneTests
         await coordinator.StartAsync(TestContext.Current.CancellationToken);
         await WaitFor(() => local.All(store.Files.ContainsKey), "every local file indexed, pictures included");
 
-        // Nothing has arrived from the cloud: requested, not indexed, and the index is not up to date yet.
-        Assert.Equal(online.Count, cloud.RequestedCount);
+        // Nothing has arrived from the cloud: requested (the cloud lane may still be getting there: it runs on its own),
+        // not indexed, and the index is not up to date yet.
+        await WaitFor(() => cloud.RequestedCount == online.Count, "every cloud file requested");
         Assert.DoesNotContain(online, store.Files.ContainsKey);
         Assert.NotEqual(IndexingState.UpToDate, coordinator.Status.State);
         Assert.NotEqual("1", store.GetMeta(IndexingCoordinator.MetaPhase2Complete)); // the walk waits for the lane
@@ -170,7 +174,9 @@ public class CloudLaneTests
         var cloud = new FakeCloud { ArriveImmediately = true, ReleaseDelay = TimeSpan.FromSeconds(2) };
         var (online, local) = Files(tree, cloud, 6, 8);
         var store = new FakeStore();
-        await using var coordinator = Create([tree.Root], [.. online, .. local], store, cloud, new CloudAwareReader(cloud), workers: 1);
+        // Slow, not hung: well within the time a give-back may take.
+        await using var coordinator = Create([tree.Root], [.. online, .. local], store, cloud, new CloudAwareReader(cloud), workers: 1,
+            releaseTimeout: TimeSpan.FromSeconds(30));
 
         var started = Stopwatch.StartNew();
         await coordinator.StartAsync(TestContext.Current.CancellationToken);
@@ -217,5 +223,69 @@ public class CloudLaneTests
         Assert.True(store.Files.ContainsKey(online[0]));
         Assert.True(store.Files.ContainsKey(online[2]));
         Assert.All(local, f => Assert.True(store.Files.ContainsKey(f)));
+    }
+
+    [Fact]
+    public async Task GivingBackThatHangsIsSkippedAndTheQueueMovesOn()
+    {
+        using var tree = new TempTree();
+        var cloud = new FakeCloud { ArriveImmediately = true };
+        var (online, local) = Files(tree, cloud, 6, 2);
+        cloud.ReleaseHangs = path => path == online[0]; // waits on the sync client forever
+        var store = new FakeStore();
+        var options = new CloudPrefetchOptions
+        {
+            MaxFiles = 2, // the hung file holds one of only two slots
+            PollInterval = TimeSpan.FromMilliseconds(20),
+            StallTimeout = TimeSpan.FromMinutes(10),
+            FreeBytes = _ => 1L << 40,
+        };
+        try
+        {
+            await using var coordinator = Create([tree.Root], [.. online, .. local], store, cloud, new CloudAwareReader(cloud), options);
+            await coordinator.StartAsync(TestContext.Current.CancellationToken);
+            await WaitFor(() => store.GetMeta(IndexingCoordinator.MetaPhase2Complete) == "1", "walk complete despite the hung give-back");
+
+            Assert.All(online, f => Assert.True(store.Files.ContainsKey(f)));
+            Assert.Equal(1, Volatile.Read(ref cloud.HungReleases));
+            // The hung file stays on record, so the next start gives it back; the others are done with.
+            Assert.Equal([online[0]], store.LoadDownloads().Select(d => d.Path));
+        }
+        finally
+        {
+            cloud.Unhang();
+        }
+    }
+
+    [Fact]
+    public async Task GivingBackThatKeepsHangingStopsCloudDownloadsButTheWalkFinishes()
+    {
+        using var tree = new TempTree();
+        var cloud = new FakeCloud { ArriveImmediately = true, ReleaseHangs = _ => true };
+        var (online, local) = Files(tree, cloud, 8, 2);
+        var store = new FakeStore();
+        var options = new CloudPrefetchOptions
+        {
+            MaxFiles = 1,
+            PollInterval = TimeSpan.FromMilliseconds(20),
+            StallTimeout = TimeSpan.FromMinutes(10),
+            FreeBytes = _ => 1L << 40,
+        };
+        try
+        {
+            await using var coordinator = Create([tree.Root], [.. online, .. local], store, cloud, new CloudAwareReader(cloud), options);
+            await coordinator.StartAsync(TestContext.Current.CancellationToken);
+            await WaitFor(() => store.GetMeta(IndexingCoordinator.MetaPhase2Complete) == "1", "walk complete");
+
+            // Three hangs, then no more downloads: files it could not give back must not pile up on the disk.
+            Assert.Equal(3, cloud.RequestLog.Count);
+            Assert.Empty(cloud.Downloads);
+            Assert.All(online, f => Assert.True(store.Files.ContainsKey(f)));
+            Assert.Equal(online.Count - 3, online.Count(f => store.Files[f].Entry.ContentPending)); // by name for now
+        }
+        finally
+        {
+            cloud.Unhang();
+        }
     }
 }

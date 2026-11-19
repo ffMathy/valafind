@@ -215,7 +215,7 @@ public sealed class Updater : IDisposable
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException or UnauthorizedAccessException
                                               or InvalidOperationException or OperationCanceledException or Win32Exception
-                                              or System.Text.Json.JsonException or CryptographicException)
+                                              or System.Text.Json.JsonException or CryptographicException or TimeoutException)
         {
             LastError = exception is OperationCanceledException ? Strings.UpdatesTimeout : exception.Message;
             log.Warning("Could not update", exception);
@@ -296,7 +296,11 @@ public sealed class Updater : IDisposable
                 staged = download;
             }
 
-            FileSwap.Replace(staged, target);
+            // Not while a copy started from a download installs to the same place.
+            using (InstallLock.Acquire(target, TimeSpan.FromMinutes(3)))
+            {
+                FileSwap.Replace(staged, target);
+            }
         }
         finally
         {

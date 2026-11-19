@@ -49,9 +49,27 @@ public static class FileSwap
         {
             Move(staged, target);
         }
+        catch (IOException) when (File.Exists(target) || Directory.Exists(target))
+        {
+            // Something put a copy at the target in the meantime (another installer, before the install lock existed):
+            // move that one aside too, then ours in.
+            var other = Unique(target, OldMarker);
+            Move(target, other);
+            try
+            {
+                Move(staged, target);
+            }
+            catch
+            {
+                Move(other, target);
+                throw;
+            }
+
+            TryDelete(other);
+        }
         catch
         {
-            if (old is not null)
+            if (old is not null && !File.Exists(target) && !Directory.Exists(target))
             {
                 Move(old, target);
             }

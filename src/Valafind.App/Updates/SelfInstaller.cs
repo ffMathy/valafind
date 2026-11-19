@@ -49,7 +49,12 @@ public sealed class SelfInstaller
     public const string ReplacesOption = "--replaces";
     public const string FirstInstallFlag = "--first-install";
 
-    private static readonly TimeSpan WaitForReplacedProcess = TimeSpan.FromSeconds(30);
+    /// <summary>How long an update's new copy waits for the old one to exit before ending it. The old copy was asked to
+    /// quit; one that takes longer is stuck, and as long as it runs it holds the single-instance lock, so the new copy
+    /// would hand over to it and exit, leaving nothing running.</summary>
+    private static readonly TimeSpan WaitForReplacedProcess = TimeSpan.FromMinutes(2);
+
+    private static readonly TimeSpan WaitForInstallLock = TimeSpan.FromMinutes(3);
 
     private readonly AppIdentity app;
     private readonly InstallLayout layout;
@@ -165,26 +170,47 @@ public sealed class SelfInstaller
         var launch = arguments.Length == 0 ? [.. app.LaunchArguments] : arguments;
         try
         {
-            var installed = ReadInstalledVersion();
-            var exists = File.Exists(layout.Executable);
-            if (exists && installed is not null && installed > version)
-            {
-                log.Information($"Version {installed} is already installed; starting it instead of {version}");
-                using var _ = Launch(layout.Executable, launch);
-                return new StartupResult(true, launch, false, false);
-            }
-
-            log.Information($"Installing {app.Name} {version} to {layout.Target}");
-            host.StopRunningInstance();
-            Install();
-            using var started = Launch(layout.Executable, exists ? launch : [.. launch, FirstInstallFlag]);
+            var (outcome, wasInstalled) = InstallUnlessCurrent();
+            var first = outcome == InstallOutcome.Installed && !wasInstalled;
+            using var started = Launch(layout.Executable, first ? [.. launch, FirstInstallFlag] : launch);
             return new StartupResult(true, launch, false, false);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception or NotSupportedException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception
+                                              or NotSupportedException or TimeoutException)
         {
             log.Warning($"Could not install {app.Name} to {layout.Target}; running from {running.ExecutablePath} instead", exception);
             return new StartupResult(false, launch, false, false);
         }
+    }
+
+    internal enum InstallOutcome
+    {
+        /// <summary>This copy was installed.</summary>
+        Installed,
+        /// <summary>The installed copy is as new or newer (another copy may have just installed it): start that one.</summary>
+        AlreadyCurrent,
+    }
+
+    /// <summary>
+    /// Installs this copy unless the installed one is newer, or another copy started at the same time has just installed
+    /// this version. One copy at a time (<see cref="InstallLock"/>): the download may have been opened twice.
+    /// </summary>
+    /// <returns>What happened, and whether an installation existed before.</returns>
+    internal (InstallOutcome Outcome, bool WasInstalled) InstallUnlessCurrent()
+    {
+        using var installLock = InstallLock.Acquire(layout.Target, WaitForInstallLock);
+        var installed = ReadInstalledVersion();
+        var exists = File.Exists(layout.Executable) || Directory.Exists(layout.Target);
+        if (exists && installed is not null && (installed > version || (installLock.Waited && installed >= version)))
+        {
+            log.Information($"Version {installed} is already installed; starting it instead of {version}");
+            return (InstallOutcome.AlreadyCurrent, true);
+        }
+
+        log.Information($"Installing {app.Name} {version} to {layout.Target}");
+        host.StopRunningInstance();
+        Install();
+        return (InstallOutcome.Installed, exists);
     }
 
     /// <summary>Copies the running application to the install location and registers it.</summary>
@@ -375,7 +401,20 @@ public sealed class SelfInstaller
         try
         {
             using var process = Process.GetProcessById(pid);
-            if (!process.WaitForExit(WaitForReplacedProcess))
+            // A process id can be reused: only one that started before this copy can be the old one.
+            if (process.StartTime > Process.GetCurrentProcess().StartTime)
+            {
+                return;
+            }
+
+            if (process.WaitForExit(WaitForReplacedProcess))
+            {
+                return;
+            }
+
+            log.Warning($"The previous copy (process {pid}) did not exit within {WaitForReplacedProcess.TotalMinutes:0} minutes; ending it");
+            process.Kill(entireProcessTree: false);
+            if (!process.WaitForExit(TimeSpan.FromSeconds(30)))
             {
                 log.Warning($"The previous copy (process {pid}) is still running");
             }

@@ -238,6 +238,31 @@ internal sealed class CloudPrefetcher : IDisposable
     /// forgets it. A file another program has open stays recorded and is given back after the next restart.</summary>
     public void Release(string path) => TryRelease(path, lastAttempt: true);
 
+    /// <summary>Stops counting a requested file without touching it (giving it back hung): it stays recorded, and the
+    /// next start gives it back.</summary>
+    public void Forget(string path)
+    {
+        lock (_lock)
+        {
+            if (!_active.Remove(path, out var entry))
+                return;
+            _waiting.Remove(entry);
+            var drive = DriveOf(path);
+            var bytes = _bytesByDrive.GetValueOrDefault(drive) - entry.Download.Size;
+            if (bytes > 0)
+                _bytesByDrive[drive] = bytes;
+            else
+                _bytesByDrive.Remove(drive);
+        }
+        try
+        {
+            _changed.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
     /// <summary>One attempt at giving a requested file back.</summary>
     /// <param name="lastAttempt">When the file is in use: false keeps it requested (and counted against the limits) for
     /// another attempt later; true forgets it here, and it stays recorded for the next restart.</param>
@@ -272,6 +297,9 @@ internal sealed class CloudPrefetcher : IDisposable
         // Counted against the limits until it is actually given back: until then it is still on the disk.
         lock (_lock)
         {
+            // Not when it was forgotten meanwhile (this call hung and the release thread went on without it).
+            if (!_active.TryGetValue(path, out var current) || !ReferenceEquals(current, entry))
+                return true;
             _active.Remove(path);
             var drive = DriveOf(path);
             var bytes = _bytesByDrive.GetValueOrDefault(drive) - entry.Download.Size;

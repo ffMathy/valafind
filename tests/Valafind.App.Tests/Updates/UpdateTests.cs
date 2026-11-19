@@ -177,6 +177,65 @@ public sealed class SelfInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task TwoCopiesStartedAtOnceInstallOnceAndBothStartTheInstalledCopy()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return; // Installs a bundle with ditto; covered by the Linux and Windows layouts.
+        }
+
+        // The download opened twice: two copies of the same version install to the same place at the same moment.
+        var layout = InstallLayout.Create(TestApp.Identity, InstallLayout.CurrentPlatform, Path.Combine(root, "home"), Path.Combine(root, "local"), Path.Combine(root, "state"));
+        var downloaded = Path.Combine(root, "Downloads", "demo");
+        Directory.CreateDirectory(Path.GetDirectoryName(downloaded)!);
+        File.WriteAllBytes(downloaded, new byte[4 << 20]); // big enough that the two copies overlap
+        SelfInstaller Copy() => new(
+            TestApp.Identity, layout, new RunningApp(downloaded, null, true), new RecordingHost(), new NullLog(), ReleaseVersion.TryParse("2.0.0"));
+
+        using var start = new Barrier(2);
+        var results = await Task.WhenAll(
+            Task.Factory.StartNew(() => { start.SignalAndWait(); return Copy().InstallUnlessCurrent(); }, TaskCreationOptions.LongRunning),
+            Task.Factory.StartNew(() => { start.SignalAndWait(); return Copy().InstallUnlessCurrent(); }, TaskCreationOptions.LongRunning));
+
+        Assert.Single(results, r => r.Outcome == SelfInstaller.InstallOutcome.Installed);
+        Assert.Single(results, r => r.Outcome == SelfInstaller.InstallOutcome.AlreadyCurrent);
+        Assert.Equal(4 << 20, new FileInfo(layout.Executable).Length);
+        Assert.Equal(ReleaseVersion.TryParse("2.0.0"), SelfInstaller.ReadInstalledVersion(layout));
+        Assert.Single(Directory.GetFileSystemEntries(Path.GetDirectoryName(layout.Executable)!)); // nothing left behind
+    }
+
+    [Fact]
+    public void InstallLock_LetsOneCopyAtATimeAndTellsTheNextItWaited()
+    {
+        var target = Path.Combine(root, "local", "demo");
+        using var held = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        // A mutex belongs to the thread that took it: hold it on a thread of its own.
+        var holder = Task.Factory.StartNew(() =>
+        {
+            using (InstallLock.Acquire(target, TimeSpan.FromSeconds(5)))
+            {
+                held.Set();
+                release.Wait(TimeSpan.FromSeconds(30));
+            }
+        }, TaskCreationOptions.LongRunning);
+        held.Wait(TimeSpan.FromSeconds(10));
+
+        Assert.Throws<TimeoutException>(() => InstallLock.Acquire(target, TimeSpan.FromMilliseconds(100)));
+        using (InstallLock.Acquire(Path.Combine(root, "elsewhere", "demo"), TimeSpan.Zero))
+        {
+            // Another install location has a lock of its own.
+        }
+
+        release.Set();
+        using (var mine = InstallLock.Acquire(target, TimeSpan.FromSeconds(10)))
+        {
+            Assert.True(mine.Waited || holder.IsCompleted);
+        }
+        holder.Wait(TimeSpan.FromSeconds(10));
+    }
+
+    [Fact]
     public void Uninstall_RemovesTheInstallationAndItsState()
     {
         if (OperatingSystem.IsMacOS())

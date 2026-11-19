@@ -1183,7 +1183,8 @@ public sealed partial class IndexingCoordinator : IIndexingService
     /// <summary>What <see cref="Prepare"/> found out about a file that needs (re-)indexing.</summary>
     private sealed record PreparedFile(string Path, long Size, DateTimeOffset Modified, FileFingerprint? Fingerprint, bool OnlineOnly = false);
 
-    private bool CanDownload(string path, long size) => _cloud.CanDownload(path, size, IndexOrder.Rank(path) > IndexOrder.Documents);
+    private bool CanDownload(string path, long size) =>
+        !_cloudDownloadsOff && _cloud.CanDownload(path, size, IndexOrder.Rank(path) > IndexOrder.Documents);
 
     /// <summary>Indexes one file on this thread if it changed since it was last indexed. Never throws except for
     /// cancellation.</summary>
@@ -2047,7 +2048,8 @@ public sealed partial class IndexingCoordinator : IIndexingService
         }
 
         // The lane observes the same cancellation; a download it is in the middle of is cancelled, or ends on its own.
-        StopCloudLane(TimeSpan.FromSeconds(30));
+        // Short: a slow shutdown keeps the next copy (an update's restart) waiting.
+        StopCloudLane(TimeSpan.FromSeconds(5));
         _workers.Dispose();
         // Requested downloads stay requested (and recorded) while Valafind is stopped; the next start gives them back.
         _prefetch?.Dispose();
@@ -2103,6 +2105,9 @@ internal sealed record CoordinatorTuning(
 
     /// <summary>Limits for downloading online-only files ahead (null: <see cref="CloudPrefetchOptions.Default"/>).</summary>
     public CloudPrefetchOptions? Prefetch { get; init; }
+
+    /// <summary>Longest a single call to give a cloud file back may take before the release thread goes on without it.</summary>
+    public TimeSpan CloudReleaseTimeout { get; init; } = TimeSpan.FromMinutes(1);
 
     /// <summary>How long after start the check for changes made while Valafind was not running begins (it stays out of
     /// the way of everything else starting at login).</summary>
@@ -2242,4 +2247,10 @@ internal static partial class IndexingLog
 
     [LoggerMessage(38, LogLevel.Information, "Cloud files: {Queued} queued, {Requested} requested ({Arriving} still downloading), {Indexing} being indexed, {Releasing} waiting to be given back")]
     public static partial void CloudLaneStatus(ILogger logger, int queued, int requested, int arriving, int indexing, int releasing);
+
+    [LoggerMessage(39, LogLevel.Warning, "Giving back the cloud file {Path} did not finish within {Timeout}; going on without it (it is given back at the next start)")]
+    public static partial void CloudReleaseHung(ILogger logger, string path, TimeSpan timeout);
+
+    [LoggerMessage(40, LogLevel.Warning, "Giving cloud files back hung {Count} times; no more cloud downloads until Valafind restarts (their names are still indexed)")]
+    public static partial void CloudDownloadsStopped(ILogger logger, int count);
 }
