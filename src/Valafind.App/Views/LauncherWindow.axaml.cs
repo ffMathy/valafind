@@ -15,7 +15,8 @@ namespace Valafind.App.Views;
 
 /// <summary>
 /// The launcher window: borderless, topmost, translucent where the OS allows it, centred horizontally on the screen
-/// under the pointer at ~22% from the top. Hides on deactivation and Escape; keyboard drives the result list.
+/// under the pointer at ~22% from the top. Hides on Escape, and on deactivation when it was summoned by the hotkey;
+/// keyboard drives the result list.
 /// </summary>
 public partial class LauncherWindow : Window
 {
@@ -25,6 +26,7 @@ public partial class LauncherWindow : Window
     private readonly LauncherViewBase _view;
     private readonly WindowsBackdropController? _backdrop;
     private DateTime _ignoreDeactivateUntil;
+    private bool _hideOnDeactivate;
     private bool _allowClose;
 
     /// <summary>Designer constructor.</summary>
@@ -78,9 +80,15 @@ public partial class LauncherWindow : Window
         _ => new LinuxLauncherView(),
     };
 
+    /// <summary>Whether the launcher hides when it loses focus (true only while summoned by the hotkey).</summary>
+    public bool HidesOnDeactivate => _hideOnDeactivate;
+
     /// <summary>Shows, positions and focuses the launcher.</summary>
-    public void ShowLauncher()
+    /// <param name="hideOnDeactivate">Hide again when focus moves elsewhere: true for a hotkey summon (a quick
+    /// popup); false when opened explicitly (app start, tray), where it stays open until dismissed.</param>
+    public void ShowLauncher(bool hideOnDeactivate = false)
     {
+        _hideOnDeactivate = hideOnDeactivate;
         _ignoreDeactivateUntil = DateTime.UtcNow + DeactivateGrace;
         if (!IsVisible)
         {
@@ -172,7 +180,7 @@ public partial class LauncherWindow : Window
 
     private void OnDeactivated(object? sender, EventArgs e)
     {
-        if (DateTime.UtcNow < _ignoreDeactivateUntil)
+        if (!_hideOnDeactivate || DateTime.UtcNow < _ignoreDeactivateUntil)
             return;
         HideLauncher();
     }

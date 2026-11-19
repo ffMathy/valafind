@@ -122,7 +122,7 @@ public sealed class AppHost : IAsyncDisposable
             platformSettings.ColorValuesChanged += (_, _) => Dispatcher.UIThread.Post(() => WindowsAppTheme.Apply(Application.Current));
 
         _launcher = new LauncherWindow(_launcherVm, _launcherVm.Flavor);
-        _tray = new TrayIconController(app, ShowLauncher, TogglePause, ShowSettings, CheckForUpdates, Quit);
+        _tray = new TrayIconController(app, () => ShowLauncher(), TogglePause, ShowSettings, CheckForUpdates, Quit);
         _launcherVm.Status.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(IndexStatusViewModel.StateText) or nameof(IndexStatusViewModel.PauseMenuText))
@@ -141,8 +141,11 @@ public sealed class AppHost : IAsyncDisposable
         StartUpdater();
 
         var background = _startupCommand == Program.BackgroundCommand;
-        if (_startupCommand is "show" or "toggle" || (_firstRun && !background))
-            Dispatcher.UIThread.Post(ShowLauncher, DispatcherPriority.Background);
+        // "--toggle" comes from a hotkey bound in the desktop (Wayland): a quick popup. Any other visible start is explicit.
+        if (_startupCommand == "toggle")
+            Dispatcher.UIThread.Post(() => ShowLauncher(hideOnDeactivate: true), DispatcherPriority.Background);
+        else if (_startupCommand == "show" || (_firstRun && !background))
+            Dispatcher.UIThread.Post(() => ShowLauncher(), DispatcherPriority.Background);
         if (_firstRun)
         {
             // Persist the defaults so the welcome (first-run launcher) appears once, not on every start.
@@ -152,7 +155,7 @@ public sealed class AppHost : IAsyncDisposable
 
     // ------------------------------------------------------------------ launcher / windows
 
-    /// <summary>Shows the launcher, or hides it if it is visible.</summary>
+    /// <summary>Hotkey: shows the launcher as a popup that hides when clicking outside, or hides it if visible.</summary>
     public void ToggleLauncher()
     {
         if (_launcher is null || _quitting)
@@ -160,17 +163,19 @@ public sealed class AppHost : IAsyncDisposable
         if (_launcher.IsVisible)
             _launcher.HideLauncher();
         else
-            ShowLauncher();
+            ShowLauncher(hideOnDeactivate: true);
     }
 
-    /// <summary>Shows and focuses the launcher on the screen under the pointer.</summary>
-    public void ShowLauncher()
+    /// <summary>Shows and focuses the launcher on the screen under the pointer. Opened explicitly (start, tray,
+    /// second launch) it stays open when focus moves elsewhere; a hotkey summon passes
+    /// <paramref name="hideOnDeactivate"/>.</summary>
+    public void ShowLauncher(bool hideOnDeactivate = false)
     {
         if (_launcher is null || _quitting)
             return;
         TryPlatform(MacActivation.ActivateIgnoringOtherApps, "activate the app");
         WindowsAppTheme.Apply(Application.Current); // Cheap; catches an app-mode switch made while we were hidden.
-        _launcher.ShowLauncher();
+        _launcher.ShowLauncher(hideOnDeactivate);
         // Re-opening Valafind is the natural thing to try after installing the model: look right away.
         if (_launcherVm.ModelState is ModelState.Missing or ModelState.Failed)
             _ = Task.Run(_modelWatcher.Poll);
