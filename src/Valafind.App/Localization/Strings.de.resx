@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Im Ordner anzeigen</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Indizierung im Leerlauf</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Indizierung im Hintergrund</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Indizierung im Leerlauf {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Indizierung im Hintergrund {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Modell nicht verfügbar – Suche deaktiviert</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>WARUM ES PASST · ÄHNLICHSTE STELLE</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Wird schneller oder langsamer, um die CPU-Last bei etwa {0} und die Datenträgerlast bei etwa {1} zu halten</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Wird fortgesetzt, sobald der Computer am Netz ist</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Ziel {0}</value>

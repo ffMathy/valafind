@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>फ़ोल्डर में दिखाएँ</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>निष्क्रिय समय में अनुक्रमण</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>पृष्ठभूमि में अनुक्रमण</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>निष्क्रिय समय में अनुक्रमण {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>पृष्ठभूमि में अनुक्रमण {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>मॉडल उपलब्ध नहीं — खोज बंद है</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>मेल क्यों खाया · सबसे निकट अंश</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU को {0} और डिस्क को {1} के आसपास रखने के लिए गति बढ़ाता या घटाता है</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>कंप्यूटर को चार्जर से जोड़ने पर फिर से शुरू होता है</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>लक्ष्य {0}</value>

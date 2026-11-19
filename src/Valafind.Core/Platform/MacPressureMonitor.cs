@@ -33,6 +33,7 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
     private readonly nint _keyPerformance;
     private readonly nint _keyGpuUtilisation;
     private bool _gpuFailed;
+    private readonly GpuSampler _gpuSampler;
     private CpuTimes? _previousCpu;
     private Dictionary<ulong, DiskStat>? _previousDisks;
     private long _previousTimestamp;
@@ -58,6 +59,7 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
             _diskFailed = true;
         }
         _gpuFailed = _keyPerformance == 0 || _keyGpuUtilisation == 0;
+        _gpuSampler = new GpuSampler(ReadGpu);
         if (_keyStatistics == 0 || _keyBytesRead == 0 || _keyBytesWritten == 0 || _keyTimeRead == 0 || _keyTimeWritten == 0)
             _diskFailed = true;
     }
@@ -102,7 +104,7 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
                 _previousCpu = cpu;
             _previousDisks = disks;
             _previousTimestamp = now;
-            return new PressureSample(DateTimeOffset.UtcNow, cpuPercent, busy, bytes, ReadOnBattery(), ReadGpu());
+            return new PressureSample(DateTimeOffset.UtcNow, cpuPercent, busy, bytes, ReadOnBattery(), _gpuSampler.Read());
         }
     }
 
@@ -281,6 +283,7 @@ internal sealed partial class MacPressureMonitor : ISystemPressureMonitor
             if (_disposed)
                 return;
             _disposed = true;
+            _gpuSampler.Dispose(); // before the keys it reads are released
             foreach (var key in new[] { _keyStatistics, _keyBytesRead, _keyBytesWritten, _keyTimeRead, _keyTimeWritten, _keyPerformance, _keyGpuUtilisation })
             {
                 if (key != 0)

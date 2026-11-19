@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Nuna a fayil ɗin ajiya</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Ana fihirisa lokacin hutu</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Ana fihirisa a bango</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Ana fihirisa lokacin hutu {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Ana fihirisa a bango {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Babu samfuri — bincike a kashe yake</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>DALILIN DACEWA · SASHI MAFI KUSA</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Yana ƙara ko rage gudu don riƙe CPU kusa da {0} da faifai kusa da {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Yana ci gaba idan an haɗa kwamfutar da wuta</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Manufa {0}</value>

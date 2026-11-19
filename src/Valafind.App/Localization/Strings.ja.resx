@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>フォルダに表示</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>アイドル中にインデックス作成中</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>バックグラウンドでインデックス作成中</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>アイドル中にインデックス作成中 {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>バックグラウンドでインデックス作成中 {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>モデルを利用できません（検索はオフ）</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>一致した理由 · 最も近い箇所</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU を {0}、ディスクを {1} 前後に保つよう速度を自動調整します</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>電源に接続すると再開します</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>目標 {0}</value>

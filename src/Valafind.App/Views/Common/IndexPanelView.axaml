@@ -49,11 +49,7 @@
   <!-- Only while indexing is in progress (or paused / waiting for the model); an up-to-date index is shown as a small
        check in the launcher's footer instead. -->
   <StackPanel Spacing="8">
-    <DockPanel Margin="4,0">
-      <TextBlock DockPanel.Dock="Right" Text="{Binding Status.PolicyText}" FontSize="12"
-                 Foreground="{DynamicResource VfSubtleBrush}" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis" />
-      <TextBlock Classes="indexTitle" Text="{x:Static l:Strings.IndexTitle}" />
-    </DockPanel>
+    <TextBlock Classes="indexTitle" Margin="4,0" Text="{x:Static l:Strings.IndexTitle}" />
 
     <Border x:Name="Panel" Background="{DynamicResource VfIndexPanelBrush}" BorderBrush="{DynamicResource VfIndexPanelBorderBrush}"
             BorderThickness="1" CornerRadius="{DynamicResource VfIndexPanelRadius}" ClipToBounds="True">

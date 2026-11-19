@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Hiển thị trong thư mục</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Đang lập chỉ mục khi rảnh</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Đang lập chỉ mục trong nền</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Đang lập chỉ mục khi rảnh {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Đang lập chỉ mục trong nền {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Mô hình không khả dụng — tìm kiếm đã tắt</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>LÝ DO KHỚP · ĐOẠN GẦN NHẤT</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Tự tăng hoặc giảm tốc để giữ CPU quanh {0} và ổ đĩa quanh {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Tiếp tục khi máy tính được cắm sạc</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Mục tiêu {0}</value>

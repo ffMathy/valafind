@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>在文件夹中显示</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>空闲时索引中</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>正在后台索引</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>空闲时索引中 {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>正在后台索引 {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>模型不可用——搜索已关闭</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>匹配原因 · 最接近的段落</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>自动加快或放慢，使 CPU 保持在 {0} 左右、磁盘保持在 {1} 左右</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>接通电源后继续</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>目标 {0}</value>

@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Afficher dans le dossier</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Indexation pendant l’inactivité</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Indexation en arrière-plan</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Indexation pendant l’inactivité {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Indexation en arrière-plan {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Modèle indisponible — recherche désactivée</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>POURQUOI CE RÉSULTAT · PASSAGE LE PLUS PROCHE</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Accélère ou ralentit pour garder le processeur vers {0} et le disque vers {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Reprend quand l’ordinateur est branché sur secteur</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Cible {0}</value>

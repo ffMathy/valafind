@@ -546,11 +546,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Klasörde göster</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Boştayken dizinleniyor</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Arka planda dizinleniyor</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Boştayken dizinleniyor {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Arka planda dizinleniyor {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Model kullanılamıyor — arama kapalı</value>
@@ -650,12 +650,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>NEDEN EŞLEŞTİ · EN YAKIN BÖLÜM</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU'yu {0}, diski {1} civarında tutmak için hızlanır veya yavaşlar</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Bilgisayar prize takıldığında devam eder</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Hedef {0}</value>

@@ -40,7 +40,18 @@ public sealed class IndexingPace
     /// estimates and how fast they follow new observations. Disk and GPU are bounded below at 5 % so their loops' gains
     /// stay sane while indexing barely touches them; the CPU limit is in charge then anyway.</summary>
     private const double MinCoresPerEffort = 0.25, MaxCoresPerEffort = 4, MinDiskPerEffort = 5, MaxDiskPerEffort = 100,
-        DefaultDiskPerEffort = 10, MinGpuPerEffort = 5, MaxGpuPerEffort = 100, DefaultGpuPerEffort = 20, LearnSmoothing = 0.3;
+        DefaultDiskPerEffort = 10, MinGpuPerEffort = 5, MaxGpuPerEffort = 100, DefaultGpuPerEffort = 60, LearnSmoothing = 0.3;
+
+    /// <summary>Gains of the GPU loop. GPU readings swing much more than CPU readings: a model batch keeps the GPU fully
+    /// busy for a moment and a 2-second sample catches either a batch or a rest. The GPU loop is fed a smoothed
+    /// reading (<see cref="GpuSmoothing"/>), so it reacts more gently and has no derivative term, which would only
+    /// amplify that noise.</summary>
+    internal static PidGains DefaultGpuGains(int maxConcurrency) =>
+        new(Kp: 0.12, Ki: 0.06, Kd: 0, OutputMin: MinEffort, OutputMax: Math.Max(1, maxConcurrency), DerivativeSmoothing: 1);
+
+    /// <summary>Weight of a new GPU reading in the smoothed GPU utilisation (exponential moving average; with 2-second
+    /// samples the average spans roughly the last 10 seconds).</summary>
+    public const double GpuSmoothing = 0.2;
 
     private readonly Lock _lock = new();
     private readonly PidController _pid;
@@ -69,7 +80,7 @@ public sealed class IndexingPace
         _processorCount = Math.Max(1, processorCount);
         _pid = new PidController(gains ?? DefaultGains(MaxConcurrency), initialEffort);
         _diskPid = new PidController(gains ?? DefaultGains(MaxConcurrency), initialEffort);
-        _gpuPid = new PidController(gains ?? DefaultGains(MaxConcurrency), initialEffort);
+        _gpuPid = new PidController(gains ?? DefaultGpuGains(MaxConcurrency), initialEffort);
         _effort = _pid.Output;
     }
 
