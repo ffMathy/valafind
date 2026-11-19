@@ -28,6 +28,8 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
                 Assert.False(vm.IsLauncherVisible);
                 window.ShowLauncher();
                 Assert.True(window.IsVisible);
+                // Opened explicitly (start, tray): stays open when focus moves elsewhere.
+                Assert.False(window.HidesOnDeactivate);
                 // The host makes indexing yield while this is true (IIndexingService.SetInteractive).
                 Assert.True(vm.IsLauncherVisible);
                 Assert.True(window.View.FindControl<TextBox>("SearchBox")!.IsFocused);
@@ -50,8 +52,10 @@ public sealed class LauncherWindowTests(HeadlessFixture fixture)
                 Assert.False(vm.IsLauncherVisible);
                 Assert.True(actions.Hidden > 0);
 
-                // Re-showing keeps the window alive; closing via the OS only hides it.
-                window.ShowLauncher();
+                // A hotkey summon is a popup that hides when clicking outside; re-showing keeps the window alive.
+                window.ShowLauncher(hideOnDeactivate: true);
+                Assert.True(window.HidesOnDeactivate);
+                // Closing via the OS only hides it.
                 window.Close();
                 Assert.False(window.IsVisible);
             }
