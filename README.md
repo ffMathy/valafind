@@ -1,9 +1,11 @@
 # Valafind
 
-<p align="center"><img src="docs/screenshots/cover@2x.png" alt="Valafind: find files by what they mean, not what they're called. Semantic file search that runs entirely on your computer, shown next to its launcher answering a question"></p>
+<p align="center"><img src="docs/screenshots/cover@2x.png" alt="Valafind: find files by what they mean, not what they're called. Semantic search for documents, photos, audio and video that runs entirely on your computer, shown next to its launcher answering a question"></p>
 
 **Find files by what they mean.** Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>, ask in your own words, and get the
-file, even when it is written in another language and named `scan_0042.pdf`. Everything runs on your computer.
+file, even when it is written in another language and named `scan_0042.pdf`. It works for **documents, photos, audio and
+video**: *"where did we negotiate the deposit?"* finds the e-mail and the lease, *"a red car in the snow"* finds the
+picture and *"the meeting about the budget"* finds the recording. Everything runs on your computer.
 
 <table>
   <tr>
