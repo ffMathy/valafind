@@ -36,6 +36,9 @@ public interface ISettingsHost
     /// <summary>Applies saved settings live (hotkey re-registration, core restart, …). Completes with a hotkey error
     /// message, or null when the hotkey registered. Registration can take seconds (Wayland portal), so it is async.</summary>
     Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after);
+
+    /// <summary>Quits and starts the downloaded update right away (and shows its launcher).</summary>
+    void RestartToUpdate();
 }
 
 /// <summary>The settings that need action when they change.</summary>
@@ -217,12 +220,30 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     private void OnUpdaterStateChanged(object? sender, EventArgs e) =>
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(UpdateStatus)));
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(UpdateStatus));
+            OnPropertyChanged(nameof(UpdateButtonText));
+        });
 
-    /// <summary>Checks GitHub now; copies that cannot update themselves open the releases page instead.</summary>
+    /// <summary>True once a newer version is in place and only a restart is needed to run it.</summary>
+    public bool IsUpdateReady => _updater is { State: UpdateState.ReadyToRestart };
+
+    /// <summary>"Check for updates", or "Restart to update" once an update has been downloaded.</summary>
+    public string UpdateButtonText => IsUpdateReady ? Strings.SettingsRestartToUpdate : Strings.SettingsCheckForUpdates;
+
+    /// <summary>
+    /// Restarts into a downloaded update; otherwise checks GitHub now. Copies that cannot update themselves open the
+    /// releases page instead.
+    /// </summary>
     [RelayCommand]
     private void CheckForUpdates()
     {
+        if (IsUpdateReady)
+        {
+            _host.RestartToUpdate();
+            return;
+        }
         if (_updater is { IsSupported: true })
         {
             _ = _updater.CheckNowAsync();
@@ -387,6 +408,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Inert host for design-time data.</summary>
     internal sealed class DesignHost : ISettingsHost
     {
+        public void RestartToUpdate() { }
+
         public static DesignHost Instance { get; } = new();
         public string? DetectModel(string? configuredDirectory) => null;
         public string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, "embeddinggemma-2");

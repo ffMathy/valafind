@@ -94,7 +94,9 @@ internal static partial class Installation
 
     private sealed class Host : IInstallHost
     {
-        private static readonly TimeSpan QuitTimeout = TimeSpan.FromSeconds(15);
+        // Quitting saves the index and unloads the model, which can take a while on a large index; giving up too early
+        // left the old version installed and this download running on its own.
+        private static readonly TimeSpan QuitTimeout = TimeSpan.FromSeconds(60);
 
         /// <summary>Asks a running Valafind to quit (it saves its index on the way out) and waits until it has.</summary>
         public void StopRunningInstance()
