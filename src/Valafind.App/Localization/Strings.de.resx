@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Ziel {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Keine Ordner</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Die zu durchsuchenden Ordner in den Einstellungen auswählen</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Noch keine Ordner – Ordner hinzufügen, die Valafind durchsuchen soll</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS erlaubt App-Store-Apps nur das Lesen ausgewählter Ordner, daher durchsucht Valafind nur die hier aufgeführten. Den persönlichen Ordner hinzufügen, um ihn vollständig zu durchsuchen.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows startet Valafind bei der Anmeldung. Ändern lässt sich das unter Einstellungen › Apps › Autostart.</value>
+  </data>
 </root>

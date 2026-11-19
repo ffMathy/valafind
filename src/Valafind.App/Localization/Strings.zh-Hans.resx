@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>目标 {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>没有文件夹</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>在设置中选择要搜索的文件夹</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>还没有文件夹——添加 Valafind 要搜索的文件夹</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS 只允许 App Store 应用读取你选择的文件夹，因此 Valafind 只搜索此处列出的文件夹。添加你的个人文件夹即可搜索其全部内容。</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows 会在你登录时启动 Valafind。可在“设置 › 应用 › 启动”中更改。</value>
+  </data>
 </root>

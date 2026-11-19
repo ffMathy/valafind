@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Meta {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Nenhuma pasta</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Escolha as pastas para pesquisar em Configurações</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Ainda não há pastas — adicione as pastas em que o Valafind deve pesquisar</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>O macOS só permite que apps da App Store leiam as pastas que você escolher, então o Valafind pesquisa apenas nas pastas listadas aqui. Adicione sua pasta pessoal para pesquisar nela toda.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>O Windows inicia o Valafind quando você faz login. Altere isso em Configurações › Aplicativos › Inicialização.</value>
+  </data>
 </root>

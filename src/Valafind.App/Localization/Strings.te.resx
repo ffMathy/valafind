@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>లక్ష్యం {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>ఫోల్డర్‌లు లేవు</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>వెతకాల్సిన ఫోల్డర్‌లను సెట్టింగ్‌లలో ఎంచుకోండి</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>ఇంకా ఫోల్డర్‌లు లేవు — Valafind వెతకాల్సిన ఫోల్డర్‌లను జోడించండి</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS, App Store యాప్‌లు మీరు ఎంచుకున్న ఫోల్డర్‌లను మాత్రమే చదవడానికి అనుమతిస్తుంది, కాబట్టి Valafind ఇక్కడ జాబితా చేసిన ఫోల్డర్‌లలో మాత్రమే వెతుకుతుంది. అంతా వెతకడానికి మీ హోమ్ ఫోల్డర్‌ను జోడించండి.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>మీరు లాగిన్ అయినప్పుడు Windows Valafind‌ను ప్రారంభిస్తుంది. దీన్ని సెట్టింగ్‌లు › యాప్‌లు › స్టార్టప్‌లో మార్చండి.</value>
+  </data>
 </root>

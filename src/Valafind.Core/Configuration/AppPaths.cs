@@ -23,6 +23,30 @@ public static class AppPaths
 
     public static string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
+    /// <summary>
+    /// True when this process runs in the macOS App Sandbox, as Mac App Store copies do. It can then read only its own
+    /// container and the folders the user picked (kept across restarts by <see cref="ValafindSettings.RootBookmarks"/>),
+    /// so nothing is indexed until the user adds folders.
+    /// </summary>
+    public static bool InAppSandbox =>
+        OperatingSystem.IsMacOS() && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APP_SANDBOX_CONTAINER_ID"));
+
+    /// <summary>
+    /// The user's real home folder. In the App Sandbox, <see cref="Home"/> is the app's container
+    /// (<c>/Users/me/Library/Containers/app.valafind.Valafind/Data</c>), which keeps the app's own data; the folders the
+    /// user indexes, and the built-in excludes for them, are relative to the real home.
+    /// </summary>
+    public static string UserHome => RealHome(Home, InAppSandbox);
+
+    internal static string RealHome(string home, bool inAppSandbox)
+    {
+        const string container = "/Library/Containers/";
+        if (!inAppSandbox)
+            return home;
+        var index = home.IndexOf(container, StringComparison.Ordinal);
+        return index > 0 ? home[..index] : home;
+    }
+
     public static string SettingsFile => Path.Combine(DataDirectory, "settings.json");
 
     public static string IndexDatabase => Path.Combine(DataDirectory, "index.db");

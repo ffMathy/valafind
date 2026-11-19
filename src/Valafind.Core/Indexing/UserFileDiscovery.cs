@@ -28,21 +28,25 @@ public sealed class UserFileDiscovery : IFileDiscovery, IFileStatDiscovery
     private readonly EnumerationOptions _enumerationOptions;
     private readonly Func<string, string?> _environment;
 
-    /// <summary>Creates discovery for <see cref="ValafindSettings.Roots"/> (or the home directory when empty),
-    /// honouring <see cref="ValafindSettings.Excludes"/>.</summary>
+    /// <summary>Creates discovery for <see cref="ValafindSettings.Roots"/> (or the home directory when empty, except in
+    /// the macOS App Sandbox, which allows only the folders the user picked), honouring
+    /// <see cref="ValafindSettings.Excludes"/>.</summary>
     public UserFileDiscovery(ValafindSettings settings)
-        : this(settings, AppPaths.Home, AppPaths.DataDirectory, TimeProvider.System, Environment.GetEnvironmentVariable)
+        : this(settings, AppPaths.UserHome, AppPaths.DataDirectory, TimeProvider.System, Environment.GetEnvironmentVariable,
+            indexHomeByDefault: !AppPaths.InAppSandbox)
     {
     }
 
+    /// <param name="indexHomeByDefault">Index <paramref name="home"/> when no roots are configured; false indexes
+    /// nothing then.</param>
     internal UserFileDiscovery(ValafindSettings settings, string home, string? dataDirectory, TimeProvider time,
-        Func<string, string?> environment)
+        Func<string, string?> environment, bool indexHomeByDefault = true)
     {
         ArgumentNullException.ThrowIfNull(settings);
         _home = Path.GetFullPath(home);
         _time = time;
         _environment = environment;
-        var roots = NormalizeRoots(settings.Roots.Count > 0 ? settings.Roots : [_home], _home);
+        var roots = NormalizeRoots(settings.Roots.Count > 0 ? settings.Roots : indexHomeByDefault ? [_home] : [], _home);
         Roots = roots;
         _rules = new ExclusionRules(CurrentFlavor, _home, roots,
             string.IsNullOrWhiteSpace(dataDirectory) ? null : Path.GetFullPath(dataDirectory),

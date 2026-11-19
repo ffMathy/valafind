@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Target {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Tidak ada folder</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Pilih folder yang akan dicari di Pengaturan</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Belum ada folder — tambahkan folder yang harus dicari Valafind</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS hanya mengizinkan aplikasi App Store membaca folder yang Anda pilih, jadi Valafind hanya mencari di folder yang tercantum di sini. Tambahkan folder rumah Anda untuk mencari di seluruhnya.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows menjalankan Valafind saat Anda masuk. Ubah ini di Pengaturan › Aplikasi › Startup.</value>
+  </data>
 </root>

@@ -89,6 +89,19 @@ public sealed class AppHost : IAsyncDisposable
         var firstRun = !File.Exists(AppPaths.SettingsFile);
         var settings = ValafindSettings.Load();
         Localization.Loc.Apply(settings.Language);
+        // Mac App Store copies: regain the folders the user granted before anything indexes them.
+        if (FolderAccess.Restore(settings, loggerFactory.CreateLogger(typeof(FolderAccess))) && !firstRun)
+        {
+            try
+            {
+                settings.Save();
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Log.PlatformCallFailed(loggerFactory.CreateLogger<AppHost>(), "save the regained folders", e);
+            }
+        }
+
         var flavor = UiFlavors.Detect();
         var services = new ServiceCollection()
             .AddSingleton(loggerFactory)
@@ -97,6 +110,7 @@ public sealed class AppHost : IAsyncDisposable
             .AddSingleton(sp => new LauncherViewModel(flavor, sp.GetRequiredService<ValafindSettings>())
             {
                 IsModelBundled = CoreServicesFactory.IsModelBundled,
+                FoldersNeedGrant = FolderAccess.IsRequired,
                 Previews = new FilePreviewService(),
             })
             .BuildServiceProvider();
@@ -146,11 +160,20 @@ public sealed class AppHost : IAsyncDisposable
         StartUpdater();
 
         var background = _startupCommand == Program.BackgroundCommand;
+        if (FolderAccess.IsRequired && _settings.Roots.Count == 0 && !background)
+        {
+            // Mac App Store copy without folders: it indexes nothing until the user adds some, so ask right away.
+            Dispatcher.UIThread.Post(ShowSettings, DispatcherPriority.Background);
+        }
         // "--toggle" comes from a hotkey bound in the desktop (Wayland): a quick popup. Any other visible start is explicit.
-        if (_startupCommand == "toggle")
+        else if (_startupCommand == "toggle")
+        {
             Dispatcher.UIThread.Post(() => ShowLauncher(hideOnDeactivate: true), DispatcherPriority.Background);
+        }
         else if (_startupCommand == "show" || (_firstRun && !background))
+        {
             Dispatcher.UIThread.Post(() => ShowLauncher(), DispatcherPriority.Background);
+        }
         if (_firstRun)
         {
             // Persist the defaults so the welcome (first-run launcher) appears once, not on every start.
@@ -234,6 +257,9 @@ public sealed class AppHost : IAsyncDisposable
 
     private void StartUpdater()
     {
+        if (StoreInstall.IsActive)
+            return; // The Microsoft Store or the Mac App Store updates this copy; store policies forbid updating it from GitHub.
+
         _updateHttp = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         _updateHttp.DefaultRequestHeaders.UserAgent.ParseAdd("Valafind/" + ReleaseVersion.Current());
         _updater = new Updater(
@@ -846,6 +872,10 @@ public sealed class AppHost : IAsyncDisposable
         public void SetAutostartEnabled(bool enabled) => Autostart.SetEnabled(enabled);
 
         public void RestartToUpdate() => host.RestartToUpdate();
+
+        public bool IsAutostartManagedBySystem => Autostart.IsManagedBySystem;
+
+        public string? RememberFolderAccess(string path) => FolderAccess.Remember(path, host._log);
 
         public async Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after)
         {

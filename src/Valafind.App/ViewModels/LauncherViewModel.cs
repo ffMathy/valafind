@@ -69,7 +69,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// <param name="flavor">Design flavor (affects path/hotkey formatting and grouping).</param>
     /// <param name="settings">Live settings instance (thresholds, hotkey).</param>
     public LauncherViewModel(UiFlavor flavor, ValafindSettings settings)
-        : this(flavor, settings, TimeProvider.System, static a => Dispatcher.UIThread.Post(a), AppPaths.Home)
+        : this(flavor, settings, TimeProvider.System, static a => Dispatcher.UIThread.Post(a), AppPaths.UserHome)
     {
     }
 
@@ -208,6 +208,18 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// unpacks the built-in copy again instead.</summary>
     public bool IsModelBundled { get; init; }
 
+    /// <summary>The macOS App Sandbox: only folders the user added are indexed, so no folders means nothing (not the
+    /// home folder) is indexed, and the scope says to choose folders.</summary>
+    public bool FoldersNeedGrant
+    {
+        get;
+        init
+        {
+            field = value;
+            RefreshIndexScope();
+        }
+    }
+
     /// <summary>Inverse of <see cref="IsModelBundled"/> (for bindings).</summary>
     public bool IsModelDownloadable => !IsModelBundled;
 
@@ -246,6 +258,14 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     {
         var roots = _settings.Roots.Where(r => !string.IsNullOrWhiteSpace(r)).ToList();
         var comparison = Flavor == UiFlavor.Linux ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        if (roots.Count == 0 && FoldersNeedGrant)
+        {
+            IndexScopeText = Strings.ScopeNoFolders;
+            IndexScopeShortText = Strings.ScopeNoFolders;
+            IndexScopeDetail = Strings.ScopeChooseFolders;
+            Phase2Text = Loc.Format(Strings.IndexPhase2, IndexScopeText);
+            return;
+        }
         if (roots.Count == 0)
         {
             IndexScopeText = Strings.ScopeHomeFolder;

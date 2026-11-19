@@ -70,6 +70,27 @@ public class UserFileDiscoveryTests
     }
 
     [Fact]
+    public void WithoutAHomeDefault_NoRootsMeansNothingIsIndexed()
+    {
+        // The macOS App Sandbox: only folders the user picked may be read, so an empty list indexes nothing.
+        using var tree = new TempTree();
+        tree.File("home/Documents/report.txt");
+        var discovery = new UserFileDiscovery(new ValafindSettings(), tree.Dir("home"), tree.P("data"), TimeProvider.System,
+            _ => null, indexHomeByDefault: false);
+
+        Assert.Empty(discovery.Roots);
+        Assert.Empty(discovery.EnumerateAllFiles(TestContext.Current.CancellationToken));
+        Assert.True(discovery.IsExcluded(tree.P("home/Documents/report.txt")));
+    }
+
+    [Theory]
+    [InlineData("/Users/me/Library/Containers/app.valafind.Valafind/Data", true, "/Users/me")]
+    [InlineData("/Users/me/Library/Containers/app.valafind.Valafind/Data", false, "/Users/me/Library/Containers/app.valafind.Valafind/Data")]
+    [InlineData("/Users/me", true, "/Users/me")]
+    public void RealHomeLeavesTheSandboxContainer(string home, bool inAppSandbox, string expected) =>
+        Assert.Equal(expected, AppPaths.RealHome(home, inAppSandbox));
+
+    [Fact]
     public void WalkWithStatsReportsTheSameFilesWithTheirSizeAndMtime()
     {
         using var tree = new TempTree();

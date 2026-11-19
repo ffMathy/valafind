@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Manufa {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Babu fayil ɗin ajiya</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Zaɓi fayilolin ajiya da za a bincika a cikin Saituna</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Babu fayil ɗin ajiya tukuna — ƙara fayilolin ajiya da Valafind zai bincika</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS yana barin manhajojin App Store su karanta fayilolin ajiya da ka zaɓa kawai, don haka Valafind yana bincika fayilolin da aka jera a nan kawai. Ƙara fayil ɗin ajiya na gidanka don bincika duka.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows yana fara Valafind lokacin da ka shiga. Canza wannan a Saituna › Manhajoji › Farawa.</value>
+  </data>
 </root>

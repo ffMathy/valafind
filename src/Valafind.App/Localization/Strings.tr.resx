@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Hedef {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Klasör yok</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Aranacak klasörleri Ayarlar'dan seçin</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Henüz klasör yok — Valafind'ın arayacağı klasörleri ekleyin</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS, App Store uygulamalarının yalnızca seçtiğiniz klasörleri okumasına izin verir; bu yüzden Valafind yalnızca burada listelenen klasörlerde arar. Tamamında aramak için ev klasörünüzü ekleyin.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows, oturum açtığınızda Valafind'ı başlatır. Bunu Ayarlar › Uygulamalar › Başlangıç bölümünden değiştirin.</value>
+  </data>
 </root>

@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>இலக்கு {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>கோப்புறைகள் இல்லை</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>தேட வேண்டிய கோப்புறைகளை அமைப்புகளில் தேர்ந்தெடுக்கவும்</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>இன்னும் கோப்புறைகள் இல்லை — Valafind தேட வேண்டிய கோப்புறைகளைச் சேர்க்கவும்</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS, App Store பயன்பாடுகளை நீங்கள் தேர்ந்தெடுக்கும் கோப்புறைகளை மட்டுமே படிக்க அனுமதிக்கிறது, எனவே Valafind இங்கே பட்டியலிடப்பட்ட கோப்புறைகளில் மட்டுமே தேடுகிறது. முழுவதும் தேட உங்கள் முகப்புக் கோப்புறையைச் சேர்க்கவும்.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>நீங்கள் உள்நுழையும்போது Windows, Valafind-ஐத் தொடங்குகிறது. இதை அமைப்புகள் › பயன்பாடுகள் › தொடக்கம் என்பதில் மாற்றவும்.</value>
+  </data>
 </root>

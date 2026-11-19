@@ -10,8 +10,13 @@ public sealed class ValafindSettings
     /// Null = platform default (see <see cref="DefaultHotkey"/>).</summary>
     public string? Hotkey { get; set; }
 
-    /// <summary>Directories to index. Empty = the user's home directory.</summary>
+    /// <summary>Directories to index. Empty = the user's home directory (nothing in the macOS App Sandbox, which
+    /// allows only folders the user picked).</summary>
     public List<string> Roots { get; set; } = [];
+
+    /// <summary>macOS App Sandbox only: a security-scoped bookmark (base64) for each folder in <see cref="Roots"/>,
+    /// keyed by its path. The sandbox forgets the folders a user picked when the app quits; these bring them back.</summary>
+    public Dictionary<string, string> RootBookmarks { get; set; } = [];
 
     /// <summary>Extra absolute paths or directory names to skip (in addition to built-in excludes).</summary>
     public List<string> Excludes { get; set; } = [];

@@ -642,4 +642,19 @@
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Cible {0}</value>
   </data>
+  <data name="ScopeNoFolders" xml:space="preserve">
+    <value>Aucun dossier</value>
+  </data>
+  <data name="ScopeChooseFolders" xml:space="preserve">
+    <value>Choisissez les dossiers à parcourir dans les Réglages</value>
+  </data>
+  <data name="SettingsNoFoldersRow" xml:space="preserve">
+    <value>Aucun dossier pour l’instant — ajoutez les dossiers que Valafind doit parcourir</value>
+  </data>
+  <data name="SettingsRootsHintSandbox" xml:space="preserve">
+    <value>macOS ne laisse les apps de l’App Store lire que les dossiers que vous choisissez : Valafind ne cherche donc que dans les dossiers listés ici. Ajoutez votre dossier personnel pour y chercher entièrement.</value>
+  </data>
+  <data name="SettingsStartAtLoginWindowsStore" xml:space="preserve">
+    <value>Windows lance Valafind à l’ouverture de session. Modifiez ce réglage dans Paramètres › Applications › Démarrage.</value>
+  </data>
 </root>

@@ -169,13 +169,73 @@ public sealed class SettingsViewModelTests : IDisposable
         var vm = new SettingsViewModel(new ValafindSettings(), new FakeHost(), macOS: false, home: "/home/u");
         Assert.True(vm.HasNoRoots);
         Assert.Equal("Your home folder (/home/u)", vm.RootsEmptyText);
-        Assert.Contains("external", SettingsViewModel.RootsHint, StringComparison.Ordinal);
+        Assert.Contains("external", vm.RootsHint, StringComparison.Ordinal);
 
         var raised = false;
         vm.PropertyChanged += (_, e) => raised |= e.PropertyName == nameof(SettingsViewModel.HasNoRoots);
         vm.Roots.Add("/media/u/Photos");
         Assert.True(raised);
         Assert.False(vm.HasNoRoots);
+    }
+
+    [Fact]
+    public async Task InTheAppSandbox_AddedFoldersAreRememberedWithABookmark()
+    {
+        var settings = new ValafindSettings
+        {
+            Roots = ["/Users/me/Old"],
+            RootBookmarks = new() { ["/Users/me/Old"] = "old-bookmark" },
+        };
+        var host = new FakeHost { Bookmarks = { ["/Users/me/Documents"] = "docs-bookmark" } };
+        var vm = new SettingsViewModel(settings, host, macOS: true, home: "/Users/me", foldersNeedGrant: true)
+        {
+            PickFolderAsync = _ => Task.FromResult<string?>("/Users/me/Documents"),
+        };
+
+        vm.Roots.Clear();
+        Assert.Equal("No folders yet — add the folders Valafind should search", vm.RootsEmptyText);
+        Assert.Contains("App Store", vm.RootsHint, StringComparison.Ordinal);
+
+        await vm.AddRootCommand.ExecuteAsync(null);
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal(["/Users/me/Documents"], settings.Roots);
+        // The removed folder's bookmark goes with it.
+        Assert.Equal(new Dictionary<string, string> { ["/Users/me/Documents"] = "docs-bookmark" }, settings.RootBookmarks);
+        Assert.Equal("docs-bookmark", ValafindSettings.Load().RootBookmarks["/Users/me/Documents"]);
+    }
+
+    [Fact]
+    public async Task OutsideTheAppSandbox_NoBookmarksAreMade()
+    {
+        var settings = new ValafindSettings();
+        var host = new FakeHost { Bookmarks = { ["/data/docs"] = "unexpected" } };
+        var vm = new SettingsViewModel(settings, host, macOS: false, home: "/home/u")
+        {
+            PickFolderAsync = _ => Task.FromResult<string?>("/data/docs"),
+        };
+
+        await vm.AddRootCommand.ExecuteAsync(null);
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal(["/data/docs"], settings.Roots);
+        Assert.Empty(settings.RootBookmarks);
+        Assert.Equal(0, host.BookmarksMade);
+    }
+
+    [Fact]
+    public async Task WhenWindowsManagesStartAtLogin_TheSwitchIsReplacedAndLeftAlone()
+    {
+        var host = new FakeHost { ManagedBySystem = true };
+        var vm = new SettingsViewModel(new ValafindSettings(), host);
+        Assert.True(vm.IsStartAtLoginManagedBySystem);
+        Assert.Contains("Settings › Apps › Startup", SettingsViewModel.StartAtLoginManagedText, StringComparison.Ordinal);
+
+        vm.StartAtLogin = true;
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        Assert.False(host.Autostart);
+        Assert.Equal(0, host.AutostartChanges);
     }
 
     [Fact]
@@ -222,7 +282,21 @@ public sealed class SettingsViewModelTests : IDisposable
         public void RestartToUpdate() => RestartsToUpdate++;
         public string? DetectModel() => Detected;
         public bool IsAutostartEnabled() => Autostart;
-        public void SetAutostartEnabled(bool enabled) => Autostart = enabled;
+        public int AutostartChanges { get; private set; }
+        public void SetAutostartEnabled(bool enabled)
+        {
+            Autostart = enabled;
+            AutostartChanges++;
+        }
+        public bool ManagedBySystem { get; init; }
+        public bool IsAutostartManagedBySystem => ManagedBySystem;
+        public Dictionary<string, string> Bookmarks { get; } = [];
+        public int BookmarksMade { get; private set; }
+        public string? RememberFolderAccess(string path)
+        {
+            BookmarksMade++;
+            return Bookmarks.GetValueOrDefault(path);
+        }
         public async Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after)
         {
             Applied = before;
