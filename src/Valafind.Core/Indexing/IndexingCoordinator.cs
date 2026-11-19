@@ -1208,10 +1208,8 @@ public sealed partial class IndexingCoordinator : IIndexingService
         }
         if (prepared.OnlineOnly && _cloudLaneRunning)
         {
-            if (CanDownload(path, prepared.Size))
-                EnqueueCloud(path, phase, onDone);
-            else
-                RunIndex(prepared, phase, onDone, after: null, cancellationToken, allowDownload: false); // by name
+            // Everything else (can it be downloaded? requested ahead?) is decided on the cloud lane.
+            EnqueueCloud(path, phase, onDone);
             return;
         }
         RunIndex(prepared, phase, onDone, after: null, cancellationToken);
@@ -1221,8 +1219,9 @@ public sealed partial class IndexingCoordinator : IIndexingService
     /// back) and <paramref name="onDone"/>.</summary>
     /// <param name="allowDownload">False: an online-only file is indexed by name rather than downloaded on the worker
     /// (the cloud lane downloads; workers never wait for the cloud).</param>
+    /// <param name="lane">Whose work this is: the passes never wait for the cloud lane's (<see cref="IndexingWorkers"/>).</param>
     private void RunIndex(PreparedFile prepared, IndexPhase phase, Action? onDone, Action? after, CancellationToken cancellationToken,
-        bool allowDownload = true)
+        bool allowDownload = true, WorkLane lane = WorkLane.Main)
     {
         _workers.Run(() =>
         {
@@ -1241,7 +1240,7 @@ public sealed partial class IndexingCoordinator : IIndexingService
                     onDone?.Invoke();
                 }
             }
-        }, cancellationToken);
+        }, cancellationToken, lane);
     }
 
     /// <summary>Stat and fingerprint check. Returns null when nothing is left to do (<paramref name="upToDate"/> tells
@@ -2057,6 +2056,8 @@ public sealed partial class IndexingCoordinator : IIndexingService
         _pendingSignal.Dispose();
         if (_cloudThread is not { IsAlive: true })
             _cloudSignal.Dispose();
+        if (_releaseThread is not { IsAlive: true })
+            _releaseSignal.Dispose();
         lock (_interactiveLock)
             _notInteractive.Dispose();
         cts?.Dispose();
@@ -2235,4 +2236,10 @@ internal static partial class IndexingLog
 
     [LoggerMessage(36, LogLevel.Warning, "Handling an online-only cloud file failed; the cloud lane goes on")]
     public static partial void CloudLaneFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(37, LogLevel.Warning, "Handling the online-only file {Path} failed; it is skipped this time")]
+    public static partial void CloudFileFailed(ILogger logger, Exception exception, string path);
+
+    [LoggerMessage(38, LogLevel.Information, "Cloud files: {Queued} queued, {Requested} requested ({Arriving} still downloading), {Indexing} being indexed, {Releasing} waiting to be given back")]
+    public static partial void CloudLaneStatus(ILogger logger, int queued, int requested, int arriving, int indexing, int releasing);
 }

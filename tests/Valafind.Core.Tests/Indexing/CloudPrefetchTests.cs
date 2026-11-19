@@ -142,7 +142,7 @@ public class CloudPrefetchTests
 
         Assert.Empty(cloud.RequestLog);
         Assert.Equal(files, cloud.Downloads);
-        Assert.Contains(files[0], cloud.OnlineOnly);
+        await WaitFor(() => cloud.IsOnlineOnly(files[0], 0), "file online-only again"); // on the release thread
     }
 
     [Fact]
@@ -165,7 +165,8 @@ public class CloudPrefetchTests
 
         Assert.Equal(files.Order(StringComparer.Ordinal), cloud.Downloads.Order(StringComparer.Ordinal)); // read directly
         Assert.Equal(0, cloud.RequestedCount); // every request undone
-        Assert.All(files, f => Assert.Contains(f, cloud.OnlineOnly));
+        // Given back on the release thread, after indexing.
+        await WaitFor(() => files.All(f => cloud.IsOnlineOnly(f, 0)), "files online-only again");
         Assert.Equal(0, store.DownloadCount);
     }
 

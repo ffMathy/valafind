@@ -2,14 +2,27 @@ using Valafind.Core.Platform;
 
 namespace Valafind.Core.Indexing;
 
+/// <summary>Who queued a work item: the passes over the files on this device, or the cloud lane.</summary>
+internal enum WorkLane
+{
+    Main = 0,
+    Cloud = 1,
+}
+
 /// <summary>
 /// Runs indexing work items on up to <see cref="IndexingPace.MaxConcurrency"/> low-priority threads, never more at once
 /// than <see cref="IndexingPace.Concurrency"/> allows at that moment. <see cref="Run"/> blocks the caller (the
 /// coordinator's dispatcher) while every allowed slot is busy, so the dispatcher never runs ahead of the workers, and
 /// a lower pace takes effect as running items finish. Threads are started on demand and kept until disposal.
 /// </summary>
-/// <remarks>Work items should not throw; one that does fails the next <see cref="Run"/> or <see cref="WaitIdle"/>
-/// call with its exception (cancellation included), so the coordinator stops as it would have done inline.</remarks>
+/// <remarks>
+/// <para>Work items should not throw; one that does fails the next <see cref="Run"/> or <see cref="WaitIdle"/> call of
+/// its lane with its exception (cancellation included), so the coordinator stops as it would have done inline.</para>
+/// <para>Two lanes share the threads (<see cref="WorkLane"/>). The main lane never waits for the cloud lane: it counts
+/// only its own items against <see cref="IndexingPace.Concurrency"/>, and <see cref="WaitIdle"/> waits only for the
+/// caller's lane. Cloud items take a slot only while the pace has one free, and never more than half of them, so files
+/// on this device always have room.</para>
+/// </remarks>
 internal sealed class IndexingWorkers : IDisposable
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(250);
@@ -17,11 +30,12 @@ internal sealed class IndexingWorkers : IDisposable
     // Monitor (not System.Threading.Lock) because waiting needs Monitor.Wait/PulseAll.
     private readonly object _lock = new();
     private readonly IndexingPace _pace;
-    private readonly Queue<Action> _queue = new();
+    private readonly Queue<(Action Work, WorkLane Lane)> _queue = new();
     private readonly List<Thread> _threads = [];
     private int _inFlight;
+    private readonly int[] _laneInFlight = new int[2];
     private int _busyThreads;
-    private Exception? _fault;
+    private readonly Exception?[] _faults = new Exception?[2];
     private bool _disposed;
 
     public IndexingWorkers(IndexingPace pace)
@@ -36,6 +50,16 @@ internal sealed class IndexingWorkers : IDisposable
         get { lock (_lock) return _inFlight; }
     }
 
+    /// <summary>Items of <paramref name="lane"/> queued or running.</summary>
+    public int InFlightOf(WorkLane lane)
+    {
+        lock (_lock)
+            return _laneInFlight[(int)lane];
+    }
+
+    /// <summary>Most cloud items at once: half the pace's slots, at least one.</summary>
+    private int CloudShare => Math.Max(1, _pace.Concurrency / 2);
+
     /// <summary>Threads started so far (tests).</summary>
     internal int ThreadCount
     {
@@ -43,23 +67,27 @@ internal sealed class IndexingWorkers : IDisposable
     }
 
     /// <summary>Queues <paramref name="work"/> once a slot is free (waiting for one if needed).</summary>
-    public void Run(Action work, CancellationToken cancellationToken)
+    public void Run(Action work, CancellationToken cancellationToken, WorkLane lane = WorkLane.Main)
     {
         ArgumentNullException.ThrowIfNull(work);
         lock (_lock)
         {
             while (true)
             {
-                ThrowIfFaultedLocked();
+                ThrowIfFaultedLocked(lane);
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 cancellationToken.ThrowIfCancellationRequested();
-                if (_inFlight < _pace.Concurrency)
+                var free = lane == WorkLane.Main
+                    ? _laneInFlight[(int)WorkLane.Main] < _pace.Concurrency
+                    : _inFlight < _pace.Concurrency && _laneInFlight[(int)WorkLane.Cloud] < CloudShare;
+                if (free)
                     break;
                 Monitor.Wait(_lock, PollInterval);
             }
             _inFlight++;
+            _laneInFlight[(int)lane]++;
             _pace.ReportInFlight(_inFlight);
-            _queue.Enqueue(work);
+            _queue.Enqueue((work, lane));
             // Threads not running an item will pick up queued ones; start another only when there are too few.
             if (_queue.Count > _threads.Count - _busyThreads && _threads.Count < _pace.MaxConcurrency)
                 StartThreadLocked();
@@ -67,25 +95,36 @@ internal sealed class IndexingWorkers : IDisposable
         }
     }
 
-    /// <summary>Waits until every queued item has finished, then rethrows the first failure among them.</summary>
-    public void WaitIdle(CancellationToken cancellationToken)
+    /// <summary>Waits until every queued item of <paramref name="lane"/> has finished, then rethrows the first failure
+    /// among them. Items of the other lane are not waited for.</summary>
+    public void WaitIdle(CancellationToken cancellationToken, WorkLane lane = WorkLane.Main)
     {
         lock (_lock)
         {
             // Not cancellable while items run: they observe the same token and finish quickly, and the caller must
             // not move on (or dispose what they use) while they still run.
-            while (_inFlight > 0)
+            while (_laneInFlight[(int)lane] > 0)
                 Monitor.Wait(_lock, PollInterval);
-            ThrowIfFaultedLocked();
+            ThrowIfFaultedLocked(lane);
         }
         cancellationToken.ThrowIfCancellationRequested();
     }
 
-    private void ThrowIfFaultedLocked()
+    /// <summary>Waits until no item of either lane runs (before disposing what they use).</summary>
+    public void WaitAllIdle()
     {
-        if (_fault is not { } fault)
+        lock (_lock)
+        {
+            while (_inFlight > 0)
+                Monitor.Wait(_lock, PollInterval);
+        }
+    }
+
+    private void ThrowIfFaultedLocked(WorkLane lane)
+    {
+        if (_faults[(int)lane] is not { } fault)
             return;
-        _fault = null;
+        _faults[(int)lane] = null;
         System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(fault);
     }
 
@@ -106,6 +145,7 @@ internal sealed class IndexingWorkers : IDisposable
         while (true)
         {
             Action work;
+            WorkLane lane;
             lock (_lock)
             {
                 while (_queue.Count == 0)
@@ -114,7 +154,7 @@ internal sealed class IndexingWorkers : IDisposable
                         return;
                     Monitor.Wait(_lock);
                 }
-                work = _queue.Dequeue();
+                (work, lane) = _queue.Dequeue();
                 _busyThreads++;
             }
 
@@ -127,13 +167,14 @@ internal sealed class IndexingWorkers : IDisposable
 #pragma warning restore CA1031
             {
                 lock (_lock)
-                    _fault ??= e;
+                    _faults[(int)lane] ??= e;
             }
             finally
             {
                 lock (_lock)
                 {
                     _inFlight--;
+                    _laneInFlight[(int)lane]--;
                     _busyThreads--;
                     _pace.ReportInFlight(_inFlight);
                     Monitor.PulseAll(_lock);

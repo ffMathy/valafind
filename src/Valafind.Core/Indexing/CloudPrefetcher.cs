@@ -236,13 +236,20 @@ internal sealed class CloudPrefetcher : IDisposable
 
     /// <summary>Gives a requested file back (online-only again when that is safe, original setting restored) and
     /// forgets it. A file another program has open stays recorded and is given back after the next restart.</summary>
-    public void Release(string path)
+    public void Release(string path) => TryRelease(path, lastAttempt: true);
+
+    /// <summary>One attempt at giving a requested file back.</summary>
+    /// <param name="lastAttempt">When the file is in use: false keeps it requested (and counted against the limits) for
+    /// another attempt later; true forgets it here, and it stays recorded for the next restart.</param>
+    /// <returns>True when the file is done with (given back, or recorded for the next restart); false when it should be
+    /// tried again.</returns>
+    public bool TryRelease(string path, bool lastAttempt)
     {
         Entry? entry;
         lock (_lock)
         {
             if (!_active.TryGetValue(path, out entry) || entry.Releasing)
-                return;
+                return true;
             entry.Releasing = true;
             _waiting.Remove(entry);
         }
@@ -251,36 +258,45 @@ internal sealed class CloudPrefetcher : IDisposable
         {
             done = _cloud.Release(entry.Path, entry.Download.Mark, entry.Download.RequestedUtc);
         }
-        finally
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            // Counted against the limits until it is actually given back: until then it is still on the disk.
-            lock (_lock)
-            {
-                _active.Remove(path);
-                var drive = DriveOf(path);
-                var bytes = _bytesByDrive.GetValueOrDefault(drive) - entry.Download.Size;
-                if (bytes > 0)
-                    _bytesByDrive[drive] = bytes;
-                else
-                    _bytesByDrive.Remove(drive);
-            }
-            try
-            {
-                if (done)
-                    _journal.RemoveDownload(entry.Path);
-            }
-            catch (Exception e) when (e is not OperationCanceledException)
-            {
-                // Stays in the journal: released again (harmlessly) after the next restart.
-            }
-            try
-            {
-                _changed.Set();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
+            done = false;
         }
+        if (!done && !lastAttempt)
+        {
+            lock (_lock)
+                entry.Releasing = false;
+            return false;
+        }
+
+        // Counted against the limits until it is actually given back: until then it is still on the disk.
+        lock (_lock)
+        {
+            _active.Remove(path);
+            var drive = DriveOf(path);
+            var bytes = _bytesByDrive.GetValueOrDefault(drive) - entry.Download.Size;
+            if (bytes > 0)
+                _bytesByDrive[drive] = bytes;
+            else
+                _bytesByDrive.Remove(drive);
+        }
+        try
+        {
+            if (done)
+                _journal.RemoveDownload(entry.Path);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // Stays in the journal: released again (harmlessly) after the next restart.
+        }
+        try
+        {
+            _changed.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        return true;
     }
 
     /// <summary>The downloads a previous run requested and did not release, registered as requested again so
