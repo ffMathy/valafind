@@ -528,6 +528,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Saitunan Valafind</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Siga</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Nuna a Files</value>
   </data>

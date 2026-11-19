@@ -528,6 +528,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind 设置</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>版本</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>在“文件”中显示</value>
   </data>

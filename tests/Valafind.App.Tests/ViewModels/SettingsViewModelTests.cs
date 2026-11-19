@@ -80,6 +80,14 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void ShowsTheRunningVersion()
+    {
+        var vm = new SettingsViewModel(new ValafindSettings(), new FakeHost());
+        Assert.Equal(Valafind.App.Updates.ReleaseVersion.Current().ToString(), vm.AppVersion);
+        Assert.NotNull(Valafind.App.Updates.ReleaseVersion.TryParse(vm.AppVersion));
+    }
+
+    [Fact]
     public async Task LanguageChoiceIsSavedAndSystemDefaultIsStoredAsNull()
     {
         var settings = new ValafindSettings();

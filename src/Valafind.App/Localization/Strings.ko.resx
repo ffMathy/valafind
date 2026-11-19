@@ -528,6 +528,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind 설정</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>버전</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>파일에서 보기</value>
   </data>

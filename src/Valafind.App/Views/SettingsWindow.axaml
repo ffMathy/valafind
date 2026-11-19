@@ -376,6 +376,14 @@
             <Border Classes="divider" />
             <Border Classes="item">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Classes="title" Text="{x:Static l:Strings.SettingsVersion}" VerticalAlignment="Center" />
+                <SelectableTextBlock Grid.Column="1" Text="{Binding AppVersion}" VerticalAlignment="Center"
+                                     AutomationProperties.Name="{x:Static l:Strings.SettingsVersion}" />
+              </Grid>
+            </Border>
+            <Border Classes="divider" />
+            <Border Classes="item">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <TextBlock Classes="hint" VerticalAlignment="Center" TextTrimming="PathSegmentEllipsis" TextWrapping="NoWrap">
                   <Run Text="{x:Static l:Strings.SettingsLogs}" /><Run Text=" " /><Run Text="{Binding LogDirectory}" />
                 </TextBlock>

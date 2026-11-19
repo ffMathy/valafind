@@ -528,6 +528,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Настройки Valafind</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Версия</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Показать в «Файлах»</value>
   </data>
