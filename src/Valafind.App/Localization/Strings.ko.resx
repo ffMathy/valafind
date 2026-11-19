@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>업데이트 확인…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>다시 시작하여 업데이트</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>검색 지우기</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>색인할 폴더 선택</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 모델 폴더 선택</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind 보기 또는 가리기</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>새 버전 자동 설치</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>찾아보기…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>업데이트 확인</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>다시 시작하여 업데이트</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>기본값: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>감지됨: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>모델 폴더</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>자동</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>찾을 수 없음 — {0} 명령을 실행하여 설치하세요({1}에 설치됨). Valafind가 자동으로 인식합니다.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind 설정</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>버전</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>파일에서 보기</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>폴더에서 보기</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>유휴 시 색인 중</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>백그라운드에서 색인 중</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>유휴 시 색인 중 {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>백그라운드에서 색인 중 {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>모델을 사용할 수 없음 — 검색 꺼짐</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>일치 이유 · 가장 가까운 구절</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU는 {0}, 디스크는 {1} 근처를 유지하도록 속도를 조절합니다</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>컴퓨터를 전원에 연결하면 다시 시작합니다</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>목표 {0}</value>

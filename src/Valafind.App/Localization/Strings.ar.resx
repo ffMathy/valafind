@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>التحقق من وجود تحديثات…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>إعادة التشغيل للتحديث</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>مسح البحث</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>اختر مجلدًا لفهرسته</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>اختر مجلد نموذج EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>إظهار Valafind أو إخفاؤه</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>تثبيت الإصدارات الجديدة تلقائيًا</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>استعراض…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>التحقق من وجود تحديثات</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>إعادة التشغيل للتحديث</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>الافتراضي: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>تم الاكتشاف: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>مجلد النموذج</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>تلقائي</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>غير موجود — ثبّته بتشغيل {0} (يُثبَّت في {1}). سيكتشفه Valafind تلقائيًا.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>إعدادات Valafind</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>الإصدار</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>إظهار في الملفات</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>إظهار في المجلد</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>الفهرسة أثناء الخمول</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>الفهرسة في الخلفية</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>الفهرسة أثناء الخمول {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>الفهرسة في الخلفية {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>النموذج غير متاح — البحث متوقف</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>سبب التطابق · أقرب مقطع</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>يُسرّع أو يُبطئ ليُبقي المعالج قرب {0} والقرص قرب {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>يستأنف عند توصيل الكمبيوتر بالكهرباء</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>الهدف {0}</value>

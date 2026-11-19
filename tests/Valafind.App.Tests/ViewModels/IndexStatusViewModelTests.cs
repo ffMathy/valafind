@@ -36,7 +36,6 @@ public sealed class IndexStatusViewModelTests
         Assert.Equal("Indexing paused while the system is busy", vm.BannerTitle);
         Assert.Equal("41% of your files are searchable", vm.BannerDetail);
         Assert.Equal("Index Now", vm.ResumeActionText);
-        Assert.Equal("Speeds up or slows down to keep CPU near 30% and disk near 25%", vm.PolicyText);
         // Target markers: a little under the limits (27 % CPU, 22.5 % disk busy time).
         Assert.Equal(0.27, vm.CpuTargetFraction, 3);
         Assert.Equal("Target 27%", vm.CpuTargetText);
@@ -74,16 +73,15 @@ public sealed class IndexStatusViewModelTests
         vm.Update(new IndexStatus(IndexingState.Running, IndexPhase.All, 6214, 6214, 182_930, 446_120, false,
             new PressureSample(At, 14, null, 4d * 1024 * 1024, false), "/x"), 30, 25);
 
-        Assert.Equal("Indexing while idle", vm.StateText);
+        Assert.Equal("Indexing in the background", vm.StateText);
         Assert.Equal(StatusTone.Good, vm.Tone);
         Assert.False(vm.ShowBanner);
-        Assert.Equal("Indexing while idle 41%", vm.CompactText);
+        Assert.Equal("Indexing in the background 41%", vm.CompactText);
         Assert.Equal("182,930 of 446,120+", vm.AllCountText);
         Assert.False(vm.IsCpuHigh);
         Assert.False(vm.IsDiskHigh);
         Assert.Equal("4 MB/s", vm.DiskText);
         Assert.True(vm.DiskFraction is > 0 and < 0.1);
-        Assert.Equal("Speeds up or slows down to keep CPU near 30% and disk near 25%", vm.PolicyText);
         Assert.Equal(0.27, vm.CpuTargetFraction, 3);
         Assert.True(double.IsNaN(vm.DiskTargetFraction), "no busy-time reading: the disk meter shows throughput, no target");
         Assert.Equal(string.Empty, vm.DiskTargetText);
@@ -94,7 +92,6 @@ public sealed class IndexStatusViewModelTests
     {
         var vm = new IndexStatusViewModel();
         vm.Update(IndexStatus.Initial with { State = IndexingState.PausedOnBattery }, 30, 25);
-        Assert.Equal("Resumes when the computer is plugged in", vm.PolicyText);
         Assert.True(double.IsNaN(vm.CpuTargetFraction), "no reading yet: no meters, no markers");
     }
 

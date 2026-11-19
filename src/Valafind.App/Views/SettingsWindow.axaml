@@ -311,16 +311,7 @@
             </Border>
             <Border Classes="divider" />
             <Border Classes="item">
-              <StackPanel Spacing="8">
-                <TextBlock Classes="title" Text="{x:Static l:Strings.SettingsModelFolder}" />
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                  <TextBox Text="{Binding ModelDirectory}" PlaceholderText="{x:Static l:Strings.SettingsModelFolderAutomatic}"
-                           AutomationProperties.Name="{x:Static l:Strings.SettingsModelFolder}" />
-                  <Button Grid.Column="1" Content="{x:Static l:Strings.SettingsBrowse}" Command="{Binding BrowseModelDirectoryCommand}"
-                          VerticalAlignment="Stretch" />
-                </Grid>
-                <TextBlock Classes="hint" Text="{Binding ModelDetectionText}" />
-              </StackPanel>
+              <TextBlock Classes="hint" Text="{Binding ModelDetectionText}" />
             </Border>
             <Border Classes="divider" />
             <Border Classes="item" MinHeight="0">
@@ -375,9 +366,17 @@
                   <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutomaticUpdates}"
                                 AutomationProperties.Name="{x:Static l:Strings.SettingsAutoUpdate}" />
                 </Grid>
-                <Button Content="{x:Static l:Strings.SettingsCheckForUpdates}" Command="{Binding CheckForUpdatesCommand}"
+                <Button Content="{Binding UpdateButtonText}" Command="{Binding CheckForUpdatesCommand}"
                         HorizontalAlignment="Left" />
               </StackPanel>
+            </Border>
+            <Border Classes="divider" />
+            <Border Classes="item">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Classes="title" Text="{x:Static l:Strings.SettingsVersion}" VerticalAlignment="Center" />
+                <SelectableTextBlock Grid.Column="1" Text="{Binding AppVersion}" VerticalAlignment="Center"
+                                     AutomationProperties.Name="{x:Static l:Strings.SettingsVersion}" />
+              </Grid>
             </Border>
             <Border Classes="divider" />
             <Border Classes="item">

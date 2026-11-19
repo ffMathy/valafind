@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>புதுப்பிப்புகளைச் சரிபார்…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>புதுப்பிக்க மறுதொடக்கம் செய்</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>தேடலை அழி</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>அட்டவணையிட ஒரு கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind-ஐக் காட்டு அல்லது மறை</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>புதிய பதிப்புகளைத் தானாக நிறுவு</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>உலாவு…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>புதுப்பிப்புகளைச் சரிபார்</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>புதுப்பிக்க மறுதொடக்கம் செய்</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>இயல்புநிலை: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>கண்டறியப்பட்டது: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>மாதிரிக் கோப்புறை</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>தானியங்கு</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>கிடைக்கவில்லை — {0} ஐ இயக்கி நிறுவவும் ({1} இல் நிறுவப்படும்). Valafind அதைத் தானாகக் கண்டறியும்.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind அமைப்புகள்</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>பதிப்பு</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>கோப்புகளில் காட்டு</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>கோப்புறையில் காட்டு</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>செயலற்ற நேரத்தில் அட்டவணையிடுகிறது</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>பின்னணியில் அட்டவணையிடுகிறது</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>செயலற்ற நேரத்தில் அட்டவணையிடுகிறது {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>பின்னணியில் அட்டவணையிடுகிறது {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>மாதிரி கிடைக்கவில்லை — தேடல் முடக்கப்பட்டுள்ளது</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ஏன் பொருந்தியது · மிக நெருக்கமான பகுதி</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU-ஐ {0} அருகிலும் வட்டை {1} அருகிலும் வைக்க வேகத்தைக் கூட்டுகிறது அல்லது குறைக்கிறது</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>கணினியை மின்சாரத்தில் இணைத்ததும் மீண்டும் தொடங்கும்</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>இலக்கு {0}</value>

@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>Проверить обновления…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>Перезапустить для обновления</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>Очистить поиск</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Выберите папку для индексирования</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Выберите папку модели EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Показать или скрыть Valafind</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Устанавливать новые версии автоматически</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Обзор…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Проверить обновления</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>Перезапустить для обновления</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>По умолчанию: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Обнаружена: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Папка модели</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Автоматически</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Не найдена — установите её командой {0} (папка установки: {1}). Valafind подхватит её автоматически.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Настройки Valafind</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Версия</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Показать в «Файлах»</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Показать в папке</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Индексирование во время простоя</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Индексирование в фоновом режиме</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Индексирование во время простоя {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Индексирование в фоновом режиме {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Модель недоступна — поиск отключён</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ПОЧЕМУ НАЙДЕНО · БЛИЖАЙШИЙ ФРАГМЕНТ</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Ускоряется или замедляется, чтобы держать загрузку ЦП около {0}, а диска — около {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Возобновится, когда компьютер подключат к сети</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Цель {0}</value>

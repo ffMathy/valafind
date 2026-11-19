@@ -13,7 +13,7 @@ var opts = BenchOptions.Parse(args);
 if (opts is null)
     return 1;
 
-var modelDir = opts.ModelDirectory ?? ModelLocator.Find(null) ?? throw new InvalidOperationException("No model found.");
+var modelDir = opts.ModelDirectory ?? ModelLocator.Find() ?? throw new InvalidOperationException("No model found.");
 Console.WriteLine($"Model: {modelDir}");
 Console.WriteLine($"Provider: {opts.Provider}, intra-op threads: {opts.Threads}, batch: {opts.Batch}, parallel files: {opts.Parallel}");
 

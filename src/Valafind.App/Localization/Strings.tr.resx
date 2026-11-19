@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>Güncellemeleri denetle…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>Güncellemek için yeniden başlat</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>Aramayı temizle</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Dizinlenecek bir klasör seçin</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 model klasörünü seçin</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind'ı göster veya gizle</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Yeni sürümleri otomatik olarak yükle</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Gözat…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Güncellemeleri denetle</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>Güncellemek için yeniden başlat</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>Varsayılan: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Algılandı: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Model klasörü</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Otomatik</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Bulunamadı — yüklemek için şunu çalıştırın: {0} (yükleneceği konum: {1}). Valafind modeli otomatik olarak algılar.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind Ayarları</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Sürüm</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Dosyalar'da Göster</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Klasörde göster</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Boştayken dizinleniyor</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Arka planda dizinleniyor</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Boştayken dizinleniyor {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Arka planda dizinleniyor {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Model kullanılamıyor — arama kapalı</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>NEDEN EŞLEŞTİ · EN YAKIN BÖLÜM</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU'yu {0}, diski {1} civarında tutmak için hızlanır veya yavaşlar</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Bilgisayar prize takıldığında devam eder</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Hedef {0}</value>

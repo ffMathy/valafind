@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>Buscar actualizaciones…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>Reiniciar para actualizar</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>Borrar búsqueda</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Elige una carpeta para indexar</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Elige la carpeta del modelo EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Mostrar u ocultar Valafind</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Instalar nuevas versiones automáticamente</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Examinar…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Buscar actualizaciones</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>Reiniciar para actualizar</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>Predeterminado: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Detectado: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Carpeta del modelo</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Automática</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>No encontrado: instálalo ejecutando {0} (se instala en {1}). Valafind lo detecta automáticamente.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Configuración de Valafind</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Versión</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Mostrar en Archivos</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Mostrar en la carpeta</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Indexando en inactividad</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Indexando en segundo plano</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Indexando en inactividad {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Indexando en segundo plano {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Modelo no disponible: búsqueda desactivada</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>POR QUÉ COINCIDE · PASAJE MÁS CERCANO</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Acelera o frena para mantener la CPU cerca del {0} y el disco cerca del {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Se reanuda al conectar el equipo a la corriente</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Objetivo {0}</value>

@@ -161,20 +161,10 @@ public sealed class ModelLocatorTests : IDisposable
     }
 
     [Fact]
-    public void Find_prefers_the_configured_directory()
-    {
-        var d = Dir("configured");
-        TouchTokenizer(d);
-        Touch(d, "onnx/model_quantized.onnx");
-        Touch(d, "onnx/model_quantized.onnx_data");
-        Assert.Equal(d, ModelLocator.Find(d));
-    }
-
-    [Fact]
     public void Candidates_are_probed_in_documented_order()
     {
-        var candidates = ModelLocator.Candidates("/configured/dir").ToList();
-        Assert.Equal("/configured/dir", candidates[0]);
+        var candidates = ModelLocator.Candidates().ToList();
+        Assert.Equal(Path.Combine(Valafind.Core.Configuration.AppPaths.ModelsDirectory, ModelLocator.ModelFolderName), candidates[0]);
         Assert.Contains(candidates, c => c.EndsWith(Path.Combine("models", ModelLocator.ModelFolderName), StringComparison.Ordinal));
         Assert.Contains(Path.Combine(AppContext.BaseDirectory, "models", ModelLocator.ModelFolderName), candidates);
         Assert.Equal(Path.Combine(Valafind.Core.Configuration.AppPaths.ModelsDirectory, ModelLocator.ModelFolderName),

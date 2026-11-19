@@ -14,9 +14,9 @@ using Valafind.App.Views.Windows;
 namespace Valafind.App.Views;
 
 /// <summary>
-/// The launcher window: borderless, topmost, translucent where the OS allows it, centred horizontally on the screen
-/// under the pointer at ~22% from the top. Hides on Escape, and on deactivation when it was summoned by the hotkey;
-/// keyboard drives the result list.
+/// The launcher window: borderless, translucent where the OS allows it, centred horizontally on the screen
+/// under the pointer at ~22% from the top. Hides on Escape; when summoned by the hotkey it also stays on top and hides
+/// on deactivation. The keyboard drives the result list.
 /// </summary>
 public partial class LauncherWindow : Window
 {
@@ -84,11 +84,13 @@ public partial class LauncherWindow : Window
     public bool HidesOnDeactivate => _hideOnDeactivate;
 
     /// <summary>Shows, positions and focuses the launcher.</summary>
-    /// <param name="hideOnDeactivate">Hide again when focus moves elsewhere: true for a hotkey summon (a quick
-    /// popup); false when opened explicitly (app start, tray), where it stays open until dismissed.</param>
+    /// <param name="hideOnDeactivate">A hotkey summon (a quick popup): stays on top and hides again when focus moves
+    /// elsewhere. False when opened explicitly (app start, tray): an ordinary window that other windows can cover,
+    /// and that stays open until dismissed.</param>
     public void ShowLauncher(bool hideOnDeactivate = false)
     {
         _hideOnDeactivate = hideOnDeactivate;
+        Topmost = hideOnDeactivate;
         _ignoreDeactivateUntil = DateTime.UtcNow + DeactivateGrace;
         if (!IsVisible)
         {

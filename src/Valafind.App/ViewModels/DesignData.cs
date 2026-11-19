@@ -18,7 +18,7 @@ public static class DesignData
     /// <summary>Windows design sample (indexing paused, system busy).</summary>
     public static LauncherViewModel Windows => Create(UiFlavor.Windows);
 
-    /// <summary>macOS design sample (indexing while idle).</summary>
+    /// <summary>macOS design sample (indexing in the background).</summary>
     public static LauncherViewModel Mac => Create(UiFlavor.Mac);
 
     /// <summary>Linux design sample (indexing paused, system busy).</summary>

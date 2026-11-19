@@ -83,6 +83,8 @@ public sealed class ThrottleGate : IDisposable
     private long _previousOwnTimestamp;
     private PressureSample? _lastSample;
     private PressureSample? _lastEffectiveSample;
+    private double? _smoothedGpu;
+    private double? _smoothedOwnGpu;
     private long? _previousPaceTimestamp;
     private double? _lastOwnCpuPercent;
     private double? _lastOwnDiskBusyPercent;
@@ -129,7 +131,9 @@ public sealed class ThrottleGate : IDisposable
     /// <summary>True when work may proceed.</summary>
     public bool IsOpen => State == IndexingState.Running;
 
-    /// <summary>The most recent raw machine-wide sample.</summary>
+    /// <summary>The most recent machine-wide sample. Its GPU utilisation is smoothed over the last ~10 seconds
+    /// (<see cref="IndexingPace.GpuSmoothing"/>): the GPU runs model batches in bursts, so single readings jump
+    /// between busy and idle.</summary>
     public PressureSample? LastSample
     {
         get { lock (_lock) return _lastSample; }
@@ -299,6 +303,7 @@ public sealed class ThrottleGate : IDisposable
         {
             if (_disposed)
                 return;
+            sample = SmoothGpuLocked(sample);
             EvaluateLocked(sample, own, timestamp);
             UpdateStateLocked(options, now);
             step = PaceStepLocked(sample, timestamp, now);
@@ -357,6 +362,22 @@ public sealed class ThrottleGate : IDisposable
         var reading = new PaceReading(0, sample.CpuPercent, _lastOwnCpuPercent, 100, sample.DiskBusyPercent, _lastOwnDiskBusyPercent,
             100, sample.GpuPercent, sample.OwnGpuPercent);
         return new PaceStep(PaceStepKind.Update, reading, _time.GetElapsedTime(since, timestamp), forced);
+    }
+
+    /// <summary>Replaces the sample's GPU readings with their exponential moving averages; a sample without a GPU
+    /// reading starts the average over.</summary>
+    private PressureSample? SmoothGpuLocked(PressureSample? sample)
+    {
+        if (sample is null)
+            return null;
+        _smoothedGpu = Smooth(_smoothedGpu, sample.GpuPercent);
+        _smoothedOwnGpu = sample.GpuPercent is null ? null : Smooth(_smoothedOwnGpu, sample.OwnGpuPercent);
+        return sample with { GpuPercent = _smoothedGpu, OwnGpuPercent = _smoothedOwnGpu };
+
+        static double? Smooth(double? average, double? reading) =>
+            reading is not { } value ? null
+            : average is { } previous ? previous + IndexingPace.GpuSmoothing * (value - previous)
+            : value;
     }
 
     private void EvaluateLocked(PressureSample? sample, OwnUsage? own, long timestamp)

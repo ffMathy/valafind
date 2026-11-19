@@ -1,4 +1,4 @@
-<!-- Borderless, topmost launcher window; its content is the platform view chosen at runtime (see LauncherWindow.axaml.cs). -->
+<!-- Borderless launcher window (topmost only when summoned by the hotkey, see ShowLauncher); its content is the platform view chosen at runtime (see LauncherWindow.axaml.cs). -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Valafind.App.Views.LauncherWindow"
@@ -7,7 +7,6 @@
         CanResize="False"
         CanMinimize="False"
         CanMaximize="False"
-        Topmost="True"
         ShowInTaskbar="False"
         ShowActivated="True"
         Background="Transparent"

@@ -16,7 +16,13 @@ internal sealed class LinuxPressureMonitor : ISystemPressureMonitor
 
     private readonly Dictionary<string, bool> _physicalCache = new(StringComparer.Ordinal);
     private readonly Lock _lock = new();
-    private readonly LinuxGpuUsage _gpu = new();
+    private readonly LinuxGpuUsage _gpuUsage = new();
+    private readonly GpuSampler _gpu;
+
+    public LinuxPressureMonitor()
+    {
+        _gpu = new GpuSampler(_gpuUsage.Read);
+    }
     private CpuTimes? _previousCpu;
     private Dictionary<string, DiskCounters>? _previousDisks;
     private long _previousTimestamp;
@@ -121,6 +127,9 @@ internal sealed class LinuxPressureMonitor : ISystemPressureMonitor
     public void Dispose()
     {
         lock (_lock)
-            _gpu.Dispose();
+        {
+            _gpu.Dispose(); // first: it reads _gpuUsage
+            _gpuUsage.Dispose();
+        }
     }
 }

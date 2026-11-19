@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>अपडेट तपासा…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>अपडेट करण्यासाठी रीस्टार्ट करा</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>शोध साफ करा</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>अनुक्रमित करण्यासाठी फोल्डर निवडा</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 मॉडेल फोल्डर निवडा</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind दाखवा किंवा लपवा</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>नवीन आवृत्त्या आपोआप इंस्टॉल करा</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>ब्राउझ करा…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>अपडेट तपासा</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>अपडेट करण्यासाठी रीस्टार्ट करा</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>डीफॉल्ट: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>आढळले: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>मॉडेल फोल्डर</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>स्वयंचलित</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>आढळले नाही — {0} चालवून ते इंस्टॉल करा ({1} मध्ये इंस्टॉल होते). Valafind ते आपोआप ओळखेल.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind सेटिंग्ज</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>आवृत्ती</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>फाइल्समध्ये दाखवा</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>फोल्डरमध्ये दाखवा</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>निष्क्रिय असताना अनुक्रमण</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>पार्श्वभूमीत अनुक्रमण</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>निष्क्रिय असताना अनुक्रमण {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>पार्श्वभूमीत अनुक्रमण {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>मॉडेल उपलब्ध नाही — शोध बंद आहे</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>का जुळले · सर्वात जवळचा उतारा</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU {0} आणि डिस्क {1} च्या जवळ ठेवण्यासाठी वेग वाढवते किंवा कमी करते</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>संगणक चार्जरला जोडल्यावर पुन्हा सुरू होते</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>लक्ष्य {0}</value>

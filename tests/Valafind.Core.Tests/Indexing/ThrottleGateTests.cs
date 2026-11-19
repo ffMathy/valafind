@@ -117,6 +117,24 @@ public class ThrottleGateTests
     }
 
     [Fact]
+    public void GpuReadingsAreSmoothedBeforeTheyReachThePaceAndTheMeter()
+    {
+        using var rig = new Rig();
+        rig.Monitor.Gpu = 0;
+        rig.Step();
+        Assert.Equal(0, rig.Gate.LastSample!.GpuPercent);
+        rig.Monitor.Gpu = 100; // a model batch fills the next interval
+        rig.Step();
+        Assert.Equal(100 * IndexingPace.GpuSmoothing, rig.Gate.LastSample!.GpuPercent!.Value, 6);
+        rig.Monitor.Gpu = null; // no GPU reading: the average starts over
+        rig.Step();
+        Assert.Null(rig.Gate.LastSample!.GpuPercent);
+        rig.Monitor.Gpu = 80;
+        rig.Step();
+        Assert.Equal(80, rig.Gate.LastSample!.GpuPercent);
+    }
+
+    [Fact]
     public void ThrottleOptionsFromSettingsCarriesTheGpuLimit()
     {
         var settings = new Valafind.Core.Configuration.ValafindSettings { MaxGpuPercent = 40 };

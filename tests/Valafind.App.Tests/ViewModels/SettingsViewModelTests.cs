@@ -80,6 +80,14 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void ShowsTheRunningVersion()
+    {
+        var vm = new SettingsViewModel(new ValafindSettings(), new FakeHost());
+        Assert.Equal(Valafind.App.Updates.ReleaseVersion.Current().ToString(), vm.AppVersion);
+        Assert.NotNull(Valafind.App.Updates.ReleaseVersion.TryParse(vm.AppVersion));
+    }
+
+    [Fact]
     public async Task LanguageChoiceIsSavedAndSystemDefaultIsStoredAsNull()
     {
         var settings = new ValafindSettings();
@@ -119,10 +127,10 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.True(vm.IsModelDetected);
         Assert.Equal("Detected: /models/embeddinggemma-2", vm.ModelDetectionText);
         host.Detected = null;
-        vm.ModelDirectory = "/nowhere";
+        vm = new SettingsViewModel(new ValafindSettings(), host);
         Assert.False(vm.IsModelDetected);
         Assert.StartsWith("Not found", vm.ModelDetectionText, StringComparison.Ordinal);
-        Assert.Contains("/nowhere", vm.ModelDetectionText, StringComparison.Ordinal);
+        Assert.Contains("/default/models/embeddinggemma-2", vm.ModelDetectionText, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -250,6 +258,15 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.Equal(1, host.LogFolderOpened);
     }
 
+    [Fact]
+    public void UpdateButtonChecksForUpdatesUntilAnUpdateIsReady()
+    {
+        var host = new FakeHost();
+        var vm = new SettingsViewModel(new ValafindSettings(), host);
+        Assert.False(vm.IsUpdateReady);
+        Assert.Equal(Valafind.App.Localization.Strings.SettingsCheckForUpdates, vm.UpdateButtonText);
+    }
+
     private sealed class FakeHost : ISettingsHost
     {
         public string? Detected { get; set; }
@@ -261,7 +278,9 @@ public sealed class SettingsViewModelTests : IDisposable
         public string LogDirectory => "/data/logs";
         public int LogFolderOpened { get; private set; }
         public void OpenLogFolder() => LogFolderOpened++;
-        public string? DetectModel(string? configuredDirectory) => Detected;
+        public int RestartsToUpdate { get; private set; }
+        public void RestartToUpdate() => RestartsToUpdate++;
+        public string? DetectModel() => Detected;
         public bool IsAutostartEnabled() => Autostart;
         public int AutostartChanges { get; private set; }
         public void SetAutostartEnabled(bool enabled)

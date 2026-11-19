@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>Duba sabuntawa…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>Sake farawa don sabuntawa</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>Share bincike</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Zaɓi fayil ɗin ajiya da za a yi wa fihirisa</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Zaɓi fayil ɗin ajiya na samfurin EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Nuna ko ɓoye Valafind</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Shigar da sabbin sigogi ta atomatik</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Bincika…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Duba sabuntawa</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>Sake farawa don sabuntawa</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>Tsoho: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>An gano: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Fayil ɗin ajiya na samfuri</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Na atomatik</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Ba a samu ba — shigar da shi ta hanyar gudanar da {0} (ana shigar da shi a {1}). Valafind zai ɗauke shi ta atomatik.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Saitunan Valafind</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Siga</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Nuna a Files</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Nuna a fayil ɗin ajiya</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Ana fihirisa lokacin hutu</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Ana fihirisa a bango</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Ana fihirisa lokacin hutu {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Ana fihirisa a bango {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Babu samfuri — bincike a kashe yake</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>DALILIN DACEWA · SASHI MAFI KUSA</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Yana ƙara ko rage gudu don riƙe CPU kusa da {0} da faifai kusa da {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Yana ci gaba idan an haɗa kwamfutar da wuta</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Manufa {0}</value>

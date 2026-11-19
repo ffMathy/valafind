@@ -13,7 +13,7 @@ namespace Valafind.App.ViewModels;
 public interface ISettingsHost
 {
     /// <summary>Locates the EmbeddingGemma model (see Core ModelLocator); null when not found.</summary>
-    string? DetectModel(string? configuredDirectory);
+    string? DetectModel();
 
     /// <summary>Folder the fetch script installs the model into by default.</summary>
     string DefaultModelDirectory { get; }
@@ -44,19 +44,21 @@ public interface ISettingsHost
     /// <summary>Applies saved settings live (hotkey re-registration, core restart, …). Completes with a hotkey error
     /// message, or null when the hotkey registered. Registration can take seconds (Wayland portal), so it is async.</summary>
     Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after);
+
+    /// <summary>Quits and starts the downloaded update right away (and shows its launcher).</summary>
+    void RestartToUpdate();
 }
 
 /// <summary>The settings that need action when they change.</summary>
-public sealed record SettingsSnapshot(string Hotkey, int Dimensions, string? ModelDirectory, IReadOnlyList<string> Roots, IReadOnlyList<string> Excludes)
+public sealed record SettingsSnapshot(string Hotkey, int Dimensions, IReadOnlyList<string> Roots, IReadOnlyList<string> Excludes)
 {
     /// <summary>Captures the relevant parts of <paramref name="settings"/>.</summary>
     public static SettingsSnapshot Of(ValafindSettings settings) =>
-        new(settings.EffectiveHotkey, settings.EmbeddingDimensions, settings.ModelDirectory, [.. settings.Roots], [.. settings.Excludes]);
+        new(settings.EffectiveHotkey, settings.EmbeddingDimensions, [.. settings.Roots], [.. settings.Excludes]);
 
     /// <summary>True when the index must be rebuilt / the core restarted to honour the change.</summary>
     public bool RequiresCoreRestart(ValafindSettings after) =>
         Dimensions != after.EmbeddingDimensions
-        || !string.Equals(ModelDirectory ?? string.Empty, after.ModelDirectory ?? string.Empty, StringComparison.Ordinal)
         || !Roots.SequenceEqual(after.Roots, StringComparer.Ordinal)
         || !Excludes.SequenceEqual(after.Excludes, StringComparer.Ordinal);
 }
@@ -103,7 +105,6 @@ public sealed partial class SettingsViewModel : ObservableObject
         MaxGpuPercent = settings.MaxGpuPercent;
         PauseOnBattery = settings.PauseOnBattery;
         SelectedDimensions = DimensionOptions.Contains(settings.EmbeddingDimensions) ? settings.EmbeddingDimensions : 768;
-        ModelDirectory = settings.ModelDirectory ?? string.Empty;
         StartAtLogin = SafeIsAutostart();
         AutomaticUpdates = settings.AutomaticUpdates;
         _originalLanguage = settings.Language ?? string.Empty;
@@ -187,9 +188,6 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>True when saving will rebuild the index.</summary>
     public bool ShowReindexWarning => SelectedDimensions != _originalDimensions;
 
-    /// <summary>Model directory override; empty = auto-locate.</summary>
-    [ObservableProperty] public partial string ModelDirectory { get; set; }
-
     /// <summary>"Detected: …" or "Not found …".</summary>
     [ObservableProperty] public partial string ModelDetectionText { get; private set; } = string.Empty;
 
@@ -227,6 +225,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     private readonly Updater? _updater;
 
+    /// <summary>The version of Valafind that is running, e.g. "7.1.0".</summary>
+    public string AppVersion => (_updater?.CurrentVersion ?? ReleaseVersion.Current()).ToString();
+
     /// <summary>What the updater is doing, or why this copy cannot update itself.</summary>
     public string UpdateStatus => _updater?.StatusText ?? Strings.UpdateChecksGitHub;
 
@@ -238,12 +239,30 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     private void OnUpdaterStateChanged(object? sender, EventArgs e) =>
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(UpdateStatus)));
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(UpdateStatus));
+            OnPropertyChanged(nameof(UpdateButtonText));
+        });
 
-    /// <summary>Checks GitHub now; copies that cannot update themselves open the releases page instead.</summary>
+    /// <summary>True once a newer version is in place and only a restart is needed to run it.</summary>
+    public bool IsUpdateReady => _updater is { State: UpdateState.ReadyToRestart };
+
+    /// <summary>"Check for updates", or "Restart to update" once an update has been downloaded.</summary>
+    public string UpdateButtonText => IsUpdateReady ? Strings.SettingsRestartToUpdate : Strings.SettingsCheckForUpdates;
+
+    /// <summary>
+    /// Restarts into a downloaded update; otherwise checks GitHub now. Copies that cannot update themselves open the
+    /// releases page instead.
+    /// </summary>
     [RelayCommand]
     private void CheckForUpdates()
     {
+        if (IsUpdateReady)
+        {
+            _host.RestartToUpdate();
+            return;
+        }
         if (_updater is { IsSupported: true })
         {
             _ = _updater.CheckNowAsync();
@@ -262,24 +281,21 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Save failure message.</summary>
     [ObservableProperty] public partial string? ErrorText { get; private set; }
 
-    partial void OnModelDirectoryChanged(string value) => UpdateModelDetection();
-
     private void UpdateModelDetection()
     {
         string? found;
         try
         {
-            found = _host.DetectModel(string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim());
+            found = _host.DetectModel();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
         {
             found = null;
         }
         IsModelDetected = found is not null;
-        var custom = string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim();
         ModelDetectionText = found is not null
             ? Loc.Format(Strings.SettingsModelDetected, found)
-            : Loc.Format(Strings.SettingsModelNotFound, ModelInstallHelp.FetchCommand(OperatingSystem.IsWindows(), _host.AppDirectory, custom), custom ?? _host.DefaultModelDirectory);
+            : Loc.Format(Strings.SettingsModelNotFound, ModelInstallHelp.FetchCommand(OperatingSystem.IsWindows(), _host.AppDirectory, null), _host.DefaultModelDirectory);
     }
 
     [RelayCommand]
@@ -301,16 +317,6 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (root is not null)
             Roots.Remove(root);
-    }
-
-    [RelayCommand]
-    private async Task BrowseModelDirectory()
-    {
-        if (PickFolderAsync is null)
-            return;
-        var path = await PickFolderAsync(Strings.PickModelFolder).ConfigureAwait(true);
-        if (!string.IsNullOrWhiteSpace(path))
-            ModelDirectory = path;
     }
 
     [RelayCommand]
@@ -356,7 +362,6 @@ public sealed partial class SettingsViewModel : ObservableObject
         _settings.MaxGpuPercent = Math.Clamp(MaxGpuPercent, 5, 100);
         _settings.PauseOnBattery = PauseOnBattery;
         _settings.EmbeddingDimensions = SelectedDimensions;
-        _settings.ModelDirectory = string.IsNullOrWhiteSpace(ModelDirectory) ? null : ModelDirectory.Trim();
         var updatesTurnedOn = AutomaticUpdates && !_settings.AutomaticUpdates;
         _settings.AutomaticUpdates = AutomaticUpdates;
         _settings.Language = string.IsNullOrEmpty(SelectedLanguage?.Code) ? null : SelectedLanguage.Code;
@@ -404,19 +409,21 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private static (string?, List<string>, Dictionary<string, string>, double, double, double, bool, int, string?, bool, string?) Capture(ValafindSettings s) =>
+    private static (string?, List<string>, Dictionary<string, string>, double, double, double, bool, int, bool, string?) Capture(ValafindSettings s) =>
         (s.Hotkey, [.. s.Roots], new(s.RootBookmarks, StringComparer.Ordinal), s.MaxCpuPercent, s.MaxDiskBusyPercent, s.MaxGpuPercent, s.PauseOnBattery,
-            s.EmbeddingDimensions, s.ModelDirectory, s.AutomaticUpdates, s.Language);
+            s.EmbeddingDimensions, s.AutomaticUpdates, s.Language);
 
-    private static void Restore(ValafindSettings s, (string?, List<string>, Dictionary<string, string>, double, double, double, bool, int, string?, bool, string?) v) =>
+    private static void Restore(ValafindSettings s, (string?, List<string>, Dictionary<string, string>, double, double, double, bool, int, bool, string?) v) =>
         (s.Hotkey, s.Roots, s.RootBookmarks, s.MaxCpuPercent, s.MaxDiskBusyPercent, s.MaxGpuPercent, s.PauseOnBattery, s.EmbeddingDimensions,
-            s.ModelDirectory, s.AutomaticUpdates, s.Language) = v;
+            s.AutomaticUpdates, s.Language) = v;
 
     /// <summary>Inert host for design-time data.</summary>
     internal sealed class DesignHost : ISettingsHost
     {
+        public void RestartToUpdate() { }
+
         public static DesignHost Instance { get; } = new();
-        public string? DetectModel(string? configuredDirectory) => null;
+        public string? DetectModel() => null;
         public string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, "embeddinggemma-2");
         public string AppDirectory => AppContext.BaseDirectory;
         public string LogDirectory => AppPaths.LogDirectory;

@@ -136,7 +136,7 @@ public class CloudLaneTests
 
         slowConnection.Set();
         await WaitFor(() => online.All(store.Files.ContainsKey) && coordinator.Status.State == IndexingState.UpToDate, "cloud files indexed");
-        Assert.All(online, f => Assert.Contains(f, cloud.OnlineOnly)); // given back
+        await WaitFor(() => online.All(f => cloud.IsOnlineOnly(f, 0)), "given back"); // on the release thread
     }
 
     [Fact]
@@ -159,5 +159,63 @@ public class CloudLaneTests
 
         cloud.ArriveAll();
         await WaitFor(() => online.All(store.Files.ContainsKey), "cloud files indexed");
+    }
+
+    [Fact]
+    public async Task SlowGivingBackNeverHoldsBackLocalFiles()
+    {
+        using var tree = new TempTree();
+        // Giving each file back takes 2 s (OneDrive or antivirus holding fresh downloads): that must not happen on a
+        // worker, or a single one would spend its time waiting.
+        var cloud = new FakeCloud { ArriveImmediately = true, ReleaseDelay = TimeSpan.FromSeconds(2) };
+        var (online, local) = Files(tree, cloud, 6, 8);
+        var store = new FakeStore();
+        await using var coordinator = Create([tree.Root], [.. online, .. local], store, cloud, new CloudAwareReader(cloud), workers: 1);
+
+        var started = Stopwatch.StartNew();
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => local.All(store.Files.ContainsKey), "every local file indexed");
+
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(6), $"local files took {started.Elapsed}");
+        await WaitFor(() => online.All(store.Files.ContainsKey) && cloud.RequestedCount == 0, "cloud files indexed and given back");
+    }
+
+    [Fact]
+    public async Task BusyCloudIndexingNeverHoldsBackLocalFiles()
+    {
+        using var tree = new TempTree();
+        var cloud = new FakeCloud { ArriveImmediately = true };
+        var (online, local) = Files(tree, cloud, 40, 10);
+        var onlineSet = online.ToHashSet(StringComparer.Ordinal);
+        // Every cloud file takes a while to index and they all arrive at once: the workers stay busy with them.
+        var reader = new CloudAwareReader(cloud) { SlowRead = onlineSet.Contains, SlowReadDelay = TimeSpan.FromMilliseconds(300) };
+        var store = new FakeStore();
+        await using var coordinator = Create([tree.Root], [.. online, .. local], store, cloud, reader, workers: 2);
+
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => local.All(store.Files.ContainsKey), "every local file indexed, pictures included");
+
+        // Local files (and the step from documents to pictures) did not wait for the cloud files to be indexed.
+        Assert.True(online.Count(store.Files.ContainsKey) < online.Count / 2, "local files waited for the cloud files");
+        await WaitFor(() => online.All(store.Files.ContainsKey) && coordinator.Status.State == IndexingState.UpToDate, "cloud files indexed");
+    }
+
+    [Fact]
+    public async Task AnErrorOnOneCloudFileDoesNotStopTheWalk()
+    {
+        using var tree = new TempTree();
+        var cloud = new FakeCloud { ArriveImmediately = true };
+        var (online, local) = Files(tree, cloud, 3, 2);
+        cloud.FailRequestFor = online[1];
+        var store = new FakeStore();
+        await using var coordinator = Create([tree.Root], [.. online, .. local], store, cloud, new CloudAwareReader(cloud));
+
+        await coordinator.StartAsync(TestContext.Current.CancellationToken);
+        await WaitFor(() => store.GetMeta(IndexingCoordinator.MetaPhase2Complete) == "1" && coordinator.Status.State == IndexingState.UpToDate,
+            "walk complete despite the failing file");
+
+        Assert.True(store.Files.ContainsKey(online[0]));
+        Assert.True(store.Files.ContainsKey(online[2]));
+        Assert.All(local, f => Assert.True(store.Files.ContainsKey(f)));
     }
 }

@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>আপডেট খুঁজুন…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>আপডেট করতে রিস্টার্ট করুন</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>অনুসন্ধান মুছুন</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>ইনডেক্স করার জন্য একটি ফোল্ডার বেছে নিন</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 মডেল ফোল্ডার বেছে নিন</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind দেখান বা লুকান</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>নতুন সংস্করণ স্বয়ংক্রিয়ভাবে ইনস্টল করুন</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>ব্রাউজ করুন…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>আপডেট খুঁজুন</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>আপডেট করতে রিস্টার্ট করুন</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>ডিফল্ট: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>শনাক্ত হয়েছে: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>মডেল ফোল্ডার</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>স্বয়ংক্রিয়</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>পাওয়া যায়নি — {0} চালিয়ে ইনস্টল করুন ({1}-এ ইনস্টল হয়)। Valafind স্বয়ংক্রিয়ভাবে এটি শনাক্ত করবে।</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind সেটিংস</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>সংস্করণ</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>ফাইলসমূহে দেখান</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>ফোল্ডারে দেখান</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>নিষ্ক্রিয় অবস্থায় ইনডেক্সিং</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>পটভূমিতে ইনডেক্সিং</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>নিষ্ক্রিয় অবস্থায় ইনডেক্সিং {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>পটভূমিতে ইনডেক্সিং {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>মডেল অনুপলব্ধ — অনুসন্ধান বন্ধ</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>কেন মিলেছে · নিকটতম অংশ</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU {0} ও ডিস্ক {1}-এর কাছাকাছি রাখতে গতি বাড়ায় বা কমায়</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>কম্পিউটার চার্জে লাগালে আবার শুরু হয়</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>লক্ষ্য {0}</value>

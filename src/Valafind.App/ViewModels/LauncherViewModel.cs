@@ -99,7 +99,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
             range.SelectCommand = new RelayCommand(() => SelectTimeRange(range));
         SelectedTimeRange = TimeRanges[0];
         SetHotkey(settings.EffectiveHotkey, null);
-        ModelTargetDirectory = settings.ModelDirectory ?? AppPaths.ModelsDirectory;
+        ModelTargetDirectory = AppPaths.ModelsDirectory;
         FetchCommandText = BuildFetchCommand(null, force: false);
         RepairCommandText = BuildFetchCommand(null, force: true);
         Status.SetUserPaused(settings.UserPaused);
@@ -355,7 +355,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
 
     /// <summary>Marks the model as not installed.</summary>
     /// <param name="targetDirectory">Where the model is expected.</param>
-    /// <param name="customTarget">True when the directory is a user override (passed to the fetch script).</param>
+    /// <param name="customTarget">True when the directory differs from the fetch script's default (VALAFIND_DATA_DIR is set), so it is passed to the script.</param>
     public void SetModelMissing(string targetDirectory, bool customTarget = false)
     {
         DetachSearch();

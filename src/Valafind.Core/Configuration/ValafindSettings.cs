@@ -44,9 +44,6 @@ public sealed class ValafindSettings
     /// Off: always the CPU. Takes effect on the next start.</summary>
     public bool UseGpu { get; set; } = true;
 
-    /// <summary>Directory holding EmbeddingGemma (tokenizer.model + onnx/model*.onnx). Null = auto-locate.</summary>
-    public string? ModelDirectory { get; set; }
-
     /// <summary>UI language as a culture name ("de", "zh-Hans", …). Null = the operating system's language.</summary>
     public string? Language { get; set; }
 

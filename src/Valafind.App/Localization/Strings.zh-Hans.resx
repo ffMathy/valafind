@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>检查更新…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>重启以更新</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>清除搜索</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>选择要索引的文件夹</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>选择 EmbeddingGemma 2 模型文件夹</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>显示或隐藏 Valafind</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>自动安装新版本</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>浏览…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>检查更新</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>重启以更新</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>默认：{0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>已检测到：{0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>模型文件夹</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>自动</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>未找到——运行 {0} 进行安装（安装到 {1}）。Valafind 会自动识别。</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Valafind 设置</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>版本</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>在“文件”中显示</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>在文件夹中显示</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>空闲时索引中</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>正在后台索引</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>空闲时索引中 {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>正在后台索引 {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>模型不可用——搜索已关闭</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>匹配原因 · 最接近的段落</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>自动加快或放慢，使 CPU 保持在 {0} 左右、磁盘保持在 {1} 左右</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>接通电源后继续</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>目标 {0}</value>

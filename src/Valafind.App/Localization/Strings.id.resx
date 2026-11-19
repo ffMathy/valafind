@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>Periksa pembaruan…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>Mulai ulang untuk memperbarui</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>Hapus pencarian</value>
   </data>
@@ -339,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Pilih folder untuk diindeks</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Pilih folder model EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Tampilkan atau sembunyikan Valafind</value>
   </data>
@@ -414,11 +414,11 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Pasang versi baru secara otomatis</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Telusuri…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Periksa pembaruan</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>Mulai ulang untuk memperbarui</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>Default: {0}</value>
@@ -489,12 +489,6 @@
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Terdeteksi: {0}</value>
   </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Folder model</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Otomatis</value>
-  </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Tidak ditemukan — pasang dengan menjalankan {0} (dipasang ke {1}). Valafind akan mendeteksinya secara otomatis.</value>
   </data>
@@ -528,6 +522,9 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Pengaturan Valafind</value>
   </data>
+  <data name="SettingsVersion" xml:space="preserve">
+    <value>Versi</value>
+  </data>
   <data name="ShowInFiles" xml:space="preserve">
     <value>Tampilkan di Berkas</value>
   </data>
@@ -537,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Tampilkan di folder</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Mengindeks saat menganggur</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Mengindeks di latar belakang</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Mengindeks saat menganggur {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Mengindeks di latar belakang {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Model tidak tersedia — pencarian nonaktif</value>
@@ -641,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>MENGAPA COCOK · BAGIAN TERDEKAT</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Mempercepat atau memperlambat agar CPU sekitar {0} dan disk sekitar {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Dilanjutkan saat komputer dicolokkan ke listrik</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Target {0}</value>

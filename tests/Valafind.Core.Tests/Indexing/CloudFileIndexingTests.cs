@@ -73,6 +73,8 @@ internal sealed class FakeCloud : ICloudFiles
 
     public CloudMark? RequestDownload(string path, Func<CloudMark, bool> record)
     {
+        if (path == FailRequestFor)
+            throw new InvalidOperationException("unexpected platform error");
         if (!record(new CloudMark(0)))
             return null;
         if (RecordedBeforeChange is { } recorded && !recorded(path))
@@ -104,8 +106,16 @@ internal sealed class FakeCloud : ICloudFiles
     /// <summary>Releases fail even as a final attempt (the pin could not be restored).</summary>
     public bool ReleaseFails { get; set; }
 
+    /// <summary>Each release takes this long (a sync client or antivirus holding freshly downloaded files).</summary>
+    public TimeSpan ReleaseDelay { get; set; }
+
+    /// <summary>Requesting this file throws (an unexpected platform error).</summary>
+    public string? FailRequestFor { get; set; }
+
     public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc, bool final = false)
     {
+        if (ReleaseDelay > TimeSpan.Zero)
+            Thread.Sleep(ReleaseDelay);
         lock (OnlineOnly)
         {
             FinalReleases.Add(final);
@@ -149,12 +159,18 @@ internal sealed class CloudAwareReader(FakeCloud cloud) : IDocumentReader
     private readonly FakeReader _inner = new();
     public readonly List<string> Reads = [];
 
-    public Task<ExtractedText?> ReadAsync(string path, CancellationToken cancellationToken)
+    /// <summary>Reading a file this returns true for takes <see cref="SlowReadDelay"/> (large files).</summary>
+    public Func<string, bool>? SlowRead { get; set; }
+    public TimeSpan SlowReadDelay { get; set; }
+
+    public async Task<ExtractedText?> ReadAsync(string path, CancellationToken cancellationToken)
     {
         lock (Reads)
             Reads.Add(path);
         cloud.NoteRead(path);
-        return _inner.ReadAsync(path, cancellationToken);
+        if (SlowRead is { } slow && slow(path))
+            Thread.Sleep(SlowReadDelay); // blocks the worker, like a real extraction
+        return await _inner.ReadAsync(path, cancellationToken);
     }
 }
 
@@ -369,6 +385,8 @@ public class CloudFileIndexingTests
         Assert.True(cloud.IsOnlineOnly("x", FileAttributes.Archive | FileAttributes.ReparsePoint | CloudFiles.RecallOnDataAccess));
         Assert.True(cloud.IsOnlineOnly("x", FileAttributes.Offline));
         Assert.False(cloud.IsOnlineOnly("x", FileAttributes.Archive | FileAttributes.ReparsePoint | CloudFiles.Pinned));
+        // The same bit as FILE_ATTRIBUTE_EA (extended attributes) on a file: an ordinary local file can have it.
+        Assert.False(cloud.IsOnlineOnly("x", FileAttributes.Archive | CloudFiles.RecallOnOpen));
     }
 
     [Fact]
