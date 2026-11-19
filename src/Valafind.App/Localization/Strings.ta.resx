@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>கோப்புறையில் காட்டு</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>செயலற்ற நேரத்தில் அட்டவணையிடுகிறது</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>பின்னணியில் அட்டவணையிடுகிறது</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>செயலற்ற நேரத்தில் அட்டவணையிடுகிறது {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>பின்னணியில் அட்டவணையிடுகிறது {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>மாதிரி கிடைக்கவில்லை — தேடல் முடக்கப்பட்டுள்ளது</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ஏன் பொருந்தியது · மிக நெருக்கமான பகுதி</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU-ஐ {0} அருகிலும் வட்டை {1} அருகிலும் வைக்க வேகத்தைக் கூட்டுகிறது அல்லது குறைக்கிறது</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>கணினியை மின்சாரத்தில் இணைத்ததும் மீண்டும் தொடங்கும்</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>இலக்கு {0}</value>

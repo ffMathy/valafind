@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>فولڈر میں دکھائیں</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>فارغ وقت میں انڈیکسنگ</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>پس منظر میں انڈیکسنگ</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>فارغ وقت میں انڈیکسنگ {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>پس منظر میں انڈیکسنگ {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>ماڈل دستیاب نہیں — تلاش بند ہے</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>کیوں مماثل ہے · قریب ترین اقتباس</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU کو {0} اور ڈسک کو {1} کے قریب رکھنے کے لیے رفتار بڑھاتا یا گھٹاتا ہے</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>کمپیوٹر کو بجلی سے جوڑنے پر دوبارہ شروع ہوتا ہے</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>ہدف {0}</value>

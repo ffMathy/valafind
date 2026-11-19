@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>ফোল্ডারে দেখান</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>নিষ্ক্রিয় অবস্থায় ইনডেক্সিং</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>পটভূমিতে ইনডেক্সিং</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>নিষ্ক্রিয় অবস্থায় ইনডেক্সিং {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>পটভূমিতে ইনডেক্সিং {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>মডেল অনুপলব্ধ — অনুসন্ধান বন্ধ</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>কেন মিলেছে · নিকটতম অংশ</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU {0} ও ডিস্ক {1}-এর কাছাকাছি রাখতে গতি বাড়ায় বা কমায়</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>কম্পিউটার চার্জে লাগালে আবার শুরু হয়</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>লক্ষ্য {0}</value>

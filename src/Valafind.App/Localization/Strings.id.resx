@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Tampilkan di folder</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Mengindeks saat menganggur</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Mengindeks di latar belakang</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Mengindeks saat menganggur {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Mengindeks di latar belakang {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Model tidak tersedia — pencarian nonaktif</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>MENGAPA COCOK · BAGIAN TERDEKAT</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Mempercepat atau memperlambat agar CPU sekitar {0} dan disk sekitar {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Dilanjutkan saat komputer dicolokkan ke listrik</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Target {0}</value>

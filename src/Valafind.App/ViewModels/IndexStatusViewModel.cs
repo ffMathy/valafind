@@ -83,7 +83,7 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>Latest raw status.</summary>
     [ObservableProperty] public partial IndexStatus Raw { get; private set; } = IndexStatus.Initial;
 
-    /// <summary>"Indexing paused — system busy", "Indexing while idle", "Up to date", …</summary>
+    /// <summary>"Indexing paused — system busy", "Indexing in the background", "Up to date", …</summary>
     [ObservableProperty] public partial string StateText { get; private set; } = string.Empty;
 
     /// <summary>Short state for the Linux pressure card ("Paused — system busy").</summary>
@@ -218,7 +218,7 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>"Target 27%" (tooltip of the GPU meter), empty without a marker.</summary>
     [ObservableProperty] public partial string GpuTargetText { get; private set; } = string.Empty;
 
-    /// <summary>Compact one-liner for the macOS footer: "Indexing while idle 41%".</summary>
+    /// <summary>Compact one-liner for the macOS footer: "Indexing in the background 41%".</summary>
     [ObservableProperty] public partial string CompactText { get; private set; } = string.Empty;
 
     /// <summary>Whether the Linux "paused" banner is shown.</summary>
@@ -232,9 +232,6 @@ public sealed partial class IndexStatusViewModel : ObservableObject
 
     /// <summary>Banner/strip action caption: "Index Now" or "Resume".</summary>
     [ObservableProperty] public partial string ResumeActionText { get; private set; } = Strings.IndexNow;
-
-    /// <summary>Explains the automatic throttling policy.</summary>
-    [ObservableProperty] public partial string PolicyText { get; private set; } = string.Empty;
 
     /// <summary>Tray menu caption: "Pause indexing" / "Resume indexing".</summary>
     [ObservableProperty] public partial string PauseMenuText { get; private set; } = Strings.PauseIndexing;
@@ -340,7 +337,7 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         (StateText, ShortStateText, Tone) = status.State switch
         {
             IndexingState.Starting => (Strings.StatePreparing, Strings.StateStarting, StatusTone.Neutral),
-            IndexingState.Running => (Strings.StateIndexingWhileIdle, Strings.StateIndexingWhileIdle, StatusTone.Good),
+            IndexingState.Running => (Strings.StateIndexingInBackground, Strings.StateIndexingInBackground, StatusTone.Good),
             IndexingState.PausedSystemBusy => (Strings.StatePausedSystemBusy, Strings.StatePausedSystemBusyShort, StatusTone.Busy),
             IndexingState.PausedOnBattery => (Strings.StatePausedOnBattery, Strings.StatePausedOnBatteryShort, StatusTone.Busy),
             IndexingState.PausedByUser => (Strings.StatePaused, Strings.StatePausedByYou, StatusTone.Paused),
@@ -362,7 +359,7 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         CompactText = status.State switch
         {
             IndexingState.UpToDate => Strings.IndexUpToDate,
-            IndexingState.Running => Loc.Format(Strings.StateIndexingWhileIdlePercent, DisplayFormat.Percent(SearchableFraction)),
+            IndexingState.Running => Loc.Format(Strings.StateIndexingInBackgroundPercent, DisplayFormat.Percent(SearchableFraction)),
             IndexingState.Starting => Strings.StatePreparingShort,
             _ => StateText + " · " + DisplayFormat.Percent(SearchableFraction),
         };
@@ -377,9 +374,5 @@ public sealed partial class IndexStatusViewModel : ObservableObject
         };
         BannerDetail = Loc.Format(Strings.BannerSearchable, DisplayFormat.Percent(SearchableFraction));
         SetUserPaused(IsUserPaused);
-        // Load never pauses indexing; it only slows it down (IndexingPace). Only the battery rule (and the user) pause it.
-        PolicyText = status.State == IndexingState.PausedOnBattery
-            ? Strings.PolicyResumesOnPower
-            : Loc.Format(Strings.PolicyAdapts, DisplayFormat.Percent(maxCpuPercent / 100), DisplayFormat.Percent(maxDiskBusyPercent / 100));
     }
 }

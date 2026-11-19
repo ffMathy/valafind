@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>ఫోల్డర్‌లో చూపించు</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>ఖాళీ సమయంలో ఇండెక్స్ చేస్తోంది</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>నేపథ్యంలో ఇండెక్స్ చేస్తోంది</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>ఖాళీ సమయంలో ఇండెక్స్ చేస్తోంది {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>నేపథ్యంలో ఇండెక్స్ చేస్తోంది {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>మోడల్ అందుబాటులో లేదు — శోధన ఆఫ్‌లో ఉంది</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ఎందుకు సరిపోలింది · అత్యంత దగ్గరి భాగం</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPUని {0} దగ్గర, డిస్క్‌ను {1} దగ్గర ఉంచడానికి వేగాన్ని పెంచుతుంది లేదా తగ్గిస్తుంది</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>కంప్యూటర్‌ను ఛార్జర్‌కు కలిపితే మళ్లీ మొదలవుతుంది</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>లక్ష్యం {0}</value>

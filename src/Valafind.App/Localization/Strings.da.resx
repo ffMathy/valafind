@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Vis i mappe</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Indekserer i inaktiv tid</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Indekserer i baggrunden</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Indekserer i inaktiv tid {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Indekserer i baggrunden {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Modellen er utilgængelig — søgning er slået fra</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>HVORFOR DEN MATCHEDE · NÆRMESTE PASSAGE</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Sætter farten op eller ned for at holde CPU'en omkring {0} og disken omkring {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Fortsætter, når computeren sluttes til strøm</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Mål {0}</value>

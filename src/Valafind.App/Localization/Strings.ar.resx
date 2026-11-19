@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>إظهار في المجلد</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>الفهرسة أثناء الخمول</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>الفهرسة في الخلفية</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>الفهرسة أثناء الخمول {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>الفهرسة في الخلفية {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>النموذج غير متاح — البحث متوقف</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>سبب التطابق · أقرب مقطع</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>يُسرّع أو يُبطئ ليُبقي المعالج قرب {0} والقرص قرب {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>يستأنف عند توصيل الكمبيوتر بالكهرباء</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>الهدف {0}</value>

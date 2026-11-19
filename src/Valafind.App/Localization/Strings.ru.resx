@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>Показать в папке</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>Индексирование во время простоя</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>Индексирование в фоновом режиме</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>Индексирование во время простоя {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>Индексирование в фоновом режиме {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>Модель недоступна — поиск отключён</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>ПОЧЕМУ НАЙДЕНО · БЛИЖАЙШИЙ ФРАГМЕНТ</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>Ускоряется или замедляется, чтобы держать загрузку ЦП около {0}, а диска — около {1}</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>Возобновится, когда компьютер подключат к сети</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>Цель {0}</value>

@@ -534,11 +534,11 @@
   <data name="ShowInFolder" xml:space="preserve">
     <value>폴더에서 보기</value>
   </data>
-  <data name="StateIndexingWhileIdle" xml:space="preserve">
-    <value>유휴 시 색인 중</value>
+  <data name="StateIndexingInBackground" xml:space="preserve">
+    <value>백그라운드에서 색인 중</value>
   </data>
-  <data name="StateIndexingWhileIdlePercent" xml:space="preserve">
-    <value>유휴 시 색인 중 {0}</value>
+  <data name="StateIndexingInBackgroundPercent" xml:space="preserve">
+    <value>백그라운드에서 색인 중 {0}</value>
   </data>
   <data name="StateModelUnavailable" xml:space="preserve">
     <value>모델을 사용할 수 없음 — 검색 꺼짐</value>
@@ -638,12 +638,6 @@
   </data>
   <data name="WhyItMatchedClosestPassage" xml:space="preserve">
     <value>일치 이유 · 가장 가까운 구절</value>
-  </data>
-  <data name="PolicyAdapts" xml:space="preserve">
-    <value>CPU는 {0}, 디스크는 {1} 근처를 유지하도록 속도를 조절합니다</value>
-  </data>
-  <data name="PolicyResumesOnPower" xml:space="preserve">
-    <value>컴퓨터를 전원에 연결하면 다시 시작합니다</value>
   </data>
   <data name="IndexTargetTooltip" xml:space="preserve">
     <value>목표 {0}</value>
