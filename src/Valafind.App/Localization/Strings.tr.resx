@@ -339,9 +339,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Dizinlenecek bir klasör seçin</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 model klasörünü seçin</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind'ı göster veya gizle</value>
   </data>
@@ -414,9 +411,6 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Yeni sürümleri otomatik olarak yükle</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Gözat…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Güncellemeleri denetle</value>
   </data>
@@ -488,12 +482,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Algılandı: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Model klasörü</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Otomatik</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Bulunamadı — yüklemek için şunu çalıştırın: {0} (yükleneceği konum: {1}). Valafind modeli otomatik olarak algılar.</value>

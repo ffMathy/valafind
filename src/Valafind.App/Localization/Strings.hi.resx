@@ -339,9 +339,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>अनुक्रमित करने के लिए फ़ोल्डर चुनें</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 मॉडल फ़ोल्डर चुनें</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind दिखाएँ या छिपाएँ</value>
   </data>
@@ -414,9 +411,6 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>नए संस्करण अपने-आप इंस्टॉल करें</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>ब्राउज़ करें…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>अपडेट की जाँच करें</value>
   </data>
@@ -488,12 +482,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>पहचाना गया: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>मॉडल फ़ोल्डर</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>स्वचालित</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>नहीं मिला — {0} चलाकर इसे इंस्टॉल करें ({1} में इंस्टॉल होता है)। Valafind इसे अपने-आप पहचान लेगा।</value>

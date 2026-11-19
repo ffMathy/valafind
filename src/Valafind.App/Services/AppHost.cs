@@ -71,7 +71,7 @@ public sealed class AppHost : IAsyncDisposable
         _launcherVm = services.GetRequiredService<LauncherViewModel>();
         _launcherVm.Actions = new LauncherActions(this);
         _modelWatcher = new ModelInstallWatcher(
-            () => CoreServicesFactory.ModelSignature(_settings.ModelDirectory),
+            () => CoreServicesFactory.ModelSignature(),
             () => Dispatcher.UIThread.Post(OnModelFilesChanged));
     }
 
@@ -394,7 +394,7 @@ public sealed class AppHost : IAsyncDisposable
             {
                 try
                 {
-                    var written = CoreServicesFactory.InstallBundledModel(_settings.ModelDirectory, ct);
+                    var written = CoreServicesFactory.InstallBundledModel(ct);
                     if (written > 0)
                         Log.BundledModelInstalled(_log, written, CoreServicesFactory.DefaultModelDirectory);
                 }
@@ -403,8 +403,8 @@ public sealed class AppHost : IAsyncDisposable
                     Log.BundledModelInstallFailed(_log, CoreServicesFactory.DefaultModelDirectory, e);
                     unpackError = e;
                 }
-                var dir = CoreServicesFactory.LocateModel(_settings.ModelDirectory);
-                return (dir, dir is null ? null : CoreServicesFactory.ModelSignature(_settings.ModelDirectory));
+                var dir = CoreServicesFactory.LocateModel();
+                return (dir, dir is null ? null : CoreServicesFactory.ModelSignature());
             }, ct).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
@@ -429,9 +429,8 @@ public sealed class AppHost : IAsyncDisposable
         if (modelDir is null)
         {
             Log.ModelMissing(_log);
-            _launcherVm.SetModelMissing(CoreServicesFactory.ExpectedModelDirectory(_settings),
-                customTarget: !string.IsNullOrWhiteSpace(_settings.ModelDirectory)
-                              || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VALAFIND_DATA_DIR")));
+            _launcherVm.SetModelMissing(CoreServicesFactory.DefaultModelDirectory,
+                customTarget: !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VALAFIND_DATA_DIR")));
             _launcherVm.UpdateStatus(IndexStatus.Initial with { State = IndexingState.ModelUnavailable });
             if (!ct.IsCancellationRequested && !_quitting)
                 _modelWatcher.Start(baseline: null);
@@ -768,7 +767,7 @@ public sealed class AppHost : IAsyncDisposable
 
     private sealed class SettingsHost(AppHost host) : ISettingsHost
     {
-        public string? DetectModel(string? configuredDirectory) => CoreServicesFactory.LocateModel(configuredDirectory);
+        public string? DetectModel() => CoreServicesFactory.LocateModel();
 
         public string DefaultModelDirectory => CoreServicesFactory.DefaultModelDirectory;
 

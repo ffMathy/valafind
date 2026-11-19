@@ -339,9 +339,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Chọn thư mục để lập chỉ mục</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Chọn thư mục mô hình EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Hiện hoặc ẩn Valafind</value>
   </data>
@@ -414,9 +411,6 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Tự động cài đặt phiên bản mới</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Duyệt…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Kiểm tra cập nhật</value>
   </data>
@@ -488,12 +482,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Đã phát hiện: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Thư mục mô hình</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Tự động</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Không tìm thấy — hãy cài đặt bằng cách chạy {0} (cài vào {1}). Valafind sẽ tự động nhận ra.</value>

@@ -339,9 +339,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Vælg en mappe, der skal indekseres</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Vælg mappen med EmbeddingGemma 2-modellen</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Vis eller skjul Valafind</value>
   </data>
@@ -414,9 +411,6 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Installer nye versioner automatisk</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Gennemse…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Søg efter opdateringer</value>
   </data>
@@ -488,12 +482,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Fundet: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Modelmappe</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Automatisk</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Ikke fundet — installer den ved at køre {0} (installeres i {1}). Valafind finder den automatisk.</value>

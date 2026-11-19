@@ -92,7 +92,7 @@ done
 echo
 if [ "$custom" -eq 1 ]; then
   echo "Done. Model installed in: $target"
-  echo "Custom location: point ModelDirectory in settings.json (or VALAFIND_MODEL_DIR) at this folder."
+  echo "Valafind only looks in its data folder; use this copy to build with -p:ValafindModelDir=\"$target\"."
 else
   echo "Done. Valafind will find the model automatically in: $target"
 fi

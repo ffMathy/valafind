@@ -339,9 +339,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>选择要索引的文件夹</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>选择 EmbeddingGemma 2 模型文件夹</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>显示或隐藏 Valafind</value>
   </data>
@@ -414,9 +411,6 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>自动安装新版本</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>浏览…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>检查更新</value>
   </data>
@@ -488,12 +482,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>已检测到：{0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>模型文件夹</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>自动</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>未找到——运行 {0} 进行安装（安装到 {1}）。Valafind 会自动识别。</value>

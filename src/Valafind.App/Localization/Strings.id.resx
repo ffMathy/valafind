@@ -339,9 +339,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Pilih folder untuk diindeks</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Pilih folder model EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Tampilkan atau sembunyikan Valafind</value>
   </data>
@@ -414,9 +411,6 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Pasang versi baru secara otomatis</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Telusuri…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Periksa pembaruan</value>
   </data>
@@ -488,12 +482,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Terdeteksi: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Folder model</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Otomatis</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Tidak ditemukan — pasang dengan menjalankan {0} (dipasang ke {1}). Valafind akan mendeteksinya secara otomatis.</value>

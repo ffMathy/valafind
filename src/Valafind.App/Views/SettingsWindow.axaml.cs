@@ -7,7 +7,7 @@ using Valafind.App.ViewModels;
 
 namespace Valafind.App.Views;
 
-/// <summary>Settings: hotkey, folders, resource limits, embedding size, model folder, start at login.</summary>
+/// <summary>Settings: hotkey, folders, resource limits, embedding size, start at login.</summary>
 public partial class SettingsWindow : Window
 {
     /// <summary>Designer constructor.</summary>

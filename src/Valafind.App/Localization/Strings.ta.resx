@@ -339,9 +339,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>அட்டவணையிட ஒரு கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 மாதிரிக் கோப்புறையைத் தேர்ந்தெடுக்கவும்</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind-ஐக் காட்டு அல்லது மறை</value>
   </data>
@@ -414,9 +411,6 @@
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>புதிய பதிப்புகளைத் தானாக நிறுவு</value>
   </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>உலாவு…</value>
-  </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>புதுப்பிப்புகளைச் சரிபார்</value>
   </data>
@@ -488,12 +482,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>கண்டறியப்பட்டது: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>மாதிரிக் கோப்புறை</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>தானியங்கு</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>கிடைக்கவில்லை — {0} ஐ இயக்கி நிறுவவும் ({1} இல் நிறுவப்படும்). Valafind அதைத் தானாகக் கண்டறியும்.</value>
