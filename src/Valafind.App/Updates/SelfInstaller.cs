@@ -159,6 +159,10 @@ public sealed class SelfInstaller
             return new StartupResult(false, arguments, false, false);
         }
 
+        // A copy started from a download was opened by the user (double-click), not by login: whichever copy ends up
+        // running must show itself. Without this the installed copy started hidden in the tray, looking as if
+        // nothing had happened.
+        var launch = arguments.Length == 0 ? [.. app.LaunchArguments] : arguments;
         try
         {
             var installed = ReadInstalledVersion();
@@ -166,20 +170,20 @@ public sealed class SelfInstaller
             if (exists && installed is not null && installed > version)
             {
                 log.Information($"Version {installed} is already installed; starting it instead of {version}");
-                using var _ = Launch(layout.Executable, arguments);
-                return new StartupResult(true, arguments, false, false);
+                using var _ = Launch(layout.Executable, launch);
+                return new StartupResult(true, launch, false, false);
             }
 
             log.Information($"Installing {app.Name} {version} to {layout.Target}");
             host.StopRunningInstance();
             Install();
-            using var started = Launch(layout.Executable, exists ? arguments : [.. arguments, FirstInstallFlag]);
-            return new StartupResult(true, arguments, false, false);
+            using var started = Launch(layout.Executable, exists ? launch : [.. launch, FirstInstallFlag]);
+            return new StartupResult(true, launch, false, false);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or Win32Exception or NotSupportedException)
         {
             log.Warning($"Could not install {app.Name} to {layout.Target}; running from {running.ExecutablePath} instead", exception);
-            return new StartupResult(false, arguments, false, false);
+            return new StartupResult(false, launch, false, false);
         }
     }
 

@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>اپ ڈیٹس کی جانچ کریں…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>اپ ڈیٹ کے لیے دوبارہ شروع کریں</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>تلاش صاف کریں</value>
   </data>
@@ -419,6 +422,9 @@
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>اپ ڈیٹس کی جانچ کریں</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>اپ ڈیٹ کے لیے دوبارہ شروع کریں</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>ڈیفالٹ: {0}</value>

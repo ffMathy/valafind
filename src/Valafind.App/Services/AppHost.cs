@@ -58,6 +58,11 @@ public sealed class AppHost : IAsyncDisposable
     private int _statusPostQueued;
     private bool _interactive;
     private bool _quitting;
+    // Set when this process quits to make way for an update; the new version is started once this one has let go of
+    // the single-instance lock. A launch the user makes meanwhile ("show"/"toggle") is remembered so that the new
+    // version opens its launcher instead of starting hidden in the tray.
+    private volatile bool _restartingForUpdate;
+    private volatile bool _showAfterRestart;
 
     private AppHost(ServiceProvider services, SingleInstance? instance, string? startupCommand, bool firstRun)
     {
@@ -238,13 +243,25 @@ public sealed class AppHost : IAsyncDisposable
             _updateHttp,
             new Installation.UpdateLog(_loggerFactory.CreateLogger<Updater>()),
             () => _settings.AutomaticUpdates);
-        _updater.UpdateReady += (_, _) => Dispatcher.UIThread.Post(RestartWhenIdle);
+        _updater.UpdateReady += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            _tray?.SetUpdateReady();
+            RestartWhenIdle();
+        });
         _updater.Start(FirstUpdateCheck, UpdateCheckInterval);
     }
 
-    /// <summary>Checks for an update now and shows the result in the settings window.</summary>
+    /// <summary>
+    /// Checks for an update now and shows the result in the settings window; restarts into the new version when one
+    /// is already downloaded (the menu item then reads "Restart to update").
+    /// </summary>
     public void CheckForUpdates()
     {
+        if (_updater is { State: UpdateState.ReadyToRestart })
+        {
+            RestartToUpdate();
+            return;
+        }
         if (_updater is not { IsSupported: true })
         {
             Shell(p => ShellIntegration.OpenUrl(new Uri(p)), Installation.App.ReleasesPage.AbsoluteUri, "open the releases page");
@@ -267,23 +284,47 @@ public sealed class AppHost : IAsyncDisposable
         }
 
         _restartTimer?.Stop();
+        _restartingForUpdate = true;
+        Quit(); // QuitAsync starts the new version once this one is torn down (StartUpdatedVersion).
+    }
+
+    /// <summary>Quits now and starts the downloaded version with its launcher open (the user asked for it).</summary>
+    public void RestartToUpdate()
+    {
+        if (_updater is not { State: UpdateState.ReadyToRestart } || _quitting)
+            return;
+        _restartTimer?.Stop();
+        _showAfterRestart = true;
+        _restartingForUpdate = true;
+        Quit();
+    }
+
+    /// <summary>
+    /// Starts the new version after this process released the single-instance lock. It waits for this process to
+    /// exit, then runs in the background like a start at login, or opens its launcher when the user started
+    /// Valafind while this copy was shutting down (that request reached this copy, which can no longer show it).
+    /// </summary>
+    private void StartUpdatedVersion(Updater updater)
+    {
+        var argument = _showAfterRestart ? "--show" : Autostart.BackgroundArgument;
         try
         {
-            // The new copy waits for this process to exit, then runs in the background like a start at login.
-            _updater.Restart([Autostart.BackgroundArgument]);
+            updater.Restart([argument]);
         }
         catch (Exception e) when (e is Win32Exception or InvalidOperationException)
         {
             Log.PlatformCallFailed(_log, "start the updated Valafind", e);
-            return;
         }
-        Quit();
     }
 
-    private void OnInstanceCommand(object? sender, string command) =>
+    private void OnInstanceCommand(object? sender, string command)
+    {
+        var normalized = command.Trim().TrimStart('-').ToLowerInvariant();
+        if (_restartingForUpdate && normalized is "show" or "toggle")
+            _showAfterRestart = true; // Read after the instance is disposed, so no command can arrive later.
         Dispatcher.UIThread.Post(() =>
         {
-            switch (command.Trim().TrimStart('-').ToLowerInvariant())
+            switch (normalized)
             {
                 case "toggle":
                     ToggleLauncher();
@@ -299,6 +340,7 @@ public sealed class AppHost : IAsyncDisposable
                     break;
             }
         });
+    }
 
     private void OnLauncherPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -634,6 +676,8 @@ public sealed class AppHost : IAsyncDisposable
         }
         finally
         {
+            if (_restartingForUpdate && _updater is { } updater)
+                StartUpdatedVersion(updater);
             _desktop?.Shutdown();
         }
     }
@@ -665,8 +709,8 @@ public sealed class AppHost : IAsyncDisposable
         _disposed = true;
         _quitting = true;
         Log.ShuttingDown(_log);
-        if (_instance is not null)
-            _instance.CommandReceived -= OnInstanceCommand;
+        // Keep listening for commands until the instance is disposed below: a launch made while an update restarts
+        // this process must not be lost (see OnInstanceCommand).
         _launcherVm.PropertyChanged -= OnLauncherPropertyChanged;
         _modelWatcher.Dispose();
         try
@@ -688,7 +732,11 @@ public sealed class AppHost : IAsyncDisposable
         {
             await StopCoreCoreAsync().ConfigureAwait(true);
             _coreCts.Dispose();
-            _instance?.Dispose();
+            if (_instance is not null)
+            {
+                _instance.Dispose();
+                _instance.CommandReceived -= OnInstanceCommand;
+            }
             await _services.DisposeAsync().ConfigureAwait(true);
         }).ConfigureAwait(true);
     }
@@ -797,6 +845,8 @@ public sealed class AppHost : IAsyncDisposable
         public bool IsAutostartEnabled() => Autostart.IsEnabled();
 
         public void SetAutostartEnabled(bool enabled) => Autostart.SetEnabled(enabled);
+
+        public void RestartToUpdate() => host.RestartToUpdate();
 
         public async Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after)
         {

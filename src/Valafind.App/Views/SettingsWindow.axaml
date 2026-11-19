@@ -369,7 +369,7 @@
                   <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutomaticUpdates}"
                                 AutomationProperties.Name="{x:Static l:Strings.SettingsAutoUpdate}" />
                 </Grid>
-                <Button Content="{x:Static l:Strings.SettingsCheckForUpdates}" Command="{Binding CheckForUpdatesCommand}"
+                <Button Content="{Binding UpdateButtonText}" Command="{Binding CheckForUpdatesCommand}"
                         HorizontalAlignment="Left" />
               </StackPanel>
             </Border>

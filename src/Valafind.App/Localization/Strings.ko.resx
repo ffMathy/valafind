@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>업데이트 확인…</value>
   </data>
+  <data name="RestartToUpdateMenu" xml:space="preserve">
+    <value>다시 시작하여 업데이트</value>
+  </data>
   <data name="ClearSearch" xml:space="preserve">
     <value>검색 지우기</value>
   </data>
@@ -419,6 +422,9 @@
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>업데이트 확인</value>
+  </data>
+  <data name="SettingsRestartToUpdate" xml:space="preserve">
+    <value>다시 시작하여 업데이트</value>
   </data>
   <data name="SettingsDefaultHotkey" xml:space="preserve">
     <value>기본값: {0}</value>

@@ -30,15 +30,9 @@ public static class Program
         if (command == "quit")
             return 0; // Nothing to quit.
 
-        var instance = SingleInstance.TryAcquire();
+        var instance = AcquireOrForward(command);
         if (instance is null)
-        {
-            // Another instance owns the lock: bring it to front instead of starting a second copy (unless this is a
-            // start at login, which must stay invisible).
-            if (command != BackgroundCommand)
-                SignalExisting("show");
             return 0;
-        }
 
         using var loggerFactory = AppLogging.Create();
         var log = loggerFactory.CreateLogger(typeof(Program));
@@ -115,6 +109,32 @@ public static class Program
             }
         }
         return null;
+    }
+
+    /// <summary>How long a launch keeps trying when the running instance is shutting down (e.g. to update itself).</summary>
+    private static readonly TimeSpan HandOverWindow = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// Takes the single-instance lock, or brings the running instance to front and returns null. A start at login
+    /// stays invisible and simply leaves when another instance runs.
+    /// </summary>
+    /// <remarks>
+    /// An instance that is quitting (for instance to restart into an update) closes its command channel before it
+    /// releases the lock. A launch in that gap could neither reach it nor start, and was lost: the user clicked
+    /// Valafind and nothing appeared. So keep trying for a little while until one of the two succeeds.
+    /// </remarks>
+    private static SingleInstance? AcquireOrForward(string? command)
+    {
+        var deadline = DateTime.UtcNow + HandOverWindow;
+        while (true)
+        {
+            var instance = SingleInstance.TryAcquire();
+            if (instance is not null)
+                return instance;
+            if (command == BackgroundCommand || SignalExisting("show") || DateTime.UtcNow >= deadline)
+                return null;
+            Thread.Sleep(250);
+        }
     }
 
     private static bool SignalExisting(string command)
