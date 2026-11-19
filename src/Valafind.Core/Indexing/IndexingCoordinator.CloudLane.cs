@@ -40,8 +40,9 @@ public sealed partial class IndexingCoordinator
         public int Completed;
     }
 
-    /// <summary>A file to give back, tried again later while another program has it open.</summary>
-    private sealed record PendingRelease(string Name, Func<bool> TryOnce, Action GiveUp)
+    /// <summary>A file to give back, tried again later while it is not done yet. <see cref="Abandon"/> forgets it
+    /// without touching it, when a call hung.</summary>
+    private sealed record PendingRelease(string Name, Func<bool> TryOnce, Action GiveUp, Action Abandon)
     {
         public int Attempts { get; set; }
         public DateTimeOffset DueUtc { get; set; }
@@ -49,6 +50,20 @@ public sealed partial class IndexingCoordinator
 
     /// <summary>Attempts at giving a file back before it is left for the next restart: about two minutes in all.</summary>
     private const int MaxReleaseAttempts = 8;
+
+    /// <summary>Longest a single call to give a file back may take (<see cref="CoordinatorTuning.CloudReleaseTimeout"/>).
+    /// One that takes longer is left to finish on its own (it cannot be cancelled), and the release thread goes on
+    /// without it.</summary>
+    private TimeSpan ReleaseCallTimeout => _tuning.CloudReleaseTimeout;
+
+    /// <summary>Calls that may hang before Valafind stops downloading cloud files for this run: a file it downloads must
+    /// be given back, and with calls hanging that cannot be relied on.</summary>
+    private const int MaxHungReleases = 3;
+
+    private int _hungReleases;
+
+    /// <summary>Set when giving files back keeps hanging: no more cloud downloads this run (names are still indexed).</summary>
+    private volatile bool _cloudDownloadsOff;
     private static readonly TimeSpan CloudStatusInterval = TimeSpan.FromMinutes(1);
 
     private readonly Lock _cloudLock = new();
@@ -435,7 +450,7 @@ public sealed partial class IndexingCoordinator
     /// <summary>Gives a requested file back on the release thread; retried there while another program has it open.</summary>
     private void ReleaseLater(CloudPrefetcher prefetch, string path) =>
         QueueRelease(new PendingRelease(path, () => prefetch.TryRelease(path, lastAttempt: false),
-            () => prefetch.TryRelease(path, lastAttempt: true)));
+            () => prefetch.TryRelease(path, lastAttempt: true), () => prefetch.Forget(path)));
 
     /// <summary>Frees a file downloaded one at a time (the lease's own safety rules apply) on the release thread.</summary>
     private void ReleaseLater(string path, IDisposable lease) =>
@@ -443,7 +458,7 @@ public sealed partial class IndexingCoordinator
         {
             lease.Dispose();
             return true;
-        }, static () => { }));
+        }, static () => { }, static () => { }));
 
     private void QueueRelease(PendingRelease release)
     {
@@ -504,16 +519,8 @@ public sealed partial class IndexingCoordinator
 
     private void TryReleaseOnce(PendingRelease release)
     {
-        bool done;
-        try
-        {
-            done = release.TryOnce();
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            IndexingLog.CloudFileFailed(_logger, e, release.Name);
-            done = false;
-        }
+        if (!TryGuarded(release, release.TryOnce, ReleaseCallTimeout, out var done))
+            return; // hung: abandoned
         if (done)
             return;
         release.Attempts++;
@@ -527,16 +534,52 @@ public sealed partial class IndexingCoordinator
             _releases.Add(release);
     }
 
-    private void GiveUp(PendingRelease release)
-    {
-        try
+    private void GiveUp(PendingRelease release) =>
+        TryGuarded(release, () =>
         {
             release.GiveUp();
+            return true;
+        }, ReleaseCallTimeout, out _);
+
+    /// <summary>Runs one call to give a file back, for at most <paramref name="timeout"/>. False when it hung: the file
+    /// is abandoned (it stays recorded for the next start), and after <see cref="MaxHungReleases"/> hangs cloud
+    /// downloads stop for this run.</summary>
+    private bool TryGuarded(PendingRelease release, Func<bool> call, TimeSpan timeout, out bool done)
+    {
+        done = false;
+        // A thread of its own, not the thread pool: a call stuck in the pool would delay the next ones until they too
+        // timed out before they even started.
+        var task = Task.Factory.StartNew(call, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        try
+        {
+            if (task.Wait(timeout))
+            {
+                done = task.Result;
+                return true;
+            }
+        }
+        catch (AggregateException e) when (e.InnerException is not OperationCanceledException)
+        {
+            IndexingLog.CloudFileFailed(_logger, e.InnerException ?? e, release.Name);
+            return true;
+        }
+
+        IndexingLog.CloudReleaseHung(_logger, release.Name, timeout);
+        try
+        {
+            release.Abandon();
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             IndexingLog.CloudFileFailed(_logger, e, release.Name);
         }
+        if (Interlocked.Increment(ref _hungReleases) == MaxHungReleases)
+        {
+            _cloudDownloadsOff = true;
+            _prefetchOff = true;
+            IndexingLog.CloudDownloadsStopped(_logger, MaxHungReleases);
+        }
+        return false;
     }
 
     /// <summary>On shutdown: one last attempt at every file still waiting to be given back, for at most ten seconds;
@@ -552,23 +595,14 @@ public sealed partial class IndexingCoordinator
         var deadline = _time.GetUtcNow() + TimeSpan.FromSeconds(10);
         foreach (var release in left)
         {
-            if (_time.GetUtcNow() >= deadline)
+            var remaining = deadline - _time.GetUtcNow();
+            if (remaining <= TimeSpan.Zero)
             {
-                GiveUp(release);
+                release.Abandon(); // recorded: given back at the next start
                 continue;
             }
-            bool done;
-            try
-            {
-                done = release.TryOnce();
-            }
-            catch (Exception e) when (e is not OperationCanceledException)
-            {
-                IndexingLog.CloudFileFailed(_logger, e, release.Name);
-                done = false;
-            }
-            if (!done)
-                GiveUp(release);
+            if (TryGuarded(release, release.TryOnce, remaining, out var done) && !done)
+                release.Abandon();
         }
     }
 

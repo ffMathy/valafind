@@ -112,8 +112,21 @@ internal sealed class FakeCloud : ICloudFiles
     /// <summary>Requesting this file throws (an unexpected platform error).</summary>
     public string? FailRequestFor { get; set; }
 
+    /// <summary>Giving back a file this returns true for never returns (until <see cref="Unhang"/>), like a platform call
+    /// that waits on the sync client forever.</summary>
+    public Func<string, bool>? ReleaseHangs { get; set; }
+    private readonly TaskCompletionSource _unhang = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public int HungReleases;
+
+    public void Unhang() => _unhang.TrySetResult();
+
     public bool Release(string path, CloudMark mark, DateTimeOffset requestedUtc, bool final = false)
     {
+        if (ReleaseHangs is { } hangs && hangs(path))
+        {
+            Interlocked.Increment(ref HungReleases);
+            _unhang.Task.Wait();
+        }
         if (ReleaseDelay > TimeSpan.Zero)
             Thread.Sleep(ReleaseDelay);
         lock (OnlineOnly)
@@ -421,7 +434,7 @@ public class CloudFileIndexingTests
 
         // A stale record pointing at a path that now holds an ordinary file: nothing is touched.
         Assert.True(cloud.Release(path, new CloudMark(0, FileId: 12345), DateTimeOffset.UtcNow.AddHours(-1)));
-        Assert.NotEqual(WindowsCloudFiles.FreeResult.Freed, WindowsCloudFiles.FreeUpSpace(path, DateTimeOffset.UtcNow));
+        Assert.True(cloud.Release(path, new CloudMark(0), DateTimeOffset.UtcNow.AddHours(-1), final: true));
         Assert.Null(cloud.RequestDownload(path, _ => throw new InvalidOperationException("must not record a local file")));
 
         Assert.Equal("local and precious", File.ReadAllText(path));
