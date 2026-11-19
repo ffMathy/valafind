@@ -371,24 +371,27 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
     }
 
     /// <summary>Renders <paramref name="content"/> at its own size times <paramref name="scale"/>. It sits on a canvas in a
-    /// small window, so it is not clipped to the headless screen (1920 × 1080).</summary>
+    /// small window, so it is not clipped to the headless screen (1920 × 1080). A larger scale goes through a layout
+    /// transform rendered at 96 DPI: rendering at a higher DPI drops text and lays nested views out at the wrong size.</summary>
     private static RenderTargetBitmap Capture(Control content, double scale = 1)
     {
+        Control root = scale == 1
+            ? content
+            : new LayoutTransformControl { LayoutTransform = new ScaleTransform(scale, scale), Child = content };
         var window = new Window
         {
             RequestedThemeVariant = ThemeVariant.Light,
             Width = 200,
             Height = 200,
-            Content = new Canvas { Children = { content } },
+            Content = new Canvas { Children = { root } },
         };
         window.Show();
         try
         {
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-            var size = content.Bounds.Size;
-            var bitmap = new RenderTargetBitmap(
-                new PixelSize((int)Math.Round(size.Width * scale), (int)Math.Round(size.Height * scale)), new Vector(96 * scale, 96 * scale));
-            bitmap.Render(content);
+            var size = root.Bounds.Size;
+            var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Round(size.Width), (int)Math.Round(size.Height)));
+            bitmap.Render(root);
             return bitmap;
         }
         finally
