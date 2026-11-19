@@ -2048,7 +2048,8 @@ public sealed partial class IndexingCoordinator : IIndexingService
         }
 
         // The lane observes the same cancellation; a download it is in the middle of is cancelled, or ends on its own.
-        StopCloudLane(TimeSpan.FromSeconds(30));
+        // Short: a slow shutdown keeps the next copy (an update's restart) waiting.
+        StopCloudLane(TimeSpan.FromSeconds(5));
         _workers.Dispose();
         // Requested downloads stay requested (and recorded) while Valafind is stopped; the next start gives them back.
         _prefetch?.Dispose();
