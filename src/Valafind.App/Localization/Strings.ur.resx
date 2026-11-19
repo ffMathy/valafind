@@ -342,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>انڈیکس کرنے کے لیے فولڈر منتخب کریں</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 ماڈل فولڈر منتخب کریں</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind دکھائیں یا چھپائیں</value>
   </data>
@@ -416,9 +413,6 @@
   </data>
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>نئے ورژن خودکار طور پر انسٹال کریں</value>
-  </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>براؤز کریں…</value>
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>اپ ڈیٹس کی جانچ کریں</value>
@@ -494,12 +488,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>شناخت ہوئی: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>ماڈل فولڈر</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>خودکار</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>نہیں ملا — {0} چلا کر اسے انسٹال کریں ({1} میں انسٹال ہوتا ہے)۔ Valafind اسے خود بخود پہچان لے گا۔</value>

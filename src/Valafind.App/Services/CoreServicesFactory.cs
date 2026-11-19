@@ -56,17 +56,17 @@ internal static class CoreServicesFactory
 
     /// <summary>
     /// Unpacks the model embedded in release builds into <see cref="DefaultModelDirectory"/> (first start, or after the
-    /// files there were damaged). Skipped when nothing is bundled or when another valid model is in use (Settings,
-    /// <c>VALAFIND_MODEL_DIR</c>, a copy next to the app), so no disk space goes to an unused copy. Slow on first start
+    /// files there were damaged). Skipped when nothing is bundled or when another valid model is in use (a copy
+    /// next to the app), so no disk space goes to an unused copy. Slow on first start
     /// (~850 MB written): call off the UI thread. Returns the number of files written. Also removes the previous
     /// model (EmbeddingGemma-300m) that earlier versions unpacked next to it: it is never loaded again.
     /// </summary>
-    public static int InstallBundledModel(string? configuredDirectory, CancellationToken cancellationToken)
+    public static int InstallBundledModel(CancellationToken cancellationToken)
     {
         var assembly = Valafind.Model.ModelResources.Assembly;
         if (!BundledModel.IsBundled(assembly))
             return 0;
-        var found = ModelLocator.Find(configuredDirectory);
+        var found = ModelLocator.Find();
         if (found is not null && !string.Equals(Path.GetFullPath(found), Path.GetFullPath(DefaultModelDirectory),
                 OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
             return 0;
@@ -75,7 +75,7 @@ internal static class CoreServicesFactory
         return written;
     }
 
-    /// <summary>Deletes <c>models/embeddinggemma-300m</c> in the data folder (only that folder, never a user-chosen one).</summary>
+    /// <summary>Deletes <c>models/embeddinggemma-300m</c> in the data folder (only that folder).</summary>
     internal static void RemoveLegacyModel()
     {
         var legacy = Path.Combine(AppPaths.ModelsDirectory, ModelLocator.LegacyModelFolderName);
@@ -90,15 +90,15 @@ internal static class CoreServicesFactory
         }
     }
 
-    /// <summary>Finds the installed EmbeddingGemma 2 model directory, honouring the configured override.</summary>
-    public static string? LocateModel(string? configuredDirectory) => ModelLocator.Find(configuredDirectory);
+    /// <summary>Finds the installed EmbeddingGemma 2 model directory.</summary>
+    public static string? LocateModel() => ModelLocator.Find();
 
     /// <summary>
     /// Identifies the model install that <see cref="LocateModel"/> would load right now: its folder plus the size and
     /// time stamp of the files that matter, or null when no valid model is installed. Cheap (a few file probes); used
     /// to notice an install (or a repaired one) without restarting.
     /// </summary>
-    public static string? ModelSignature(string? configuredDirectory) => SignatureOf(ModelLocator.Find(configuredDirectory));
+    public static string? ModelSignature() => SignatureOf(ModelLocator.Find());
 
     /// <summary>Signature of the model in <paramref name="directory"/>, or null when it is not a valid model folder.</summary>
     internal static string? SignatureOf(string? directory)
@@ -116,10 +116,6 @@ internal static class CoreServicesFactory
         }
         return sb.ToString();
     }
-
-    /// <summary>Where the user should install the model (configured directory or the default models folder).</summary>
-    public static string ExpectedModelDirectory(ValafindSettings settings) =>
-        string.IsNullOrWhiteSpace(settings.ModelDirectory) ? DefaultModelDirectory : settings.ModelDirectory;
 
     /// <summary>The folder tools/fetch-model.* installs into by default.</summary>
     public static string DefaultModelDirectory => Path.Combine(AppPaths.ModelsDirectory, ModelLocator.ModelFolderName);

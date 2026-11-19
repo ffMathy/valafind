@@ -342,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Выберите папку для индексирования</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Выберите папку модели EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Показать или скрыть Valafind</value>
   </data>
@@ -416,9 +413,6 @@
   </data>
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Устанавливать новые версии автоматически</value>
-  </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Обзор…</value>
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Проверить обновления</value>
@@ -494,12 +488,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Обнаружена: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Папка модели</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Автоматически</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Не найдена — установите её командой {0} (папка установки: {1}). Valafind подхватит её автоматически.</value>

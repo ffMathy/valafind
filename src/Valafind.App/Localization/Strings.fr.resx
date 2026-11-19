@@ -342,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>Choisissez un dossier à indexer</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>Choisissez le dossier du modèle EmbeddingGemma 2</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Afficher ou masquer Valafind</value>
   </data>
@@ -416,9 +413,6 @@
   </data>
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>Installer automatiquement les nouvelles versions</value>
-  </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>Parcourir…</value>
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>Rechercher des mises à jour</value>
@@ -494,12 +488,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>Détecté : {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>Dossier du modèle</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>Automatique</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>Introuvable — installez-le en exécutant {0} (installation dans {1}). Valafind le détecte automatiquement.</value>

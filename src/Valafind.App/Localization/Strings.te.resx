@@ -342,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>ఇండెక్స్ చేయడానికి ఫోల్డర్‌ను ఎంచుకోండి</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 మోడల్ ఫోల్డర్‌ను ఎంచుకోండి</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind‌ను చూపించు లేదా దాచు</value>
   </data>
@@ -416,9 +413,6 @@
   </data>
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>కొత్త వెర్షన్‌లను ఆటోమేటిక్‌గా ఇన్‌స్టాల్ చేయి</value>
-  </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>బ్రౌజ్ చేయి…</value>
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>అప్‌డేట్‌ల కోసం తనిఖీ చేయి</value>
@@ -494,12 +488,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>గుర్తించబడింది: {0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>మోడల్ ఫోల్డర్</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>ఆటోమేటిక్</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>కనుగొనబడలేదు — {0} ను అమలు చేసి ఇన్‌స్టాల్ చేయండి ({1} లో ఇన్‌స్టాల్ అవుతుంది). Valafind దాన్ని ఆటోమేటిక్‌గా గుర్తిస్తుంది.</value>

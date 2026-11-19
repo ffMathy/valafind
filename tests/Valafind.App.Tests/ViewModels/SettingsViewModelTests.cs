@@ -127,10 +127,10 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.True(vm.IsModelDetected);
         Assert.Equal("Detected: /models/embeddinggemma-2", vm.ModelDetectionText);
         host.Detected = null;
-        vm.ModelDirectory = "/nowhere";
+        vm = new SettingsViewModel(new ValafindSettings(), host);
         Assert.False(vm.IsModelDetected);
         Assert.StartsWith("Not found", vm.ModelDetectionText, StringComparison.Ordinal);
-        Assert.Contains("/nowhere", vm.ModelDetectionText, StringComparison.Ordinal);
+        Assert.Contains("/default/models/embeddinggemma-2", vm.ModelDetectionText, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -220,7 +220,7 @@ public sealed class SettingsViewModelTests : IDisposable
         public void OpenLogFolder() => LogFolderOpened++;
         public int RestartsToUpdate { get; private set; }
         public void RestartToUpdate() => RestartsToUpdate++;
-        public string? DetectModel(string? configuredDirectory) => Detected;
+        public string? DetectModel() => Detected;
         public bool IsAutostartEnabled() => Autostart;
         public void SetAutostartEnabled(bool enabled) => Autostart = enabled;
         public async Task<string?> ApplyAsync(SettingsSnapshot before, ValafindSettings after)

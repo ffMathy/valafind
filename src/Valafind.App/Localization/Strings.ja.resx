@@ -342,9 +342,6 @@
   <data name="PickFolderToIndex" xml:space="preserve">
     <value>インデックスを作成するフォルダを選択</value>
   </data>
-  <data name="PickModelFolder" xml:space="preserve">
-    <value>EmbeddingGemma 2 モデルフォルダを選択</value>
-  </data>
   <data name="PortalShortcutDescription" xml:space="preserve">
     <value>Valafind を表示／非表示</value>
   </data>
@@ -416,9 +413,6 @@
   </data>
   <data name="SettingsAutoUpdate" xml:space="preserve">
     <value>新しいバージョンを自動的にインストール</value>
-  </data>
-  <data name="SettingsBrowse" xml:space="preserve">
-    <value>参照…</value>
   </data>
   <data name="SettingsCheckForUpdates" xml:space="preserve">
     <value>アップデートを確認</value>
@@ -494,12 +488,6 @@
   </data>
   <data name="SettingsModelDetected" xml:space="preserve">
     <value>検出済み：{0}</value>
-  </data>
-  <data name="SettingsModelFolder" xml:space="preserve">
-    <value>モデルフォルダ</value>
-  </data>
-  <data name="SettingsModelFolderAutomatic" xml:space="preserve">
-    <value>自動</value>
   </data>
   <data name="SettingsModelNotFound" xml:space="preserve">
     <value>見つかりません。{0} を実行してインストールしてください（インストール先：{1}）。Valafind が自動的に検出します。</value>

@@ -7,9 +7,6 @@ namespace Valafind.Core.Embedding;
 /// </summary>
 public static class ModelLocator
 {
-    /// <summary>Environment variable that points at a model directory (overrides the default locations).</summary>
-    public const string EnvironmentVariable = "VALAFIND_MODEL_DIR";
-
     /// <summary>Name of the model's sub-directory below a "models" folder.</summary>
     public const string ModelFolderName = "embeddinggemma-2";
 
@@ -52,14 +49,13 @@ public static class ModelLocator
     private const long MinSelfContainedModelBytes = 16L * 1024 * 1024;
 
     /// <summary>
-    /// Returns the first valid model directory among, in order: <paramref name="configuredDirectory"/>,
-    /// <c>%VALAFIND_MODEL_DIR%</c>, <c>AppPaths.ModelsDirectory/embeddinggemma-2</c>,
+    /// Returns the first valid model directory among, in order: <c>AppPaths.ModelsDirectory/embeddinggemma-2</c>,
     /// <c>&lt;app&gt;/models/embeddinggemma-2</c> and, on macOS,
     /// <c>&lt;bundle&gt;/Contents/Resources/models/embeddinggemma-2</c>; or null when none is valid.
     /// </summary>
-    public static string? Find(string? configuredDirectory)
+    public static string? Find()
     {
-        foreach (var candidate in Candidates(configuredDirectory))
+        foreach (var candidate in Candidates())
         {
             if (IsValid(candidate, out _))
                 return candidate;
@@ -166,15 +162,8 @@ public static class ModelLocator
                || name.Contains("half", StringComparison.OrdinalIgnoreCase);
     }
 
-    internal static IEnumerable<string> Candidates(string? configuredDirectory)
+    internal static IEnumerable<string> Candidates()
     {
-        if (!string.IsNullOrWhiteSpace(configuredDirectory))
-            yield return ExpandHome(configuredDirectory);
-
-        var env = Environment.GetEnvironmentVariable(EnvironmentVariable);
-        if (!string.IsNullOrWhiteSpace(env))
-            yield return ExpandHome(env);
-
         yield return Path.Combine(AppPaths.ModelsDirectory, ModelFolderName);
 
         var baseDir = AppContext.BaseDirectory;
@@ -187,15 +176,5 @@ public static class ModelLocator
             if (contents is not null)
                 yield return Path.Combine(contents, "Resources", "models", ModelFolderName);
         }
-    }
-
-    private static string ExpandHome(string path)
-    {
-        path = path.Trim();
-        if (path == "~")
-            return AppPaths.Home;
-        if (path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal))
-            return Path.Combine(AppPaths.Home, path[2..]);
-        return path;
     }
 }
