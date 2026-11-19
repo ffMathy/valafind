@@ -64,7 +64,9 @@ internal static class CloudFiles
     internal const FileAttributes RecallOnDataAccess = (FileAttributes)0x00400000;
 
     /// <summary>Attributes that mark a Windows file whose content is not on this device.</summary>
-    internal const FileAttributes OnlineOnlyAttributes = FileAttributes.Offline | RecallOnDataAccess | RecallOnOpen;
+    /// <remarks>Not <see cref="RecallOnOpen"/>: that bit marks directories in directory listings, and on a file it is
+    /// the same bit as FILE_ATTRIBUTE_EA (the file has extended attributes), which ordinary local files can have.</remarks>
+    internal const FileAttributes OnlineOnlyAttributes = FileAttributes.Offline | RecallOnDataAccess;
 
     /// <summary>Online-only documents larger than this are not downloaded: their text would not be read anyway
     /// (<see cref="Abstractions.ExtractionLimits.MaxFileBytes"/>).</summary>
@@ -245,7 +247,8 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
                 return false; // in use: try again after the next restart
             if (modified || (File.GetAttributes(path) & CloudFiles.RecallOnDataAccess) != 0)
                 return true; // edited, or never arrived: nothing to free
-            if (FreeUpSpace(path, requestedUtc) != FreeResult.Busy)
+            // Uninstalling (final) may wait a few seconds; otherwise one try, and the release thread tries again later.
+            if (FreeUpSpace(path, requestedUtc, final ? DehydrateAttempts : 1) != FreeResult.Busy)
                 return true;
             if (final)
             {
@@ -298,18 +301,20 @@ internal sealed partial class WindowsCloudFiles : ICloudFiles
 
     /// <summary>Makes <paramref name="path"/> online-only again, but only when that cannot lose anything.</summary>
     /// <param name="notWrittenSince">The file must not have been written to after this time.</param>
-    internal static FreeResult FreeUpSpace(string path, DateTimeOffset notWrittenSince)
+    /// <param name="attempts">Tries while another program has the file open, a second apart. One (the default) never
+    /// sleeps: the caller retries later instead (Valafind's release thread), so no thread is held up.</param>
+    internal static FreeResult FreeUpSpace(string path, DateTimeOffset notWrittenSince, int attempts = 1)
     {
         try
         {
             if (IsInPinnedFolder(path))
                 return FreeResult.Kept; // the user keeps this folder on the device
-            for (var attempt = 1; attempt <= DehydrateAttempts; attempt++)
+            for (var attempt = 1; attempt <= attempts; attempt++)
             {
                 var result = TryDehydrate(path, notWrittenSince);
                 if (result != FreeResult.Busy)
                     return result;
-                if (attempt < DehydrateAttempts)
+                if (attempt < attempts)
                     Thread.Sleep(DehydrateRetryDelay); // antivirus scans freshly downloaded files
             }
             return FreeResult.Busy;

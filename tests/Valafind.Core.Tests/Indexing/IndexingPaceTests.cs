@@ -364,6 +364,38 @@ public class IndexingWorkersTests
     }
 
     [Fact]
+    public void The_main_lane_never_waits_for_cloud_items()
+    {
+        using var workers = new IndexingWorkers(PaceWithConcurrency(2));
+        using var cloudHeld = new ManualResetEventSlim();
+        var cloudRunning = 0;
+        var ct = TestContext.Current.CancellationToken;
+
+        // Cloud items get at most half the slots: the second waits even though the pace allows two.
+        workers.Run(() =>
+        {
+            Interlocked.Increment(ref cloudRunning);
+            cloudHeld.Wait(TimeSpan.FromSeconds(10));
+        }, ct, WorkLane.Cloud);
+        var secondCloud = Task.Run(() => workers.Run(() => cloudHeld.Wait(TimeSpan.FromSeconds(10)), ct, WorkLane.Cloud), ct);
+        Thread.Sleep(100);
+        Assert.False(secondCloud.IsCompleted, "a second cloud item must not take the other slot");
+
+        // Main items run beside the stuck cloud item, and waiting for the main lane ignores it.
+        var mainDone = 0;
+        for (var i = 0; i < 4; i++)
+            workers.Run(() => Interlocked.Increment(ref mainDone), ct);
+        workers.WaitIdle(ct);
+        Assert.Equal(4, mainDone);
+        Assert.Equal(1, workers.InFlightOf(WorkLane.Cloud));
+
+        cloudHeld.Set();
+        secondCloud.Wait(ct);
+        workers.WaitIdle(ct, WorkLane.Cloud);
+        Assert.Equal(0, workers.InFlight);
+    }
+
+    [Fact]
     public void A_failing_item_fails_the_next_wait()
     {
         using var workers = new IndexingWorkers(PaceWithConcurrency(2));

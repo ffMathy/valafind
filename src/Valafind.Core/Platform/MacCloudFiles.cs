@@ -39,6 +39,8 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
     private readonly Func<string, bool> _isDataless;
     private readonly ConcurrentDictionary<string, byte> _refusesEviction = new(StringComparer.Ordinal);
     private readonly Func<string, bool?> _isUploaded;
+    // Providers already found to report upload state: asked once each, not for every file (it is a call to a daemon).
+    private readonly ConcurrentDictionary<string, byte> _reportsUploadState = new(StringComparer.Ordinal);
 
     public MacCloudFiles()
         : this(AppPaths.Home, MacFileFlags.IsDataless, IsUploaded)
@@ -63,10 +65,15 @@ internal sealed unsafe partial class MacCloudFiles : ICloudFiles
             return false;
         // A provider that does not say whether its files are uploaded could never be given a file back safely:
         // download nothing from it.
-        if (_isUploaded(path) is null)
+        var provider = ProviderKey(path);
+        if (!_reportsUploadState.ContainsKey(provider))
         {
-            _refusesEviction.TryAdd(ProviderKey(path), 0);
-            return false;
+            if (_isUploaded(path) is null)
+            {
+                _refusesEviction.TryAdd(provider, 0);
+                return false;
+            }
+            _reportsUploadState.TryAdd(provider, 0);
         }
         return CloudFiles.HasRoomFor(path, size);
     }
