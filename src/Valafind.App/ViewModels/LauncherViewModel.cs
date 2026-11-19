@@ -402,7 +402,7 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
 
     /// <summary>Applies a new index status (must be called on the UI thread).</summary>
     public void UpdateStatus(IndexStatus status) =>
-        Status.Update(status, _settings.MaxCpuPercent, _settings.MaxDiskBusyPercent);
+        Status.Update(status, _settings.MaxCpuPercent, _settings.MaxDiskBusyPercent, _settings.MaxGpuPercent);
 
     /// <summary>Shows whether indexing is paused by the user. The persisted setting is the single source of truth, so
     /// the captions are right even before the Core runs (or while the model is unavailable).</summary>
