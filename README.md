@@ -55,12 +55,13 @@ request Valafind makes is checking GitHub for a newer release every few hours (s
 ## Get it
 
 Download the file for your platform from the [latest release](https://github.com/ffMathy/valafind/releases/latest). It is
-a single executable with the model inside. Every merge to `main` publishes a new release.
+a single executable with the model inside. Every merge to `main` publishes a new release, once CI has started each
+of its files on its own platform and seen the app come up (`tools/smoke-test-release.sh`).
 
 | Platform | File |
 |---|---|
 | Windows (x64 / Arm64) | `valafind-win-x64.exe`, `valafind-win-arm64.exe` |
-| macOS (Apple silicon / Intel) | `valafind-osx-arm64.app.zip`, `valafind-osx-x64.app.zip` (`Valafind.app`), or the bare `valafind-osx-*` executable |
+| macOS (Apple silicon / Intel) | `valafind-osx-arm64.app.zip`, `valafind-osx-x64.app.zip` (open it and double-click `Valafind.app`), or the bare `valafind-osx-*` executable (`chmod +x` it and start it from Terminal; double-clicking it opens it in TextEdit) |
 | Linux (x64 / Arm64) | `valafind-linux-x64`, `valafind-linux-arm64` (`chmod +x` it first) |
 
 Run it, and Valafind installs itself for your user (no administrator rights), sets itself to start at login and sits in

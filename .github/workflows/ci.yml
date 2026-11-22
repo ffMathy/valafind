@@ -170,11 +170,50 @@ jobs:
           compression-level: 0
           retention-days: 14
 
+  smoke:
+    # Starts each file a user can download, on its own operating system and architecture, the way a user would: the
+    # macOS app bundle is unzipped and opened through Launch Services like a double-click in Finder. Passes once the
+    # app reports that its user interface is up and keeps running. See tools/smoke-test-release.sh.
+    name: Start the release build (${{ matrix.rid }})
+    needs: publish
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64, os: windows-latest }
+          - { rid: win-arm64, os: windows-11-arm }
+          - { rid: osx-arm64, os: macos-latest }
+          - { rid: osx-x64, os: macos-15-intel }
+          - { rid: linux-x64, os: ubuntu-latest }
+          - { rid: linux-arm64, os: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/smoke-test-release.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: valafind-${{ matrix.rid }}
+          path: dist
+      - name: Install a virtual X server
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends xvfb
+      - name: Start every download
+        shell: bash
+        run: |
+          ls -la dist
+          for file in dist/*; do
+            echo "::group::$(basename "$file")"
+            tools/smoke-test-release.sh "$file"
+            echo "::endgroup::"
+          done
+
   release:
     # Every merge to the default branch becomes a GitHub release with the binaries attached.
     name: GitHub release
     if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-    needs: [publish, model-parity]
+    needs: [publish, smoke, model-parity]
     runs-on: ubuntu-latest
     permissions:
       contents: write
