@@ -157,6 +157,21 @@ provisioning profile is per app.
 3. Select the uploaded build and **Add for Review**. After the first approval, set `STORE_DRAFT_ONLY` to `false`: every
    later release is uploaded, given release notes that link to its GitHub release, submitted, and released when approved.
 
+## Charging for the app
+
+The store versions are paid; the GitHub releases stay free. Both stores pay out only once their business details are in:
+
+- **Microsoft Store:** in Partner Center, fill in **Account settings › Payout and tax**
+  (a payout account and the tax interview) before submitting a paid app. Under the app's **Pricing and availability**,
+  choose a **base price**. Keep to a base price rather than separate prices per market: when you publish an update,
+  `msstore publish` keeps the app's base price, but it stops with an error if the price is set per market
+  ([msstore CLI › Paid apps and pricing](https://learn.microsoft.com/windows/apps/publish/msstore-dev-cli/commands#paid-apps-and-pricing)).
+  Microsoft's GitHub Actions guide still says CLI updates are for free products only, while the newer CLI reference
+  describes paid updates; if a paid update is refused, upload that release's **microsoft-store** artifact by hand.
+- **Mac App Store:** in [App Store Connect › Business](https://appstoreconnect.apple.com/business), accept the **Paid
+  Apps Agreement** and add your bank account and tax forms. Paid apps can't be submitted until the agreement is active.
+  Then choose a price under the app's **Pricing and Availability**.
+
 ## All secrets and variables
 
 Set them under **Settings › Secrets and variables › Actions** of this repository, or with the GitHub CLI:
