@@ -565,6 +565,14 @@ public sealed partial class IndexingCoordinator
         }
 
         IndexingLog.CloudReleaseHung(_logger, release.Name, timeout);
+        // Count the hang, and stop downloads at the last one, before abandoning the file: abandoning frees its place
+        // among the files being downloaded, and the cloud lane would otherwise fill it with one more download first.
+        if (Interlocked.Increment(ref _hungReleases) == MaxHungReleases)
+        {
+            _cloudDownloadsOff = true;
+            _prefetchOff = true;
+            IndexingLog.CloudDownloadsStopped(_logger, MaxHungReleases);
+        }
         try
         {
             release.Abandon();
@@ -572,12 +580,6 @@ public sealed partial class IndexingCoordinator
         catch (Exception e) when (e is not OperationCanceledException)
         {
             IndexingLog.CloudFileFailed(_logger, e, release.Name);
-        }
-        if (Interlocked.Increment(ref _hungReleases) == MaxHungReleases)
-        {
-            _cloudDownloadsOff = true;
-            _prefetchOff = true;
-            IndexingLog.CloudDownloadsStopped(_logger, MaxHungReleases);
         }
         return false;
     }
