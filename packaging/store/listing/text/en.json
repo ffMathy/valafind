@@ -1,5 +1,5 @@
 {
-  "title": "Valafind",
+  "title": "Valafind: Find files by what they mean",
   "shortTitle": "Valafind",
   "sortTitle": "Valafind",
   "voiceTitle": "Valafind",
@@ -17,7 +17,15 @@
     "Slows down automatically when your computer is busy; you set the CPU, disk and GPU limits",
     "Choose which folders to index, and pause on battery"
   ],
-  "searchTerms": ["file search", "semantic search", "find files", "AI search", "photo search", "document search", "offline search"],
+  "searchTerms": [
+    "file search",
+    "semantic search",
+    "find files",
+    "AI search",
+    "photo search",
+    "document search",
+    "offline search"
+  ],
   "screenshots": {
     "search": {
       "headline": "Find files by what they mean",
