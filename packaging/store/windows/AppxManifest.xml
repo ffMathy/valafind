@@ -15,7 +15,9 @@
   <Identity Name="{{IDENTITY_NAME}}" Publisher="{{PUBLISHER}}" Version="{{VERSION}}" ProcessorArchitecture="{{ARCHITECTURE}}" />
 
   <Properties>
-    <DisplayName>Valafind</DisplayName>
+    <!-- Must be one of the names reserved for the app in Partner Center (the Store listing's Title is the same). The
+         short name people see in Start and on the taskbar is uap:VisualElements' DisplayName below. -->
+    <DisplayName>Valafind: Find files by what they mean</DisplayName>
     <PublisherDisplayName>{{PUBLISHER_DISPLAY_NAME}}</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
