@@ -92,7 +92,8 @@ public class CloudLaneTests
         await WaitFor(() => online.All(store.Files.ContainsKey) && coordinator.Status.State == IndexingState.UpToDate,
             "cloud files indexed and up to date");
         await WaitFor(() => store.GetMeta(IndexingCoordinator.MetaPhase2Complete) == "1", "walk recorded as complete");
-        Assert.Equal(0, cloud.RequestedCount); // every one given back
+        // Giving back runs on its own thread and never holds up the walk, so it may finish after the index is up to date.
+        await WaitFor(() => cloud.RequestedCount == 0, "every cloud file given back");
     }
 
     [Fact]
@@ -113,7 +114,8 @@ public class CloudLaneTests
 
         await coordinator.StartAsync(TestContext.Current.CancellationToken);
         await WaitFor(() => local.All(store.Files.ContainsKey), "every local file indexed");
-        Assert.Equal(1, cloud.RequestedCount); // the limit is full, and the rest wait in the cloud lane
+        // The limit is full, and the rest wait in the cloud lane (which runs on its own, so it may still be getting there).
+        await WaitFor(() => cloud.RequestedCount == 1, "the one allowed cloud file requested");
 
         cloud.ArriveImmediately = true;
         cloud.ArriveAll();
