@@ -24,8 +24,32 @@
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
 
+  <!--
+    The UI languages (Valafind.App/Localization, Loc.Languages), English first: the Store lists them as the languages
+    the app supports, and the Store listing import (packaging/store/listing) names its language columns after them.
+  -->
   <Resources>
     <Resource Language="en-us" />
+    <Resource Language="zh-Hans" />
+    <Resource Language="hi" />
+    <Resource Language="es" />
+    <Resource Language="ar" />
+    <Resource Language="fr" />
+    <Resource Language="bn" />
+    <Resource Language="pt-BR" />
+    <Resource Language="ru" />
+    <Resource Language="id" />
+    <Resource Language="ur" />
+    <Resource Language="de" />
+    <Resource Language="ja" />
+    <Resource Language="mr" />
+    <Resource Language="vi" />
+    <Resource Language="te" />
+    <Resource Language="ha-Latn" />
+    <Resource Language="tr" />
+    <Resource Language="ta" />
+    <Resource Language="ko" />
+    <Resource Language="da" />
   </Resources>
 
   <Applications>

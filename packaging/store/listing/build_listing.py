@@ -15,8 +15,8 @@ Output (in --out):
 In Partner Center: the app > Store listings (any language) > Import listings > Upload folder, then pick the extracted
 folder. Image paths in the CSV start with the folder name, as Partner Center expects.
 
-The CSV's language columns must match the listing languages of the submission. The defaults are below (LOCALES); if
-Partner Center names a language differently, export the listing once (Export listings) and pass that CSV as
+The CSV's language columns are the languages the package declares (windows/AppxManifest.xml, <Resource Language>),
+which become the submission's listing languages. If Partner Center still names a language differently, export the listing once (Export listings) and pass that CSV as
 --columns-from: its language columns are then matched to ours by language (de-de -> de, zh-cn -> zh-Hans, ...).
 """
 from __future__ import annotations
@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import shutil
 import sys
 import zipfile
@@ -31,12 +32,26 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-# UI language (text/<code>.json) -> Partner Center listing column.
-LOCALES = {
-    "en": "en-us", "zh-Hans": "zh-hans", "hi": "hi", "es": "es", "ar": "ar", "fr": "fr", "bn": "bn", "pt": "pt-br",
-    "ru": "ru", "id": "id", "ur": "ur", "de": "de", "ja": "ja", "mr": "mr", "vi": "vi", "te": "te", "ha": "ha",
-    "tr": "tr", "ta": "ta", "ko": "ko", "da": "da",
-}
+MANIFEST = HERE.parent / "windows" / "AppxManifest.xml"
+
+
+def manifest_locales() -> dict[str, str]:
+    """UI language (text/<code>.json) -> Partner Center listing column: the language the package declares for it."""
+    declared = re.findall(r'<Resource Language="([^"]+)"', MANIFEST.read_text(encoding="utf-8"))
+    locales = {}
+    for code in (p.stem for p in sorted((HERE / "text").glob("*.json"))):
+        match = [d for d in declared if d.lower() == code.lower() or d.lower().startswith(code.lower() + "-")]
+        if not match:
+            sys.exit(f"{MANIFEST.name} declares no language for text/{code}.json")
+        locales[code] = match[0].lower()
+    return locales
+
+
+# In the order of the app's language picker (Loc.Languages): English first.
+ORDER = ["en", "zh-Hans", "hi", "es", "ar", "fr", "bn", "pt", "ru", "id", "ur", "de", "ja", "mr", "vi", "te", "ha", "tr",
+         "ta", "ko", "da"]
+_DECLARED = manifest_locales()
+LOCALES = {code: _DECLARED[code] for code in ORDER if code in _DECLARED}
 
 SCREENSHOTS = ["search", "photos", "recordings", "indexing", "settings"]
 LOGOS = {"StoreLogo720x1080": "poster-1440x2160.png", "StoreLogo1080x1080": "boxart-2160x2160.png",

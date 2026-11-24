@@ -32,6 +32,44 @@ public sealed partial class LocalizationTests
         Assert.Equal("en", Loc.Languages[0].Code);
     }
 
+    /// <summary>The Microsoft Store lists the languages the package declares as the ones the app supports, and the
+    /// Store listing (packaging/store/listing) has a text for each: a new UI language needs all three.</summary>
+    [Fact]
+    public void TheStorePackageAndListingCoverEveryLanguage()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Valafind.slnx")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        var store = Path.Combine(dir.FullName, "packaging", "store");
+        var declared = ResourceLanguage().Matches(File.ReadAllText(Path.Combine(store, "windows", "AppxManifest.xml")))
+            .Select(m => m.Groups[1].Value)
+            .ToList();
+
+        Assert.Equal("en-us", declared[0], ignoreCase: true);
+        Assert.Equal(Loc.Languages.Count, declared.Count);
+        foreach (var language in Loc.Languages)
+        {
+            var culture = CultureInfo.GetCultureInfo(language.Code);
+            Assert.Single(declared, d => CultureInfo.GetCultureInfo(d) is var c
+                && (c.Name.Equals(culture.Name, StringComparison.OrdinalIgnoreCase) || IsUnder(c, culture)));
+            Assert.True(File.Exists(Path.Combine(store, "listing", "text", language.Code + ".json")), $"no Store listing text for {language.Code}");
+        }
+
+        static bool IsUnder(CultureInfo specific, CultureInfo neutral)
+        {
+            for (var c = specific; !string.IsNullOrEmpty(c.Name); c = c.Parent)
+            {
+                if (c.Name.Equals(neutral.Name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+    }
+
+    [GeneratedRegex("<Resource Language=\"([^\"]+)\"")]
+    private static partial Regex ResourceLanguage();
+
     [Theory]
     [MemberData(nameof(Translations))]
     public void EveryTranslationCoversEveryTextWithTheSamePlaceholders(string code)

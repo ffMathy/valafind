@@ -121,6 +121,8 @@ Partner Center:
    column adds that listing language if the submission doesn't have it yet) and pick `valafind-store-listing-1-of-5`. Import
    `2-of-5` to `5-of-5` the same way; together they hold every language, split so each upload stays small. A
    `valafind-store-listing-<language>` folder updates one language. Unzip first; upload the folder itself.
+   The languages are the ones the package declares (`windows/AppxManifest.xml`, `<Resource Language>`), which
+   Partner Center shows under **Languages supported in packages** once a package built from it is uploaded.
 3. If the import rejects a language column, Partner Center names that language differently: **Export listings**, then
    run `make-listing.sh <out> -- --columns-from <the exported .csv>` and import again.
 
