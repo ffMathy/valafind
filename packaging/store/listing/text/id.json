@@ -1,0 +1,59 @@
+{
+  "title": "Valafind",
+  "shortTitle": "Valafind",
+  "sortTitle": "Valafind",
+  "voiceTitle": "Valafind",
+  "shortDescription": "Temukan file berdasarkan maknanya, bukan namanya. Jelaskan dokumen, foto, rekaman, atau video dengan kata-kata Anda sendiri, dalam lebih dari 100 bahasa, dan Valafind akan menemukannya. Semuanya berjalan di komputer Anda: tanpa cloud, tanpa akun, tanpa telemetri.",
+  "description": "Temukan file berdasarkan maknanya, bukan namanya.\n\nTekan Ctrl+Alt+Space, jelaskan apa yang Anda cari dengan kata-kata sendiri, dan Valafind akan menemukan filenya, bahkan jika file itu ditulis dalam bahasa lain dan bernama scan_0042.pdf.\n\nBisa untuk dokumen, foto, audio, dan video:\n• “di mana kita menegosiasikan uang jaminan?” menemukan email dan kontrak sewanya\n• “mobil merah di salju” menemukan fotonya\n• “rapat tentang anggaran” menemukan rekamannya\n\nValafind membaca dokumen, PDF, slide, spreadsheet, email, dan kode Anda, melihat foto-foto Anda, serta mendengarkan rekaman dan video Anda. Valafind memahaminya dalam lebih dari 100 bahasa, jadi Anda bisa bertanya seperti bertanya kepada rekan kerja. Bagian yang disorot di setiap hasil menunjukkan alasan hasil itu cocok.\n\nTidak ada yang keluar dari komputer Anda\nModel AI (EmbeddingGemma 2 dari Google DeepMind) berjalan secara lokal dan sudah terpasang di dalam aplikasi: tanpa cloud, tanpa akun, tanpa telemetri. File, indeks, dan pencarian Anda tetap berada di komputer Anda, dan indeksnya hanya dapat dibaca oleh Anda.\n\nFile sehari-hari Anda lebih dulu\nValafind memulai dari file yang benar-benar Anda gunakan, yaitu dokumen terbaru dan yang sering dibuka, lalu mengerjakan sisanya. Dokumen lebih dulu, kemudian gambar, audio, dan video. File baru, diubah, dipindahkan, dan dihapus terdeteksi dalam hitungan detik.\n\nTidak mengganggu kerja Anda\nPengindeksan hanya memakai CPU dan disk yang sedang tidak dipakai komputer Anda. Valafind mengukur beban setiap dua detik dan melambat saat Anda sedang mengompilasi, bermain game, atau menelepon, lalu kembali cepat saat komputer senggang. Anda yang menentukan batas pemakaian CPU, disk, dan GPU, folder mana yang diindeks, serta apakah pengindeksan dijeda saat memakai baterai. Setelah semuanya diindeks, Valafind hanya menampilkan tanda ✓ yang tidak mencolok.\n\nValafind adalah perangkat lunak sumber terbuka (github.com/ffMathy/valafind). Dengan membelinya di sini, Anda mendukung pengembangannya.",
+  "releaseNotes": "Rilis pertama di Microsoft Store.",
+  "additionalLicenseTerms": "Valafind adalah perangkat lunak sumber terbuka. Valafind menyertakan model EmbeddingGemma 2 dari Google DeepMind, yang dilisensikan di bawah Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0). Penggunaan model ini juga harus mematuhi Kebijakan Penggunaan Terlarang Gemma (Gemma Prohibited Use Policy, https://ai.google.dev/gemma/prohibited_use_policy).",
+  "features": [
+    "Cari dokumen, foto, audio, dan video dengan menjelaskannya dalam kata-kata Anda sendiri",
+    "Mendukung lebih dari 100 bahasa: pertanyaan dalam satu bahasa menemukan file yang ditulis dalam bahasa lain",
+    "Berjalan sepenuhnya di komputer Anda: tanpa cloud, tanpa akun, tanpa telemetri",
+    "Buka dari mana saja dengan Ctrl+Alt+Space",
+    "Menunjukkan alasan setiap hasil cocok, lengkap dengan bagian yang disorot",
+    "Mengindeks file yang paling sering Anda pakai lebih dulu dan menjaga indeks tetap terbaru saat file berubah",
+    "Otomatis melambat saat komputer sibuk; Anda yang menentukan batas CPU, disk, dan GPU",
+    "Pilih folder yang akan diindeks, dan jeda pengindeksan saat memakai baterai"
+  ],
+  "searchTerms": [
+    "pencarian file",
+    "pencarian semantik",
+    "cari file",
+    "pencarian AI",
+    "cari foto",
+    "cari dokumen",
+    "pencarian offline"
+  ],
+  "screenshots": {
+    "search": {
+      "headline": "Temukan file dari maknanya",
+      "subline": "Bertanyalah dengan kata-kata Anda sendiri. Valafind menemukan email, catatan, dan kontrak sewa, meskipun ditulis dalam bahasa lain.",
+      "caption": "Pertanyaan dengan kata-kata Anda sendiri menemukan email, catatan, dan kontrak sewa berbahasa Denmark; bagian yang disorot menunjukkan alasan masing-masing cocok.",
+      "query": "di mana kita menegosiasikan uang jaminan?"
+    },
+    "photos": {
+      "headline": "Cari foto dari isinya",
+      "subline": "Jelaskan gambarnya, dan Valafind akan menemukannya. Tidak perlu tag, album, atau nama file.",
+      "caption": "Cukup jelaskan fotonya untuk menemukannya, apa pun nama filenya.",
+      "query": "mobil merah di salju"
+    },
+    "recordings": {
+      "headline": "Rekaman dan video juga",
+      "subline": "Valafind mendengarkan audio dan menonton video, jadi Anda bisa menemukan rapat dari apa yang dibicarakan di dalamnya.",
+      "caption": "Temukan rekaman dan video dari apa yang dikatakan atau ditampilkan di dalamnya.",
+      "query": "rapat saat kita membahas anggaran"
+    },
+    "indexing": {
+      "headline": "Tidak mengganggu kerja Anda",
+      "subline": "Pengindeksan hanya memakai CPU dan disk yang sedang tidak dipakai komputer Anda, dan langsung melambat begitu Anda sibuk.",
+      "caption": "Pengindeksan menyesuaikan diri agar tetap di bawah batas CPU dan disk yang Anda tetapkan."
+    },
+    "settings": {
+      "headline": "Anda yang memegang kendali",
+      "subline": "Pilih folder yang diindeks, pintasan, dan seberapa banyak CPU, disk, dan GPU yang boleh dipakai Valafind. Semuanya tetap di komputer Anda.",
+      "caption": "Pilih folder, pintasan, dan batas pemakaian CPU, disk, dan GPU."
+    }
+  }
+}

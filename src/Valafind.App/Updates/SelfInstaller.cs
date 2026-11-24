@@ -192,8 +192,9 @@ public sealed class SelfInstaller
     }
 
     /// <summary>
-    /// Installs this copy unless the installed one is newer, or another copy started at the same time has just installed
-    /// this version. One copy at a time (<see cref="InstallLock"/>): the download may have been opened twice.
+    /// Installs this copy unless the installed one is newer, or is this very build (another copy started at the same time
+    /// may have just installed it). One copy at a time (<see cref="InstallLock"/>): the download may have been opened
+    /// twice. The same version is installed again when its executable differs (a broken or different build).
     /// </summary>
     /// <returns>What happened, and whether an installation existed before.</returns>
     internal (InstallOutcome Outcome, bool WasInstalled) InstallUnlessCurrent()
@@ -201,7 +202,9 @@ public sealed class SelfInstaller
         using var installLock = InstallLock.Acquire(layout.Target, WaitForInstallLock);
         var installed = ReadInstalledVersion();
         var exists = File.Exists(layout.Executable) || Directory.Exists(layout.Target);
-        if (exists && installed is not null && (installed > version || (installLock.Waited && installed >= version)))
+        // Whether this copy waited for the other one says little: on a fast disk the other copy may be done before this
+        // one even asks for the lock. Comparing the builds does not depend on that timing.
+        if (exists && installed is not null && (installed > version || (installed >= version && (installLock.Waited || IsThisBuild()))))
         {
             log.Information($"Version {installed} is already installed; starting it instead of {version}");
             return (InstallOutcome.AlreadyCurrent, true);
@@ -211,6 +214,34 @@ public sealed class SelfInstaller
         host.StopRunningInstance();
         Install();
         return (InstallOutcome.Installed, exists);
+    }
+
+    /// <summary>True when the installed executable has the same bytes as the running one.</summary>
+    private bool IsThisBuild()
+    {
+        try
+        {
+            var installed = new FileInfo(layout.Executable);
+            var mine = new FileInfo(running.ExecutablePath);
+            if (!installed.Exists || !mine.Exists || installed.Length != mine.Length)
+                return false;
+            using var a = new FileStream(installed.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16);
+            using var b = new FileStream(mine.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 16);
+            var bufferA = new byte[1 << 20];
+            var bufferB = new byte[1 << 20];
+            int read;
+            while ((read = a.ReadAtLeast(bufferA, bufferA.Length, throwOnEndOfStream: false)) > 0)
+            {
+                if (b.ReadAtLeast(bufferB, read, throwOnEndOfStream: false) != read
+                    || !bufferA.AsSpan(0, read).SequenceEqual(bufferB.AsSpan(0, read)))
+                    return false;
+            }
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false; // cannot tell: install, as before
+        }
     }
 
     /// <summary>Copies the running application to the install location and registers it.</summary>

@@ -1,0 +1,42 @@
+name: Store listing
+
+# Regenerates the Microsoft Store listing import folders (texts, screenshots and logos for every language) with
+# packaging/store/listing/make-listing.sh, and uploads them as an artifact. Run it after changing the UI or
+# packaging/store/listing/text/*.json, then import the folder in Partner Center (see packaging/store/README.md).
+on:
+  workflow_dispatch:
+    inputs:
+      languages:
+        description: "Languages to render, comma separated (empty: all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  listing:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      VALAFIND_STORE_LANGUAGES: ${{ inputs.languages }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install fonts for every script
+        run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-core fonts-noto-cjk fonts-noto-ui-core
+
+      - name: Render and pack
+        run: packaging/store/listing/make-listing.sh "$RUNNER_TEMP/store-listing"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-listing
+          path: |
+            ${{ runner.temp }}/store-listing/valafind-store-listing-*/
+          retention-days: 30

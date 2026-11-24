@@ -1,0 +1,59 @@
+{
+  "title": "Valafind",
+  "shortTitle": "Valafind",
+  "sortTitle": "Valafind",
+  "voiceTitle": "Valafind",
+  "shortDescription": "Finde Dateien nach ihrer Bedeutung statt nach ihrem Namen. Beschreibe ein Dokument, ein Foto, eine Aufnahme oder ein Video in eigenen Worten, in über 100 Sprachen, und Valafind findet es. Alles läuft auf deinem Computer: keine Cloud, kein Konto, keine Telemetrie.",
+  "description": "Finde Dateien nach ihrer Bedeutung statt nach ihrem Namen.\n\nDrück Ctrl+Alt+Space, beschreib in eigenen Worten, was du suchst, und Valafind findet die Datei – auch wenn sie in einer anderen Sprache geschrieben ist und scan_0042.pdf heißt.\n\nDas klappt mit Dokumenten, Fotos, Audio und Video:\n• „wo haben wir die Kaution verhandelt?“ findet die E-Mail und den Mietvertrag\n• „ein rotes Auto im Schnee“ findet das Bild\n• „das Meeting zum Budget“ findet die Aufnahme\n\nValafind liest deine Dokumente, PDFs, Präsentationen, Tabellen, E-Mails und deinen Code, sieht sich deine Fotos an und hört deine Aufnahmen und Videos ab. Es versteht Inhalte in mehr als 100 Sprachen, du kannst also so fragen, wie du eine Kollegin oder einen Kollegen fragen würdest. Die hervorgehobene Stelle in jedem Ergebnis zeigt, warum es passt.\n\nNichts verlässt deinen Computer\nDas KI-Modell (EmbeddingGemma 2 von Google DeepMind) läuft lokal und ist direkt in die App integriert: keine Cloud, kein Konto, keine Telemetrie. Deine Dateien, dein Index und deine Suchanfragen bleiben auf deinem Computer, und den Index kannst nur du lesen.\n\nDeine Alltagsdateien zuerst\nValafind beginnt mit den Dateien, die du wirklich nutzt – deinen zuletzt und häufig verwendeten Dokumenten – und arbeitet sich dann durch den Rest. Zuerst kommen Dokumente, dann Bilder, Audio und Video. Neue, geänderte, verschobene und gelöschte Dateien werden innerhalb von Sekunden erfasst.\n\nHält sich im Hintergrund\nDie Indizierung nutzt nur die CPU- und Datenträgerleistung, die dein Computer gerade nicht braucht. Valafind misst alle zwei Sekunden die Auslastung, drosselt sich, wenn du kompilierst, spielst oder telefonierst, und legt wieder zu, sobald der Rechner zur Ruhe kommt. Du legst die Grenzen für CPU, Datenträger und GPU fest, wählst die Ordner, die indiziert werden, und entscheidest, ob im Akkubetrieb pausiert wird. Wenn alles indiziert ist, zeigt Valafind nur noch ein dezentes ✓.\n\nValafind ist Open Source (github.com/ffMathy/valafind). Mit dem Kauf hier unterstützt du die Weiterentwicklung.",
+  "releaseNotes": "Erste Version im Microsoft Store.",
+  "additionalLicenseTerms": "Valafind ist Open Source. Es enthält das Modell EmbeddingGemma 2 von Google DeepMind, lizenziert unter der Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0). Bei der Nutzung des Modells ist außerdem die Richtlinie zur unzulässigen Nutzung von Gemma einzuhalten (Gemma Prohibited Use Policy, https://ai.google.dev/gemma/prohibited_use_policy).",
+  "features": [
+    "Dokumente, Fotos, Audio und Video durchsuchen, indem du sie in eigenen Worten beschreibst",
+    "Funktioniert in über 100 Sprachen: Eine Frage in einer Sprache findet Dateien in einer anderen",
+    "Läuft vollständig auf deinem Computer: keine Cloud, kein Konto, keine Telemetrie",
+    "Von überall mit Ctrl+Alt+Space aufrufen",
+    "Zeigt mit hervorgehobener Textstelle, warum jedes Ergebnis passt",
+    "Indiziert deine meistgenutzten Dateien zuerst und hält den Index aktuell, wenn sich Dateien ändern",
+    "Drosselt sich automatisch, wenn dein Computer ausgelastet ist; die Grenzen für CPU, Datenträger und GPU legst du fest",
+    "Wähle selbst, welche Ordner indiziert werden, und pausiere im Akkubetrieb"
+  ],
+  "searchTerms": [
+    "Dateisuche",
+    "Dateien finden",
+    "semantische Suche",
+    "KI-Suche",
+    "Fotosuche",
+    "Dokumentensuche",
+    "Offline-Suche"
+  ],
+  "screenshots": {
+    "search": {
+      "headline": "Dateien nach Bedeutung finden",
+      "subline": "Frag in eigenen Worten. Valafind findet die E-Mail, die Notizen und den Mietvertrag – auch wenn sie in einer anderen Sprache verfasst sind.",
+      "caption": "Eine Frage in eigenen Worten findet die E-Mail, die Notizen und einen dänischen Mietvertrag; die hervorgehobene Stelle zeigt, warum jedes Ergebnis passt.",
+      "query": "wo haben wir die Kaution verhandelt?"
+    },
+    "photos": {
+      "headline": "Fotos nach dem, was drauf ist",
+      "subline": "Beschreib das Bild, und Valafind findet es. Ganz ohne Tags, Alben oder Dateinamen.",
+      "caption": "Beschreib ein Foto, und Valafind findet es – egal, wie die Datei heißt.",
+      "query": "ein rotes Auto im Schnee"
+    },
+    "recordings": {
+      "headline": "Auch Aufnahmen und Videos",
+      "subline": "Valafind hört Audio und schaut Videos, so findest du ein Meeting anhand dessen, was darin gesagt wurde.",
+      "caption": "Finde Aufnahmen und Videos anhand dessen, was darin gesagt oder gezeigt wird.",
+      "query": "das Meeting, in dem es ums Budget ging"
+    },
+    "indexing": {
+      "headline": "Hält sich im Hintergrund",
+      "subline": "Die Indizierung nutzt nur die CPU- und Datenträgerleistung, die dein Computer nicht braucht, und drosselt sich, sobald du loslegst.",
+      "caption": "Die Indizierung regelt sich selbst und bleibt unter den Grenzen für CPU und Datenträger, die du festlegst."
+    },
+    "settings": {
+      "headline": "Du hast die Kontrolle",
+      "subline": "Wähle die Ordner, das Tastenkürzel und wie viel CPU, Datenträger und GPU Valafind nutzen darf. Alles bleibt auf deinem Computer.",
+      "caption": "Wähle die Ordner, das Tastenkürzel und die Grenzen für CPU, Datenträger und GPU."
+    }
+  }
+}

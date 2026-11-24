@@ -204,6 +204,33 @@ public sealed class SelfInstallerTests : IDisposable
         Assert.Single(Directory.GetFileSystemEntries(Path.GetDirectoryName(layout.Executable)!)); // nothing left behind
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TheSameVersionIsInstalledAgainOnlyWhenItIsAnotherBuild(bool sameBuild)
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            return; // Installs a bundle with ditto; covered by the Linux and Windows layouts.
+        }
+
+        var layout = InstallLayout.Create(TestApp.Identity, InstallLayout.CurrentPlatform, Path.Combine(root, "home"), Path.Combine(root, "local"), Path.Combine(root, "state"));
+        Directory.CreateDirectory(Path.GetDirectoryName(layout.Executable)!);
+        File.WriteAllText(layout.Executable, "build 2.0.0");
+        SelfInstaller.WriteInstalledVersion(layout, ReleaseVersion.TryParse("2.0.0")!);
+        var downloaded = Path.Combine(root, "Downloads", "demo");
+        Directory.CreateDirectory(Path.GetDirectoryName(downloaded)!);
+        File.WriteAllText(downloaded, sameBuild ? "build 2.0.0" : "build 2.0.0, repaired");
+        var installer = new SelfInstaller(
+            TestApp.Identity, layout, new RunningApp(downloaded, null, true), new RecordingHost(), new NullLog(), ReleaseVersion.TryParse("2.0.0"));
+
+        var (outcome, wasInstalled) = installer.InstallUnlessCurrent();
+
+        Assert.True(wasInstalled);
+        Assert.Equal(sameBuild ? SelfInstaller.InstallOutcome.AlreadyCurrent : SelfInstaller.InstallOutcome.Installed, outcome);
+        Assert.Equal(File.ReadAllText(downloaded), File.ReadAllText(layout.Executable));
+    }
+
     [Fact]
     public void InstallLock_LetsOneCopyAtATimeAndTellsTheNextItWaited()
     {
@@ -227,11 +254,23 @@ public sealed class SelfInstallerTests : IDisposable
             // Another install location has a lock of its own.
         }
 
-        release.Set();
-        using (var mine = InstallLock.Acquire(target, TimeSpan.FromSeconds(10)))
+        // The next copy asks while the lock is still held, and gets it once the holder lets go: it says it waited.
+        // Release only once that copy is blocked on the lock, so the order never depends on thread timing.
+        var waited = (bool?)null;
+        var next = new Thread(() =>
         {
-            Assert.True(mine.Waited || holder.IsCompleted);
-        }
+            using var mine = InstallLock.Acquire(target, TimeSpan.FromSeconds(30));
+            waited = mine.Waited;
+        }) { IsBackground = true };
+        next.Start();
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while ((next.ThreadState & ThreadState.WaitSleepJoin) == 0 && DateTime.UtcNow < deadline)
+            Thread.Sleep(5);
+        Assert.True(next.IsAlive, "the next copy got the lock while it was held");
+
+        release.Set();
+        Assert.True(next.Join(TimeSpan.FromSeconds(30)));
+        Assert.True(waited);
         holder.Wait(TimeSpan.FromSeconds(10));
     }
 
