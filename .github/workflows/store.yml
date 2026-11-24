@@ -134,8 +134,9 @@ jobs:
           $draft = @()
           if ($env:DRAFT_ONLY -eq 'true') { $draft = @('--noCommit') }
           if (-not $upload) { Write-Error 'No .msixupload in dist'; exit 1 }
-          # -i is the folder that holds the package, not the package itself.
-          msstore publish $upload.DirectoryName -i $upload.DirectoryName -id $env:PRODUCT_ID @draft
+          # The package file itself: msstore recognises a prebuilt package by its extension (.msix, .msixbundle or
+          # .msixupload) and uploads from the folder it is in. A folder is taken for a project to build, and fails.
+          msstore publish $upload.FullName -id $env:PRODUCT_ID @draft
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   mac-app-store:
