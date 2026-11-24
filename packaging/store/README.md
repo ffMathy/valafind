@@ -103,12 +103,35 @@ The Store API can only update an app whose first submission exists, so make that
    - Without them, download the run's **microsoft-store** artifact, unzip it, and in Partner Center start the submission
      and drop the `.msixupload` under **Packages**.
 2. Fill in **Pricing and availability**, **Properties** (category, privacy policy URL), **Age ratings** and the **Store
-   listing** (description, at least one screenshot, 1366×768 or larger). Under **Submission options**, explain the
+   listing** (see [The Store listing](#the-store-listing): one import fills every language). Under **Submission options**, explain the
    `runFullTrust` restricted capability: "Valafind is a desktop app (packaged Win32/.NET) and needs full trust to index the user's files in the background, register its global hotkey and open files in their apps."
 3. **Submit to the Store**.
 4. When it is published, delete `STORE_DRAFT_ONLY` (or set it to `false`). With the API secrets, every later release is
    submitted and published without you; without them, upload the releases you want from their **microsoft-store**
    artifacts the same way (you don't have to upload every one).
+
+### The Store listing
+
+The listing (texts, five screenshots and the logos, in all 21 UI languages) is generated, so it never has to be typed in
+Partner Center:
+
+1. Run **Actions › Store listing** (or `packaging/store/listing/make-listing.sh` locally; it needs the .NET SDK,
+   Python 3 and the Noto fonts) and download the **store-listing** artifact.
+2. In Partner Center, open the submission's **Store listings**, add the languages you want under **Manage Store listing
+   languages**, then **Import listings › Upload folder** and pick `valafind-store-listing-all` (every language) or a
+   `valafind-store-listing-<language>` folder (one language). Unzip it first; upload the folder itself.
+3. If the import rejects a language column, Partner Center names that language differently: **Export listings**, then
+   run `make-listing.sh <out> -- --columns-from <the exported .csv>` and import again.
+
+What goes in:
+
+- Texts: [`listing/text/<language>.json`](listing/text/en.json), English being the source. Change `en.json`, then update
+  the translations the same way (their keys, order and limits are checked when the folders are built).
+- Screenshots (1920×1080): rendered from the real Windows UI by
+  [`StoreListingScreenshotTests`](../../tests/Valafind.App.Tests/Headless/StoreListingScreenshotTests.cs), with the
+  UI, headline and search query in each language. The test also draws the 9:16 poster, 1:1 box art and 300×300 tile.
+- Fields: [`listing/fields.csv`](listing/fields.csv) is Partner Center's list of listing fields (from an export);
+  [`listing/build_listing.py`](listing/build_listing.py) fills it.
 
 ## Mac App Store
 
@@ -208,6 +231,7 @@ gh variable set MSSTORE_PRODUCT_ID --repo ffMathy/valafind --body 9NXXXXXXXXXX
 - [`windows/AppxManifest.xml`](windows/AppxManifest.xml): the MSIX manifest. Besides the app it declares a startup task
   (start at login; packaged apps cannot use the `Run` registry key), which users switch in **Settings › Apps › Startup**.
 - [`windows/make-msix.ps1`](windows/make-msix.ps1): packs `dotnet publish` output into the `.msixupload`.
+- [`listing/`](listing): the Store listing generator (see [The Store listing](#the-store-listing)).
 - [`macos/Info.plist`](macos/Info.plist), [`macos/Entitlements.plist`](macos/Entitlements.plist): the App Store bundle's
   property list and its sandbox entitlements.
 - [`macos/make-pkg.sh`](macos/make-pkg.sh): builds, signs and packages the `.app`.

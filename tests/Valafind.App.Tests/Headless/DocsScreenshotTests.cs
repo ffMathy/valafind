@@ -28,10 +28,10 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
     private const string Query = "where did we negotiate the deposit?";
     private const int ShotWidth = 1400;
 
-    private static readonly DateTimeOffset Now = new(2026, 11, 18, 14, 30, 0, TimeSpan.Zero);
-    private static readonly DateTimeOffset Modified = new(2026, 11, 18, 2, 3, 0, TimeSpan.Zero);
+    internal static readonly DateTimeOffset Now = new(2026, 11, 18, 14, 30, 0, TimeSpan.Zero);
+    internal static readonly DateTimeOffset Modified = new(2026, 11, 18, 2, 3, 0, TimeSpan.Zero);
 
-    private sealed class FixedTime : TimeProvider
+    internal sealed class FixedTime : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => Now;
         public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
@@ -85,7 +85,7 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
 
     /// <summary>The README story: an English question finds the landlord's e-mail and a Danish lease. The e-mail (top
     /// match) is selected, with the start of the mail in the preview; a photo of the deposit receipt shows its thumbnail.</summary>
-    private static LauncherViewModel Launcher(UiFlavor flavor)
+    internal static LauncherViewModel Launcher(UiFlavor flavor, string query = Query)
     {
         var home = flavor switch
         {
@@ -118,7 +118,7 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
             Hit(Dir("Documents"), "travel-lisbon-2025.md", FileKind.Text, 1_877, 0.22f,
                 "# Lisbon, May 2025 Flights booked for 14–19 May. Hotel in Alfama, near the Miradouro de Santa Luzia…"),
         ];
-        vm.LoadSnapshot(Query, results, TimeSpan.FromMilliseconds(flavor == UiFlavor.Linux ? 334 : 321));
+        vm.LoadSnapshot(query, results, TimeSpan.FromMilliseconds(flavor == UiFlavor.Linux ? 334 : 321));
         vm.UpdateStatus(DesignData.IdleStatus with { State = IndexingState.UpToDate, AllDone = 189_144, AllTotal = 189_144 });
 
         var photo = Photo();
@@ -133,7 +133,7 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
         return vm;
     }
 
-    private static SearchResult Hit(string dir, string name, FileKind kind, long size, float score, string snippet,
+    internal static SearchResult Hit(string dir, string name, FileKind kind, long size, float score, string snippet,
         string? highlight = null)
     {
         var sep = dir.Contains('\\') ? "\\" : "/";
@@ -144,7 +144,7 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
     }
 
     /// <summary>A phone photo of a paper receipt on a wooden table. Decoded like real pictures, so the thumbnail is the real thing.</summary>
-    private static Bitmap Photo()
+    internal static Bitmap Photo()
     {
         var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "valafind-docs-" + Guid.NewGuid().ToString("N") + ".png");
         using (var bitmap = new SkiaSharp.SKBitmap(720, 720))
@@ -196,7 +196,7 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
 
     // ------------------------------------------------------------------ composition
 
-    private static Control LauncherView(UiFlavor flavor, LauncherViewModel vm, double scale, double top, double bottom)
+    internal static Control LauncherView(UiFlavor flavor, LauncherViewModel vm, double scale, double top, double bottom)
     {
         var view = LauncherWindow.CreateView(flavor);
         view.DataContext = vm;
@@ -219,7 +219,7 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
     }
 
     /// <summary>A blurred desktop: a base gradient plus a few soft colour blobs.</summary>
-    private static IBrush[] Backdrop(UiFlavor flavor)
+    internal static IBrush[] Backdrop(UiFlavor flavor)
     {
         static LinearGradientBrush Linear(string a, string b) => new()
         {
@@ -373,7 +373,7 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
     /// <summary>Renders <paramref name="content"/> at its own size times <paramref name="scale"/>. It sits on a canvas in a
     /// small window, so it is not clipped to the headless screen (1920 × 1080). A larger scale goes through a layout
     /// transform rendered at 96 DPI: rendering at a higher DPI drops text and lays nested views out at the wrong size.</summary>
-    private static RenderTargetBitmap Capture(Control content, double scale = 1)
+    internal static RenderTargetBitmap Capture(Control content, double scale = 1)
     {
         Control root = scale == 1
             ? content

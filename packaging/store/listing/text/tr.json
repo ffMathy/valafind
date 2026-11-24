@@ -1,0 +1,59 @@
+{
+  "title": "Valafind",
+  "shortTitle": "Valafind",
+  "sortTitle": "Valafind",
+  "voiceTitle": "Valafind",
+  "shortDescription": "Dosyaları adına göre değil, anlamına göre bulun. Bir belgeyi, fotoğrafı, kaydı veya videoyu kendi sözcüklerinizle, 100'den fazla dilden herhangi birinde anlatın; Valafind onu bulsun. Her şey bilgisayarınızda çalışır: bulut yok, hesap yok, telemetri yok.",
+  "description": "Dosyaları adına göre değil, anlamına göre bulun.\n\nCtrl+Alt+Space tuşlarına basın ve aradığınız şeyi kendi sözcüklerinizle anlatın; dosya başka bir dilde yazılmış ve adı scan_0042.pdf olsa bile Valafind onu bulur.\n\nBelgeler, fotoğraflar, ses ve video için çalışır:\n• “depozito pazarlığını nerede yapmıştık?” e-postayı ve kira sözleşmesini bulur\n• “karda kırmızı bir araba” fotoğrafı bulur\n• “bütçe toplantısı” kaydı bulur\n\nValafind belgelerinizi, PDF'lerinizi, sunularınızı, tablolarınızı, e-postalarınızı ve kodunuzu okur; fotoğraflarınıza bakar, ses kayıtlarınızı ve videolarınızı dinler. Bunları 100'den fazla dilde anlar; böylece bir iş arkadaşınıza sorar gibi sorabilirsiniz. Her sonuçta vurgulanan bölüm, sonucun neden eşleştiğini gösterir.\n\nHiçbir şey bilgisayarınızdan çıkmaz\nYapay zekâ modeli (Google DeepMind tarafından geliştirilen EmbeddingGemma 2) yerel olarak çalışır ve uygulamaya yerleşiktir: bulut yok, hesap yok, telemetri yok. Dosyalarınız, dizininiz ve aramalarınız bilgisayarınızda kalır; dizini yalnızca siz okuyabilirsiniz.\n\nÖnce her gün kullandığınız dosyalar\nValafind işe gerçekten kullandığınız dosyalarla, yani son açtığınız ve sık kullandığınız belgelerle başlar, ardından geri kalanına geçer. Önce belgeler, sonra resimler, ses ve video gelir. Yeni, değiştirilen, taşınan ve silinen dosyalar saniyeler içinde algılanır.\n\nİşinizi bölmez\nDizinleme yalnızca bilgisayarınızın o an kullanmadığı CPU ve disk kapasitesini kullanır. Valafind yükü iki saniyede bir ölçer; derleme yaparken, oyun oynarken veya görüşmedeyken yavaşlar, bilgisayar sakinleşince yeniden hızlanır. CPU, disk ve GPU kullanım sınırlarını, hangi klasörlerin dizinleneceğini ve pil gücündeyken duraklatılıp duraklatılmayacağını siz seçersiniz. Her şey dizinlendiğinde yalnızca sade bir ✓ gösterir.\n\nValafind açık kaynaklıdır (github.com/ffMathy/valafind). Buradan satın alarak geliştirilmesine destek olursunuz.",
+  "releaseNotes": "Microsoft Store'daki ilk sürüm.",
+  "additionalLicenseTerms": "Valafind açık kaynaklıdır. Google DeepMind tarafından geliştirilen ve Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0) kapsamında lisanslanan EmbeddingGemma 2 modelini içerir. Modelin kullanımı ayrıca Gemma Yasaklı Kullanım Politikası'na (https://ai.google.dev/gemma/prohibited_use_policy) uygun olmalıdır.",
+  "features": [
+    "Belgeleri, fotoğrafları, ses kayıtlarını ve videoları kendi sözcüklerinizle anlatarak arayın",
+    "100'den fazla dilde çalışır: bir dilde sorulan soru, başka bir dilde yazılmış dosyaları bulur",
+    "Tamamen bilgisayarınızda çalışır: bulut yok, hesap yok, telemetri yok",
+    "Ctrl+Alt+Space ile her yerden açın",
+    "Her sonucun neden eşleştiğini, ilgili bölümü vurgulayarak gösterir",
+    "En çok kullandığınız dosyaları önce dizinler ve dosyalar değiştikçe dizini güncel tutar",
+    "Bilgisayarınız meşgulken kendiliğinden yavaşlar; CPU, disk ve GPU sınırlarını siz belirlersiniz",
+    "Dizinlenecek klasörleri seçin, pil gücündeyken dizinlemeyi duraklatın"
+  ],
+  "searchTerms": [
+    "dosya arama",
+    "anlamsal arama",
+    "dosya bul",
+    "yapay zeka arama",
+    "fotoğraf arama",
+    "belge arama",
+    "çevrimdışı arama"
+  ],
+  "screenshots": {
+    "search": {
+      "headline": "Dosyaları anlamına göre bulun",
+      "subline": "Kendi sözcüklerinizle sorun. Valafind e-postayı, notları ve kira sözleşmesini, başka bir dilde yazılmış olsalar bile bulur.",
+      "caption": "Kendi sözcüklerinizle sorulan bir soru e-postayı, notları ve Danca bir kira sözleşmesini bulur; vurgulanan bölüm her birinin neden eşleştiğini gösterir.",
+      "query": "depozito pazarlığını nerede yapmıştık?"
+    },
+    "photos": {
+      "headline": "Fotoğrafları içeriğiyle bulun",
+      "subline": "Fotoğrafı anlatın, Valafind bulsun. Etiket, albüm ya da dosya adı gerekmez.",
+      "caption": "Dosyanın adı ne olursa olsun, bir fotoğrafı anlatmak onu bulmaya yeter.",
+      "query": "karda kırmızı bir araba"
+    },
+    "recordings": {
+      "headline": "Kayıtlar ve videolar da",
+      "subline": "Valafind sesi dinler, videoyu izler; böylece bir toplantıyı içinde konuşulanlara göre bulabilirsiniz.",
+      "caption": "Kayıtları ve videoları içlerinde söylenenlere ya da gösterilenlere göre bulun.",
+      "query": "bütçeyi konuştuğumuz toplantı"
+    },
+    "indexing": {
+      "headline": "İşinizi bölmez",
+      "subline": "Dizinleme yalnızca bilgisayarınızın kullanmadığı CPU ve disk kapasitesini kullanır ve siz meşgul olduğunuz anda yavaşlar.",
+      "caption": "Dizinleme, belirlediğiniz CPU ve disk sınırlarının altında kalmak için kendini ayarlar."
+    },
+    "settings": {
+      "headline": "Kontrol sizde",
+      "subline": "Dizinlenecek klasörleri, kısayolu ve Valafind'ın ne kadar CPU, disk ve GPU kullanabileceğini seçin. Her şey bilgisayarınızda kalır.",
+      "caption": "Klasörleri, kısayolu ve CPU, disk ve GPU kullanım sınırlarını seçin."
+    }
+  }
+}

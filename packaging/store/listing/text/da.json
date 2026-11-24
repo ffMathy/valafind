@@ -1,0 +1,59 @@
+{
+  "title": "Valafind",
+  "shortTitle": "Valafind",
+  "sortTitle": "Valafind",
+  "voiceTitle": "Valafind",
+  "shortDescription": "Find filer ud fra, hvad de handler om, ikke hvad de hedder. Beskriv et dokument, et foto, en optagelse eller en video med dine egne ord, på et af over 100 sprog, og Valafind finder det. Alt kører på din computer: ingen sky, ingen konto, ingen telemetri.",
+  "description": "Find filer ud fra, hvad de handler om, ikke hvad de hedder.\n\nTryk på Ctrl+Alt+Space, beskriv med dine egne ord, hvad du leder efter, og Valafind finder filen, også når den er skrevet på et andet sprog og hedder scan_0042.pdf.\n\nDet virker for dokumenter, fotos, lyd og video:\n• “hvor forhandlede vi depositummet?” finder mailen og lejekontrakten\n• “en rød bil i sneen” finder billedet\n• “mødet om budgettet” finder optagelsen\n\nValafind læser dine dokumenter, PDF'er, præsentationer, regneark, mails og kode, ser på dine fotos og lytter til dine optagelser og videoer. Den forstår dem på mere end 100 sprog, så du kan spørge, som du ville spørge en kollega. Den fremhævede passage i hvert resultat viser, hvorfor det matchede.\n\nIntet forlader din computer\nAI-modellen (EmbeddingGemma 2 fra Google DeepMind) kører lokalt og er bygget ind i appen: ingen sky, ingen konto, ingen telemetri. Dine filer, dit indeks og dine søgninger bliver på din computer, og indekset kan kun læses af dig.\n\nDine daglige filer først\nValafind starter med de filer, du faktisk bruger, dine seneste og oftest brugte dokumenter, og arbejder sig derefter igennem resten. Dokumenter kommer først, derefter billeder, lyd og video. Nye, ændrede, flyttede og slettede filer opdages i løbet af få sekunder.\n\nKommer ikke i vejen\nIndekseringen bruger kun den CPU og disk, din computer ikke selv bruger. Valafind måler belastningen hvert andet sekund og sætter farten ned, når du kompilerer, spiller eller sidder i et opkald, og sætter den op igen, når maskinen er i ro. Du bestemmer grænserne for CPU-, disk- og GPU-forbrug, hvilke mapper der skal indekseres, og om indekseringen skal sættes på pause ved batteridrift. Når alt er indekseret, viser den bare et diskret ✓.\n\nValafind er open source (github.com/ffMathy/valafind). Når du køber den her, støtter du udviklingen.",
+  "releaseNotes": "Første udgivelse i Microsoft Store.",
+  "additionalLicenseTerms": "Valafind er open source. Appen indeholder EmbeddingGemma 2-modellen fra Google DeepMind, der er licenseret under Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0). Brugen af modellen skal desuden følge Gemmas politik for forbudt brug (Gemma Prohibited Use Policy, https://ai.google.dev/gemma/prohibited_use_policy).",
+  "features": [
+    "Søg i dokumenter, fotos, lyd og video ved at beskrive dem med dine egne ord",
+    "Virker på over 100 sprog: et spørgsmål på ét sprog finder filer, der er skrevet på et andet",
+    "Kører udelukkende på din computer: ingen sky, ingen konto, ingen telemetri",
+    "Hent den frem hvor som helst med Ctrl+Alt+Space",
+    "Viser, hvorfor hvert resultat matchede, med den relevante passage fremhævet",
+    "Indekserer dine mest brugte filer først og holder indekset opdateret, når filerne ændres",
+    "Sætter automatisk farten ned, når computeren har travlt; du bestemmer grænserne for CPU, disk og GPU",
+    "Vælg, hvilke mapper der skal indekseres, og sæt indekseringen på pause ved batteridrift"
+  ],
+  "searchTerms": [
+    "filsøgning",
+    "find filer",
+    "semantisk søgning",
+    "AI-søgning",
+    "billedsøgning",
+    "dokumentsøgning",
+    "offline søgning"
+  ],
+  "screenshots": {
+    "search": {
+      "headline": "Find filer ud fra betydning",
+      "subline": "Spørg med dine egne ord. Valafind finder mailen, noterne og lejekontrakten, også når de er skrevet på et andet sprog.",
+      "caption": "Et spørgsmål med dine egne ord finder mailen, noterne og lejekontrakten, også på tværs af sprog; den fremhævede passage viser, hvorfor hver enkelt matchede.",
+      "query": "hvor forhandlede vi depositummet?"
+    },
+    "photos": {
+      "headline": "Fotos, ud fra hvad de viser",
+      "subline": "Beskriv billedet, og Valafind finder det. Ingen tags, albummer eller filnavne nødvendige.",
+      "caption": "Beskriv et foto, og du finder det, uanset hvad filen hedder.",
+      "query": "en rød bil i sneen"
+    },
+    "recordings": {
+      "headline": "Også optagelser og videoer",
+      "subline": "Valafind lytter til lyd og ser video, så du kan finde et møde ud fra, hvad der blev sagt.",
+      "caption": "Find optagelser og videoer ud fra, hvad der bliver sagt eller vist i dem.",
+      "query": "mødet hvor vi talte om budgettet"
+    },
+    "indexing": {
+      "headline": "Kommer ikke i vejen",
+      "subline": "Indekseringen bruger kun den CPU og disk, din computer ikke selv bruger, og sætter farten ned, så snart du får travlt.",
+      "caption": "Indekseringen regulerer sig selv, så den holder sig under de grænser for CPU og disk, du har sat."
+    },
+    "settings": {
+      "headline": "Du bestemmer",
+      "subline": "Vælg de mapper, der skal indekseres, genvejen, og hvor meget CPU, disk og GPU Valafind må bruge. Alt bliver på din computer.",
+      "caption": "Vælg mapperne, genvejen og grænserne for CPU-, disk- og GPU-forbrug."
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "title": "Valafind",
+  "shortTitle": "Valafind",
+  "sortTitle": "Valafind",
+  "voiceTitle": "Valafind",
+  "shortDescription": "按含义查找文件，而不是靠文件名。用你自己的话描述要找的文档、照片、录音或视频，支持 100 多种语言，Valafind 都能帮你找到。一切都在你的电脑上运行：无需云端，无需账户，没有遥测。",
+  "description": "按含义查找文件，而不是靠文件名。\n\n按下 Ctrl+Alt+Space，用你自己的话描述要找的内容，Valafind 就能找到那个文件，即使它是用另一种语言写的，文件名还叫 scan_0042.pdf。\n\n文档、照片、音频和视频都能找：\n• “我们在哪儿谈过押金？”能找到那封邮件和租约\n• “雪地里的红色汽车”能找到那张照片\n• “预算会议”能找到那段录音\n\nValafind 会阅读你的文档、PDF、幻灯片、电子表格、邮件和代码，查看你的照片，聆听你的录音和视频。它能理解 100 多种语言，所以你可以像问同事一样提问。每个结果中高亮的段落会告诉你它为什么匹配。\n\n数据绝不离开你的电脑\nAI 模型（Google DeepMind 的 EmbeddingGemma 2）内置于应用中，在本地运行：无需云端，无需账户，没有遥测。你的文件、索引和搜索内容都留在你的电脑上，而且索引只有你自己能读取。\n\n常用文件优先\nValafind 会先索引你真正在用的文件，也就是最近和经常使用的文档，然后再处理其余文件。先是文档，然后是图片、音频和视频。新建、修改、移动和删除的文件会在几秒内同步到索引中。\n\n不打扰你工作\n索引只使用电脑闲置的 CPU 和磁盘资源。Valafind 每两秒测量一次负载，在你编译代码、玩游戏或通话时自动放慢，电脑空闲下来后再提速。你可以设置 CPU、磁盘和 GPU 的使用上限，选择要索引的文件夹，以及使用电池时是否暂停。全部索引完成后，它只会安静地显示一个 ✓。\n\nValafind 是开源软件 (github.com/ffMathy/valafind)。在这里购买即可支持它的开发。",
+  "releaseNotes": "首次在 Microsoft Store 发布。",
+  "additionalLicenseTerms": "Valafind 是开源软件。它包含 Google DeepMind 的 EmbeddingGemma 2 模型，该模型依据 Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0) 授权。使用该模型还必须遵守 Gemma 禁止使用政策 (https://ai.google.dev/gemma/prohibited_use_policy)。",
+  "features": [
+    "用你自己的话描述，即可搜索文档、照片、音频和视频",
+    "支持 100 多种语言：用一种语言提问，也能找到用另一种语言写的文件",
+    "完全在你的电脑上运行：无需云端，无需账户，没有遥测",
+    "随时随地按 Ctrl+Alt+Space 打开",
+    "高亮显示相关段落，告诉你每个结果为什么匹配",
+    "优先索引最常用的文件，并在文件变化时保持索引最新",
+    "电脑繁忙时自动放慢；CPU、磁盘和 GPU 上限由你设定",
+    "自选要索引的文件夹，使用电池时可暂停索引"
+  ],
+  "searchTerms": [
+    "文件搜索",
+    "语义搜索",
+    "查找文件",
+    "AI搜索",
+    "图片搜索",
+    "文档搜索",
+    "本地搜索"
+  ],
+  "screenshots": {
+    "search": {
+      "headline": "按含义搜索文件",
+      "subline": "用你自己的话提问。即使是用另一种语言写的，Valafind 也能找到邮件、笔记和租约。",
+      "caption": "用中文提问，也能找到邮件、笔记和一份丹麦语租约；高亮的段落说明了每个结果为什么匹配。",
+      "query": "我们在哪儿谈过押金？"
+    },
+    "photos": {
+      "headline": "按画面内容找照片",
+      "subline": "描述照片的内容，Valafind 就能找到它。无需标签、相册或文件名。",
+      "caption": "描述照片就能找到它，不管文件叫什么名字。",
+      "query": "雪地里的红色汽车"
+    },
+    "recordings": {
+      "headline": "录音和视频也能找",
+      "subline": "Valafind 能听懂音频、看懂视频，你可以凭会上说过的话找到那场会议。",
+      "caption": "凭录音和视频中说过或出现过的内容找到它们。",
+      "query": "我们讨论预算的那次会议"
+    },
+    "indexing": {
+      "headline": "不打扰你工作",
+      "subline": "索引只使用电脑闲置的 CPU 和磁盘，你一忙起来就立刻放慢。",
+      "caption": "索引会自动调节，始终保持在你设定的 CPU 和磁盘上限以内。"
+    },
+    "settings": {
+      "headline": "一切由你掌控",
+      "subline": "选择要索引的文件夹、快捷键，以及 Valafind 可使用多少 CPU、磁盘和 GPU。一切都留在你的电脑上。",
+      "caption": "选择文件夹、快捷键，以及 CPU、磁盘和 GPU 的使用上限。"
+    }
+  }
+}
