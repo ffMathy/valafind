@@ -7,8 +7,9 @@ Input:
   --images DIR           what StoreListingScreenshotTests rendered: <lang>/screenshots/*.png and logos/*.png
 
 Output (in --out):
-  valafind-store-listing-all/       one CSV with a column per language, plus every image: import this to update all
-  valafind-store-listing-<lang>/    one language each, for updating a single listing
+  valafind-store-listing-<n>-of-<parts>/  every language, split over a few folders (--parts, default 5) so each upload
+                                          stays small: import them one after the other to update all languages
+  valafind-store-listing-<lang>/          one language each, for updating a single listing
   and a .zip of each folder.
 
 In Partner Center: the app > Store listings (any language) > Import listings > Upload folder, then pick the extracted
@@ -139,6 +140,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--languages", help="comma separated, default: every text/<language>.json")
     parser.add_argument("--columns-from", type=Path, help="a listing CSV exported from Partner Center")
+    parser.add_argument("--parts", type=int, default=5, help="how many folders to split all languages over (default 5)")
     args = parser.parse_args()
 
     locales = columns_from(args.columns_from)
@@ -167,13 +169,18 @@ def main() -> None:
         return folder
 
     built = []
-    root = "valafind-store-listing-all"
-    folder = fresh(root)
-    for l in languages:
-        shutil.copytree(args.images / l / "screenshots", folder / l / "screenshots")
-    write_csv(folder / "listing.csv", [locales[l] for l in languages],
-              [values(texts[l], f"{root}/{l}/screenshots", f"{root}/logos") for l in languages])
-    built.append(folder)
+    parts = max(1, min(args.parts, len(languages)))
+    for index in range(parts):
+        # Languages in their usual order, spread evenly: the first parts take one more when they don't divide.
+        group = languages[index * len(languages) // parts:(index + 1) * len(languages) // parts]
+        root = f"valafind-store-listing-{index + 1}-of-{parts}"
+        folder = fresh(root)
+        for l in group:
+            shutil.copytree(args.images / l / "screenshots", folder / l / "screenshots")
+        write_csv(folder / "listing.csv", [locales[l] for l in group],
+                  [values(texts[l], f"{root}/{l}/screenshots", f"{root}/logos") for l in group])
+        print(f"{root}: {', '.join(group)}", file=sys.stderr)
+        built.append(folder)
 
     for l in languages:
         root = f"valafind-store-listing-{l}"

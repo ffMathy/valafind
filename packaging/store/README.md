@@ -117,9 +117,10 @@ Partner Center:
 
 1. Run **Actions › Store listing** (or `packaging/store/listing/make-listing.sh` locally; it needs the .NET SDK,
    Python 3 and the Noto fonts) and download the **store-listing** artifact.
-2. In Partner Center, open the submission's **Store listings**, add the languages you want under **Manage Store listing
-   languages**, then **Import listings › Upload folder** and pick `valafind-store-listing-all` (every language) or a
-   `valafind-store-listing-<language>` folder (one language). Unzip it first; upload the folder itself.
+2. In Partner Center, open the submission's **Store listings**, then **Import listings › Upload folder** (a language
+   column adds that listing language if the submission doesn't have it yet) and pick `valafind-store-listing-1-of-5`. Import
+   `2-of-5` to `5-of-5` the same way; together they hold every language, split so each upload stays small. A
+   `valafind-store-listing-<language>` folder updates one language. Unzip first; upload the folder itself.
 3. If the import rejects a language column, Partner Center names that language differently: **Export listings**, then
    run `make-listing.sh <out> -- --columns-from <the exported .csv>` and import again.
 
