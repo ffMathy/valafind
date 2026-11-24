@@ -18,3 +18,5 @@ models/
 **/_Pending*Stub*.cs
 # ...except the tiny fake model files the BundledModel tests embed.
 !tests/Valafind.Core.Tests/Fixtures/BundledModel/**
+
+__pycache__/
