@@ -1,3 +1,4 @@
+// ail-derived-from: TextSniffing@9e6c9f9936d358b8
 // End-to-end check for TextSniffing: a file without a known extension is read when it looks like text, in whatever
 // encoding it was written, and left out when it does not.
 import { afterEach, expect } from "bun:test";

@@ -1,3 +1,4 @@
+// ail-derived-from: MailAndNotebooks@0bcfd853f7eb0eaf
 // End-to-end check for MailAndNotebooks: e-mail and mailboxes are found by their headers and bodies, and Jupyter
 // notebooks by their cells, without the cells' output.
 import { afterEach, expect } from "bun:test";

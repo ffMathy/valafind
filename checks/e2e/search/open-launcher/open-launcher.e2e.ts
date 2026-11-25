@@ -1,3 +1,4 @@
+// ail-derived-from: OpenLauncher@07d3a10f707575eb
 // End-to-end check for OpenLauncher: Ctrl+Alt+Space, Esc and a click elsewhere, on a real X11 desktop. It sees only
 // what a user sees: whether a window titled "Valafind" is on screen, where it is, and the words on it.
 import { afterAll, afterEach, beforeAll, expect } from "bun:test";

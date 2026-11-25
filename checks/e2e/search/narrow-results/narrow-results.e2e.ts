@@ -1,3 +1,4 @@
+// ail-derived-from: NarrowResults@3e03f81817a9d529
 // End-to-end check for NarrowResults: the kind chips and the "Any time" menu under the list. It sees only what a user
 // sees: files saved in the home folder (one dated in the past, as a file copied from an old disk is), clicks on the
 // chips and the menu, and the words on the launcher.

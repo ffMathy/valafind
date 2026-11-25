@@ -1,0 +1,21 @@
+{
+  "node": "WhatGetsIndexed",
+  "shots": [
+    {
+      "test": "a file saved anywhere in the home folder is found",
+      "file": "a-file-saved-anywhere-in-the-home-folder-is-found.png"
+    },
+    {
+      "test": "hidden folders, installed packages and version control are skipped",
+      "file": "hidden-folders-installed-packages-and-version-control-are-sk.png"
+    },
+    {
+      "test": "build output next to a project file is skipped, a folder of the same name elsewhere is not",
+      "file": "build-output-next-to-a-project-file-is-skipped-a-folder-of-t.png"
+    },
+    {
+      "test": "a folder added in Settings is indexed along with the home folder",
+      "file": "a-folder-added-in-settings-is-indexed-along-with-the-home-fo.png"
+    }
+  ]
+}

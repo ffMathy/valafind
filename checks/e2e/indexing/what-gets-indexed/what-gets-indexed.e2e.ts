@@ -1,3 +1,4 @@
+// ail-derived-from: WhatGetsIndexed@448a0cde0e67bc98
 // End-to-end check for WhatGetsIndexed: which files in the home folder (and in folders added in Settings) are found,
 // and which are skipped. It only saves files as a user would, uses Settings with the mouse and keys, and reads the
 // launcher from the screen.

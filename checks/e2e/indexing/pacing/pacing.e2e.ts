@@ -1,8 +1,9 @@
+// ail-derived-from: Pacing@bc609ed15eeda00f
 // End-to-end check for Pacing: the target ticks on the index panel's meters, a limit changed in Settings, and pausing
 // and resuming from the launcher's menu. The panel shows only while indexing is under way, so each scenario first
 // saves a batch of notes for it to index.
 import { afterEach, expect } from "bun:test";
-import { closeLauncher, keepScreen, launcher, releaseAll, saveFile, sleep, test, unique } from "../../desktop.ts";
+import { closeLauncher, deleteFile, keepScreen, launcher, releaseAll, saveFile, sleep, test, unique } from "../../desktop.ts";
 import {
   chooseFromLauncherMenu, indexPanelShown, meterTooltip, openLauncherEmpty, openSettings, pressResume, resultsText, saveSettings,
   listed, searchUntilFound, setSlider,
@@ -11,6 +12,9 @@ import {
 afterEach(async () => {
   await releaseAll();
   await closeLauncher();
+  // The notes only give indexing work while the test watches it; left behind, they keep it busy for minutes and
+  // the checks after this one wait behind them.
+  deleteFile("Busy");
 });
 
 /** Saves `count` long notes (several parts each) so indexing has work for a while. */

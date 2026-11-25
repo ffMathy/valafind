@@ -1,0 +1,29 @@
+{
+  "node": "WatchChanges",
+  "shots": [
+    {
+      "test": "a new file is found within seconds",
+      "file": "a-new-file-is-found-within-seconds.png"
+    },
+    {
+      "test": "an edited file is found by its new text",
+      "file": "an-edited-file-is-found-by-its-new-text.png"
+    },
+    {
+      "test": "a renamed file is found under its new name only",
+      "file": "a-renamed-file-is-found-under-its-new-name-only.png"
+    },
+    {
+      "test": "a moved folder takes its files along",
+      "file": "a-moved-folder-takes-its-files-along.png"
+    },
+    {
+      "test": "a deleted file disappears from the results",
+      "file": "a-deleted-file-disappears-from-the-results.png"
+    },
+    {
+      "test": "a file emptied by the user disappears from the results",
+      "file": "a-file-emptied-by-the-user-disappears-from-the-results.png"
+    }
+  ]
+}

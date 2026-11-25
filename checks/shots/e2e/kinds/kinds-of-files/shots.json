@@ -1,0 +1,9 @@
+{
+  "node": "KindsOfFiles",
+  "shots": [
+    {
+      "test": "a question finds files of every kind by what they hold",
+      "file": "a-question-finds-files-of-every-kind-by-what-they-hold.png"
+    }
+  ]
+}

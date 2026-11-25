@@ -1,3 +1,4 @@
+// ail-derived-from: Pictures@47a3987c5577b814
 // End-to-end check for Pictures: a picture is found by what it shows and by the words written in it, in every common
 // format; a TIFF (read only on a Mac) is found by its name.
 import { afterEach, expect } from "bun:test";

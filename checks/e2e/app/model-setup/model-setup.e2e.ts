@@ -1,3 +1,4 @@
+// ail-derived-from: ModelSetup@0a39980cee3a6a8b
 // End-to-end check for ModelSetup: its scenarios, played on a desktop of its own with a Valafind started in a fresh
 // home and data folder, from a build without the model. It sees only what a user sees: the words on that desktop
 // (OCR). "The model is put into the folder the launcher names" is what running the install command does; the check

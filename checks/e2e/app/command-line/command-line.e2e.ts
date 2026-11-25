@@ -1,3 +1,4 @@
+// ail-derived-from: CommandLine@3fe8fe8b2b4643bf
 // End-to-end check for CommandLine: its scenarios, played from a terminal against the running Valafind (with the
 // environment it was started with), and, for --quit and for no display, against a Valafind of their own. It sees only
 // what a user sees: windows on screen, the command's exit code and what it writes (see app-driver.ts).

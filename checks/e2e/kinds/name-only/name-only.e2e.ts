@@ -1,3 +1,4 @@
+// ail-derived-from: NameOnly@ec098ee66742baa3
 // End-to-end check for NameOnly: archives, legacy Office files and media no decoder can read are found by their name,
 // and what is inside them never shows.
 import { afterEach, expect } from "bun:test";

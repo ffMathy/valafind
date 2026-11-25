@@ -1,3 +1,4 @@
+// ail-derived-from: TextDocuments@4ae9fc77f758832a
 // End-to-end check for TextDocuments: plain text, Markdown, code and web pages are found by what they say, and only
 // the first part of a long document is searched.
 import { afterEach, expect } from "bun:test";

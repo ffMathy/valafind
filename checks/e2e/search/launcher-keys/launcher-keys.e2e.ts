@@ -1,3 +1,4 @@
+// ail-derived-from: LauncherKeys@cfdd6da4d7f5ac68
 // End-to-end check for LauncherKeys: the arrows, Tab and the footer of the launcher, on a real X11 desktop. It sees
 // only what a user sees: the words on the launcher, read with OCR.
 import { afterEach, beforeAll, expect } from "bun:test";

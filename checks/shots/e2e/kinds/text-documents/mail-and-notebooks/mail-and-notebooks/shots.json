@@ -1,0 +1,17 @@
+{
+  "node": "MailAndNotebooks",
+  "shots": [
+    {
+      "test": "an e-mail is found by its subject and body",
+      "file": "an-e-mail-is-found-by-its-subject-and-body.png"
+    },
+    {
+      "test": "every message in a mailbox file is searched",
+      "file": "every-message-in-a-mailbox-file-is-searched.png"
+    },
+    {
+      "test": "a notebook is searched by its cells, not their output",
+      "file": "a-notebook-is-searched-by-its-cells-not-their-output.png"
+    }
+  ]
+}

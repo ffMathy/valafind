@@ -1,3 +1,4 @@
+// ail-derived-from: WatchChanges@093ec2935a74975c
 // End-to-end check for WatchChanges: files added, edited, renamed, moved, deleted and emptied in the home folder while
 // Valafind runs, as a user would change them, and what the launcher then lists.
 import { afterEach, expect } from "bun:test";

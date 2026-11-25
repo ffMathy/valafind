@@ -1,3 +1,4 @@
+// ail-derived-from: OfficeDocuments@4917375dd2c7faca
 // End-to-end check for OfficeDocuments: Word, Excel, PowerPoint, OpenDocument, EPUB, RTF and PDF files are found by
 // their text, and the passage that matched is shown.
 import { afterEach, expect } from "bun:test";

@@ -1,3 +1,4 @@
+// ail-derived-from: KindsOfFiles@f4dae5d1f5d9ccb7
 // End-to-end check for KindsOfFiles: one question in words finds a recording, a picture and a document by what
 // each of them holds, whatever its kind.
 import { afterEach, expect } from "bun:test";

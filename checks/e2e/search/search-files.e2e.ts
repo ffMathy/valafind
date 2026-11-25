@@ -1,3 +1,4 @@
+// ail-derived-from: SearchFiles@f180201fa1ae6125
 // End-to-end check for SearchFiles: questions typed into the launcher, and the results, excerpts and highlights it
 // shows. It sees only what a user sees: files saved in the home folder, keys, and the words and colours on the launcher.
 import { afterEach, beforeAll, expect } from "bun:test";

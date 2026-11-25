@@ -1,0 +1,17 @@
+{
+  "node": "Audio",
+  "shots": [
+    {
+      "test": "a recording is found by what is said in it",
+      "file": "a-recording-is-found-by-what-is-said-in-it.png"
+    },
+    {
+      "test": "MP3 and FLAC recordings are read too",
+      "file": "mp3-and-flac-recordings-are-read-too.png"
+    },
+    {
+      "test": "a long recording is heard to its end",
+      "file": "a-long-recording-is-heard-to-its-end.png"
+    }
+  ]
+}

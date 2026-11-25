@@ -1,3 +1,4 @@
+// ail-derived-from: ActOnResult@652fa890a1292cb5
 // End-to-end check for ActOnResult: opening a result, showing it in the file manager and copying its path. It sees
 // only what a user sees: what was opened (scripts/ail/bin stands in for xdg-open), the clipboard, and the launcher.
 import { afterEach, beforeAll, expect } from "bun:test";

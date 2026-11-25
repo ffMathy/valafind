@@ -1,3 +1,4 @@
+// ail-derived-from: ChangeSettings@319a1d95e7796c33
 // End-to-end check for ChangeSettings: its scenarios, played in the settings window of the running Valafind. It sees
 // only what a user sees: windows on screen and their words (OCR), the keys that open the launcher, the autostart entry
 // in the home folder, and what would have opened (see app-driver.ts). Every scenario that saves puts things back.
@@ -107,7 +108,7 @@ test("Save keeps a changed limit", async () => {
 }, 60_000);
 
 test("adding a folder replaces the home folder in the list", async () => {
-  const name = `aapick${unique()}`; // sorts first among the home folder's folders
+  const name = `AAApick${unique()}`; // sorts first among the home folder's folders, with capitals first or not
   mkdirSync(join(home(), name), { recursive: true });
   try {
     await openSettings();

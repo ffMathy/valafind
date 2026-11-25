@@ -1,3 +1,4 @@
+// ail-derived-from: Video@d38351e57209fb68
 // End-to-end check for Video: a video is found by what its pictures show and by what is said in it.
 import { afterEach, expect } from "bun:test";
 import { closeLauncher, releaseAll, test, unique } from "../../desktop.ts";

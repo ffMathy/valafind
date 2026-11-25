@@ -13,8 +13,12 @@ import { dirname, join, resolve } from "node:path";
 const root = resolve(import.meta.dir, "../..");
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** A short id of letters OCR reads reliably, so texts from different tests never collide. */
-export const unique = () => Array.from({ length: 6 }, () => "acdefhkmnprtwxyz"[Math.floor(Math.random() * 16)]).join("");
+/**
+ * A short id of letters OCR reads reliably, so texts from different tests never collide. No "c" (read as "e") and no
+ * "r" ("rn" reads as "m").
+ */
+const ID_LETTERS = "adefhkmnptwxyz";
+export const unique = () => Array.from({ length: 6 }, () => ID_LETTERS[Math.floor(Math.random() * ID_LETTERS.length)]).join("");
 
 // ---------------------------------------------------------------- the user's files
 
