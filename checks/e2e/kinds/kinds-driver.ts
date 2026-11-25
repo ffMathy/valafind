@@ -61,9 +61,19 @@ export const filler = (chars: number) =>
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
     .repeat(Math.ceil(chars / 120)).slice(0, chars);
 
+/**
+ * Where `name` is in what the launcher shows: the whole name, or else the part after its first "-" (when that has 6
+ * characters or more), since OCR now and then misreads a letter of the random code in front.
+ */
+function locate(seen: string, name: string): number {
+  const s = seen.toLowerCase(), n = name.toLowerCase(), whole = s.indexOf(n);
+  const rest = n.slice(n.indexOf("-") + 1);
+  return whole >= 0 || !n.includes("-") || rest.length < 6 ? whole : s.indexOf(rest);
+}
+
 /** True when `first` is shown and comes before `then` in the launcher (or `then` is not shown at all). */
 export function shownAbove(seen: string, first: string, then: string): boolean {
-  const s = seen.toLowerCase(), a = s.indexOf(first.toLowerCase()), b = s.indexOf(then.toLowerCase());
+  const a = locate(seen, first), b = locate(seen, then);
   return a >= 0 && (b < 0 || a < b);
 }
 

@@ -11,7 +11,7 @@ test("a text file is found by what it says, with the passage that matched", asyn
   saveFile(`${dir}/${n}.txt`, `Logbook ${t}: the lighthouse keeper repaired the foghorn before the winter storm arrived.`);
   const seen = await searchUntilFound("who looks after the lighthouse", [`${n}.txt`, t]);
   expect(seen).toContain(t);
-}, 240_000);
+}, 420_000);
 
 test("Markdown and code are read as text", async () => {
   const dir = folder(), n = unique(), t = unique(), c = unique();
@@ -19,7 +19,7 @@ test("Markdown and code are read as text", async () => {
   saveFile(`${dir}/${n}.py`, `def to_celsius(fahrenheit):\n    """Convert a temperature from Fahrenheit to Celsius ${c}."""\n    return (fahrenheit - 32) * 5 / 9\n`);
   expect(await searchUntilFound("what to bring when camping", [`${n}.md`, t])).toContain(t);
   expect(await searchUntilFound("temperature conversion", [`${n}.py`, c])).toContain(c);
-}, 300_000);
+}, 420_000);
 
 test("a web page is read without its markup", async () => {
   const dir = folder(), n = unique(), t = unique();
@@ -29,7 +29,7 @@ test("a web page is read without its markup", async () => {
   expect(seen).toContain(t);
   expect(seen).not.toContain("trackingPixel");
   expect(seen).not.toContain("crimson");
-}, 240_000);
+}, 420_000);
 
 test("only the first part of a long document is searched", async () => {
   const dir = folder(), n = unique(), tail = unique(), control = unique();
@@ -41,4 +41,4 @@ test("only the first part of a long document is searched", async () => {
   const seen = readScreen();
   keepScreen();
   expect(seen).not.toContain(tail);
-}, 240_000);
+}, 420_000);

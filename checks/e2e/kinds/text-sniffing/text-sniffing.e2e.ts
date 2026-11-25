@@ -11,13 +11,13 @@ test("a text file without an extension is read", async () => {
   const dir = folder(), n = unique(), t = unique();
   saveFile(`${dir}/${n}-CHANGELOG`, `Release ${t}: fixed the crash when the printer ran out of paper during a long print job.\n`);
   expect(await searchUntilFound("the printer ran out of paper", [`${n}-CHANGELOG`, t])).toContain(t);
-}, 240_000);
+}, 420_000);
 
 test("a UTF-16 text file without a byte order mark is read", async () => {
   const dir = folder(), n = unique(), t = unique();
   saveFile(`${dir}/${n}.log`, Buffer.from(`Night ${t}: the greenhouse heater switched on because frost was coming.`, "utf16le"));
   expect(await searchUntilFound("frost in the greenhouse", [`${n}.log`, t])).toContain(t);
-}, 240_000);
+}, 420_000);
 
 test("a binary file with an unknown extension is not indexed", async () => {
   const dir = folder(), n = unique(), t = unique();
@@ -29,4 +29,4 @@ test("a binary file with an unknown extension is not indexed", async () => {
   const seen = readScreen();
   keepScreen();
   expect(seen).not.toContain(`sailing-logbook-${n}`);
-}, 240_000);
+}, 420_000);

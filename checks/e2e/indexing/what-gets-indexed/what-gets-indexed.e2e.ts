@@ -6,7 +6,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { closeLauncher, home, releaseAll, saveFile, test, unique } from "../../desktop.ts";
 import {
-  addFolder, openSettings, removeAllFolders, saveSettings, searchUntilFound, searchUntilGone,
+  addFolder, openSettings, removeAllFolders, saveSettings, searchUntilFound, searchUntilGone, listed,
 } from "../indexing-driver.ts";
 
 afterEach(async () => {
@@ -20,8 +20,8 @@ test("a file saved anywhere in the home folder is found", async () => {
   const id = unique();
   saveFile(`Recipes/${id}/pancakes-${id}.txt`, recipe(id));
   const seen = await searchUntilFound("blueberry pancakes recipe", `pancakes-${id}`);
-  expect(seen).toContain(`pancakes-${id}`);
-  expect(seen).toContain(`Recipes/${id}`);
+  expect(listed(seen, `pancakes-${id}`)).toBe(true);
+  expect(listed(seen, `Recipes/${id}`)).toBe(true);
 }, 480_000);
 
 test("hidden folders, installed packages and version control are skipped", async () => {
@@ -31,10 +31,10 @@ test("hidden folders, installed packages and version control are skipped", async
   saveFile(`.git/${id}/git-${id}.txt`, recipe(id));
   saveFile(`Kitchen/${id}/kept-${id}.txt`, recipe(id));
   const seen = await searchUntilFound(`blueberry pancakes ${id}`, `kept-${id}`);
-  expect(seen).toContain(`kept-${id}`);
-  expect(seen).not.toContain(`hidden-${id}`);
-  expect(seen).not.toContain(`package-${id}`);
-  expect(seen).not.toContain(`git-${id}`);
+  expect(listed(seen, `kept-${id}`)).toBe(true);
+  expect(listed(seen, `hidden-${id}`)).toBe(false);
+  expect(listed(seen, `package-${id}`)).toBe(false);
+  expect(listed(seen, `git-${id}`)).toBe(false);
 }, 480_000);
 
 test("build output next to a project file is skipped, a folder of the same name elsewhere is not", async () => {
@@ -43,8 +43,8 @@ test("build output next to a project file is skipped, a folder of the same name 
   saveFile(`Web-${id}/dist/built-${id}.txt`, recipe(id));
   saveFile(`Notes-${id}/dist/notes-${id}.txt`, recipe(id));
   const seen = await searchUntilFound(`blueberry pancakes ${id}`, `notes-${id}`);
-  expect(seen).toContain(`notes-${id}`);
-  expect(seen).not.toContain(`built-${id}`);
+  expect(listed(seen, `notes-${id}`)).toBe(true);
+  expect(listed(seen, `built-${id}`)).toBe(false);
 }, 480_000);
 
 test("a folder added in Settings is indexed along with the home folder", async () => {
@@ -59,14 +59,14 @@ test("a folder added in Settings is indexed along with the home folder", async (
     await addFolder(shelf);
     await saveSettings();
     const seen = await searchUntilFound("old stone lighthouse keeper", `shelf-${id}`);
-    expect(seen).toContain(`shelf-${id}`);
+    expect(listed(seen, `shelf-${id}`)).toBe(true);
     await closeLauncher();
 
     await openSettings();
     await removeAllFolders();
     await saveSettings();
     const after = await searchUntilGone("old stone lighthouse keeper", `shelf-${id}`);
-    expect(after).not.toContain(`shelf-${id}`);
+    expect(listed(after, `shelf-${id}`)).toBe(false);
   } finally {
     // Leave Settings as they start: no folders listed, so the home folder is indexed.
     try {

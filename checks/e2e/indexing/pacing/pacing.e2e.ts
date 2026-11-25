@@ -4,8 +4,8 @@
 import { afterEach, expect } from "bun:test";
 import { closeLauncher, keepScreen, launcher, releaseAll, saveFile, sleep, test, unique } from "../../desktop.ts";
 import {
-  chooseFromLauncherMenu, find, meterTooltip, openLauncherEmpty, openSettings, pressResume, resultsText, saveSettings,
-  searchUntilFound, setSlider,
+  chooseFromLauncherMenu, indexPanelShown, meterTooltip, openLauncherEmpty, openSettings, pressResume, resultsText, saveSettings,
+  listed, searchUntilFound, setSlider,
 } from "../indexing-driver.ts";
 
 afterEach(async () => {
@@ -13,16 +13,19 @@ afterEach(async () => {
   await closeLauncher();
 });
 
-/** Saves `count` short notes so indexing has work for a while. */
-function giveIndexingWork(id: string, count = 20) {
-  for (let i = 1; i <= count; i++)
-    saveFile(`Busy/${id}/note-${i}.txt`, `Field notes ${id} number ${i} on bird migration over the marshes, with counts of geese and cranes.`);
+/** Saves `count` long notes (several parts each) so indexing has work for a while. */
+function giveIndexingWork(id: string, count = 12) {
+  for (let i = 1; i <= count; i++) {
+    const lines = Array.from({ length: 40 }, (_, n) =>
+      `Day ${n + 1}: field notes ${id}-${i} on bird migration over the marshes, counting ${n * 7 + i} geese, cranes and lapwings.`);
+    saveFile(`Busy/${id}/note-${i}.txt`, lines.join("\n"));
+  }
 }
 
 async function panelShows(): Promise<boolean> {
   for (let i = 0; i < 20; i++) {
     await openLauncherEmpty();
-    if (find("Phase 2", launcher())) return true;
+    if (indexPanelShown()) return true;
     await sleep(500);
   }
   return false;
@@ -30,10 +33,9 @@ async function panelShows(): Promise<boolean> {
 
 test("the meters mark the targets of the default limits", async () => {
   giveIndexingWork(unique());
-  await sleep(3000);
   expect(await panelShows()).toBe(true);
-  expect(await meterTooltip("CPU")).toContain("Target 27%");
-  expect(await meterTooltip("Disk")).toContain("Target 22%");
+  expect(listed(await meterTooltip("CPU"), "Target 27%")).toBe(true);
+  expect(listed(await meterTooltip("Disk"), "Target 22%")).toBe(true);
 }, 180_000);
 
 test("a higher processor limit moves the CPU target", async () => {
@@ -43,7 +45,7 @@ test("a higher processor limit moves the CPU target", async () => {
     await setSlider("Maximum CPU", 50);
     await saveSettings();
     expect(await panelShows()).toBe(true);
-    expect(await meterTooltip("CPU")).toContain("Target 45%");
+    expect(listed(await meterTooltip("CPU"), "Target 45%")).toBe(true);
   } finally {
     await closeLauncher();
     await openSettings();
@@ -58,24 +60,25 @@ test("pausing from the launcher's menu holds new files back until the user resum
     await chooseFromLauncherMenu("Pause indexing");
     await sleep(1000);
     const paused = resultsText();
-    expect(paused).toContain("Indexing paused");
+    expect(listed(paused, "Indexing paused")).toBe(true);
     expect(paused).toMatch(/of your files are searchable/);
-    expect(paused).toContain("Paused by you");
+    expect(listed(paused, "Paused by you")).toBe(true);
     keepScreen();
 
     saveFile(`Paused/${id}/held-${id}.txt`, `An orchard ${id} of old apple trees, the harvest, the cider press and the ladders.`);
     await closeLauncher();
     await sleep(30_000);
-    const meanwhile = await searchUntilFound("apple orchard harvest", `held-${id}`, 5_000);
-    expect(meanwhile).not.toContain(`held-${id}`);
+    const meanwhile = await searchUntilFound(`apple orchard ${id} harvest`, `held-${id}`, 5_000);
+    expect(listed(meanwhile, `held-${id}`)).toBe(false);
 
+    await openLauncherEmpty();
     await pressResume();
   } finally {
     // Never leave indexing paused for the other checks: the banner's Resume shows only while paused.
     await openLauncherEmpty();
-    if (find("Indexing paused", launcher())) await pressResume();
+    if (/Indexing paused/.test(resultsText())) await pressResume();
   }
   await closeLauncher();
-  const seen = await searchUntilFound("apple orchard harvest", `held-${id}`);
-  expect(seen).toContain(`held-${id}`);
+  const seen = await searchUntilFound(`apple orchard ${id} harvest`, `held-${id}`);
+  expect(listed(seen, `held-${id}`)).toBe(true);
 }, 600_000);

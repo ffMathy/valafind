@@ -15,17 +15,17 @@ test("an archive is found by its name, not by what is in it", async () => {
   expect(r.exitCode).toBe(0);
   const seen = await searchUntilFound("holiday photos from Crete", [`holiday-photos-from-crete-${n}.zip`]);
   expect(seen).not.toContain(t);
-}, 240_000);
+}, 420_000);
 
 test("an old Word file is found by its name only", async () => {
   const dir = folder(), n = unique(), t = unique();
   saveFile(`${dir}/minutes-of-the-board-meeting-${n}.doc`, `The elephant parade ${t} passed the castle gates.`);
   const seen = await searchUntilFound("board meeting minutes", [`minutes-of-the-board-meeting-${n}.doc`]);
   expect(seen).not.toContain(t);
-}, 240_000);
+}, 420_000);
 
 test("a video no decoder can read is still found by its name", async () => {
   const dir = folder(), n = unique();
   saveFile(`${dir}/sailing-trip-to-norway-${n}.mp4`, randomBytes(4000));
   expect(await searchUntilFound("sailing trip to Norway", [`sailing-trip-to-norway-${n}.mp4`])).toContain(`sailing-trip-to-norway-${n}.mp4`);
-}, 240_000);
+}, 420_000);

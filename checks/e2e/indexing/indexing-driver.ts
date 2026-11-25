@@ -8,7 +8,8 @@ import {
 } from "../desktop.ts";
 
 function run(cmd: string[]): string {
-  return Bun.spawnSync(cmd, { env: process.env, stdout: "pipe", stderr: "pipe" }).stdout.toString();
+  // One OCR thread: on a busy machine tesseract's default threading makes a read take minutes.
+  return Bun.spawnSync(cmd, { env: { ...process.env, OMP_THREAD_LIMIT: "1" }, stdout: "pipe", stderr: "pipe" }).stdout.toString();
 }
 
 /** What the launcher shows below its search box: the query typed in the box is left out, so a word found here was
@@ -40,7 +41,7 @@ export function wordsIn(region: Box | null = null, scale = 2): Word[] {
   const shot = join(dir, "shot.png"), big = join(dir, "big.png");
   run(["import", "-window", "root", "-crop", `${r.width}x${r.height}+${r.x}+${r.y}`, "+repage", shot]);
   run(["convert", shot, "-resize", `${scale * 100}%`, "-colorspace", "Gray", big]);
-  const tsv = run(["tesseract", big, "stdout", "--psm", "11", "tsv"]);
+  const tsv = run(["tesseract", big, "stdout", "--psm", "6", "tsv"]);
   rmSync(dir, { recursive: true, force: true });
   const words: Word[] = [];
   for (const row of tsv.split("\n").slice(1)) {
@@ -56,8 +57,16 @@ export function wordsIn(region: Box | null = null, scale = 2): Word[] {
 
 /** The centre of the first place on screen where `phrase` is written (its words in a row), or null. */
 export function find(phrase: string, region: Box | null = null): { x: number; y: number } | null {
+  // OCR misses a word at one scale now and then; a second read at another scale usually gets it.
+  for (const scale of [2, 3]) {
+    const at = findAt(phrase, wordsIn(region, scale));
+    if (at) return at;
+  }
+  return null;
+}
+
+function findAt(phrase: string, words: Word[]): { x: number; y: number } | null {
   const want = phrase.toLowerCase().split(/\s+/);
-  const words = wordsIn(region);
   for (let i = 0; i < words.length; i++) {
     let ok = true;
     for (let j = 0; j < want.length && ok; j++) {
@@ -80,10 +89,16 @@ export async function clickAt(p: { x: number; y: number }, after = 400) {
 }
 
 /** Clicks the text `phrase` where it is written on screen, waiting up to `timeout` for it to appear. */
-export async function clickText(phrase: string, region: () => Box | null = () => null, timeout = 8000) {
+export async function clickText(phrase: string, region: () => Box | null = () => null, timeout = 15000) {
   const p = await waitFor(() => find(phrase, region()), timeout, 400);
   if (!p) throw new Error(`"${phrase}" is not on the screen`);
   await clickAt(p);
+}
+
+/** Whether OCR'd text shows `word`: case is ignored, and so is OCR's usual mix-up of "c" and "e". */
+export function listed(seen: string, word: string): boolean {
+  const norm = (s: string) => s.toLowerCase().replace(/e/g, "c");
+  return norm(seen).includes(norm(word));
 }
 
 /** Searches until the results show `word` (never part of the query), closing the launcher between tries so indexing,
@@ -93,7 +108,7 @@ export async function searchUntilFound(query: string, word: string, timeout = 42
   for (const until = Date.now() + timeout; Date.now() < until;) {
     await search(query);
     seen = resultsText();
-    if (seen.toLowerCase().includes(word.toLowerCase())) {
+    if (listed(seen, word)) {
       keepScreen();
       return seen;
     }
@@ -110,7 +125,7 @@ export async function searchUntilGone(query: string, word: string, timeout = 420
   for (const until = Date.now() + timeout; Date.now() < until;) {
     await search(query);
     seen = resultsText();
-    if (/results/i.test(seen) && !seen.toLowerCase().includes(word.toLowerCase())) {
+    if (/results/i.test(seen) && !listed(seen, word)) {
       keepScreen();
       return seen;
     }
@@ -137,26 +152,26 @@ export async function chooseFromLauncherMenu(item: string) {
   await clickText(item, () => launcher());
 }
 
-/** The "Resume" button of the paused banner (white on blue, which OCR often misses): at the banner's right end. */
+/** Presses "Resume" on the paused banner, which runs across the top of the launcher under the search box. */
 export async function pressResume() {
   const box = launcher();
   if (!box) throw new Error("the launcher is closed");
-  const banner = find("Indexing paused", box);
-  if (!banner) throw new Error("no paused banner");
-  await clickAt(find("Resume", box) ?? { x: box.x + box.width - 52, y: banner.y }, 1000);
+  if (!/Indexing paused/.test(resultsText())) throw new Error("no paused banner");
+  await clickAt({ x: box.x + box.width - 53, y: box.y + 74 }, 1000);
 }
 
-/** Points at the meter of `label` ("CPU" or "Disk") in the index panel and reads its tooltip. */
+/** True while the launcher shows the index panel (its "Phase 2" column). */
+export const indexPanelShown = () => /Phase 2/.test(resultsText());
+
+/** Points at the meter of `label` ("CPU" or "Disk") in the index panel and reads its tooltip. The meters sit in the
+ * panel's right column, just above the filter chips. */
 export async function meterTooltip(label: "CPU" | "Disk"): Promise<string> {
   const box = launcher();
   if (!box) throw new Error("the launcher is closed");
-  const panel: Box = { ...box, x: box.x + Math.round(box.width * 0.66), y: box.y + box.height - 220, width: Math.round(box.width * 0.34), height: 150 };
-  const at = await waitFor(() => find(label, panel), 5000, 300);
-  if (!at) throw new Error(`no ${label} meter on the screen`);
-  xdotool("mousemove", String(Math.round(at.x + 120)), String(Math.round(at.y)));
+  const x = box.x + 970, y = box.y + box.height - (label === "CPU" ? 167 : 149);
+  xdotool("mousemove", String(x), String(y));
   await sleep(1800);
-  const around: Box = { id: "root", x: Math.round(at.x), y: Math.round(at.y), width: 330, height: 60 };
-  const text = readRegion(around);
+  const text = readRegion({ id: "root", x: x - 120, y: y + 4, width: 300, height: 40 });
   keepScreen();
   xdotool("mousemove", "5", "5");
   await sleep(300);
@@ -180,11 +195,17 @@ export async function openSettings(): Promise<Box> {
 }
 
 export async function saveSettings() {
-  // "Save" is white on blue, which OCR often misses; it sits right of "Cancel".
-  const at = await waitFor(() => find("Save") ?? (({ x, y }) => ({ x: x + 104, y }))(find("Cancel") ?? { x: -1000, y: -1000 }), 8000, 300);
-  if (!at || at.x < 0) throw new Error("no Save button in Settings");
+  // "Save" is white on blue, which OCR often misses; it sits just right of "Cancel". (Enter is no substitute: it
+  // presses whichever button has the focus, such as "Add folder…".)
+  const at = await waitFor(() => {
+    const save = find("Save");
+    if (save) return save;
+    const cancel = find("Cancel");
+    return cancel ? { x: cancel.x + 104, y: cancel.y } : null;
+  }, 15000, 300);
+  if (!at) throw new Error("no Save button in Settings");
   await clickAt(at);
-  await waitFor(() => !settingsWindow(), 8000, 200);
+  if (!(await waitFor(() => !settingsWindow(), 8000, 200))) throw new Error("Settings did not close on Save");
   await sleep(800);
 }
 
@@ -193,7 +214,8 @@ export async function saveSettings() {
 
 /** Sets a percentage slider ("Maximum CPU", "Maximum disk busy") to `percent` (5 to 100, steps of 5) with the keys. */
 export async function setSlider(label: string, percent: number) {
-  const at = await waitFor(() => find(label), 8000, 300);
+  // OCR sometimes misreads "Maximum"; the last word of the label ("CPU", "busy") is on the same row.
+  const at = await waitFor(() => find(label) ?? find(`${label.split(" ").pop()} `.trim()), 15000, 300);
   if (!at) throw new Error(`no "${label}" in Settings`);
   await clickAt({ x: at.x + 150, y: at.y + 33 }, 300);
   await tap("Home");
@@ -208,9 +230,17 @@ export async function addFolder(folder: string) {
   await clickText("Add folder");
   const chooser = await waitFor(folderChooser, 8000, 200);
   if (!chooser) throw new Error("the folder chooser did not open");
-  await sleep(800);
+  // Wait until the chooser is drawn: its places list ends with "Other Locations"; "Home" is the place above it (not
+  // the "home folder" written in Settings behind it).
+  const places = await waitFor(() => find("Other Locations"), 20000, 400);
+  if (!places) throw new Error("the folder chooser shows no places");
+  const homePlace = await waitFor(() => wordsIn().find((w) => w.text === "Home" && Math.abs(w.x - (places.x - 50)) < 60 && w.y < places.y), 10000, 400);
+  if (!homePlace) throw new Error("the folder chooser has no Home place");
   // From the Home place, a path typed in the location bar and Enter picks that folder.
-  await clickText("Home");
+  // The first click can go to giving the new window focus; a second click on the same place does no harm.
+  const home = { x: homePlace.x + homePlace.w / 2, y: homePlace.y + homePlace.h / 2 };
+  await clickAt(home, 800);
+  await clickAt(home, 800);
   await tap("ctrl+l");
   await tap("ctrl+a");
   xdotool("type", "--delay", "20", folder.endsWith("/") ? folder : folder + "/");

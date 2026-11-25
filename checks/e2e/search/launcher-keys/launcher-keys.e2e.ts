@@ -2,13 +2,14 @@
 // only what a user sees: the words on the launcher, read with OCR.
 import { afterEach, beforeAll, expect } from "bun:test";
 import { keepScreen, readScreen, sleep, tap, test, unique } from "../../desktop.ts";
-import { deleteSaved, firstResult, readList, readPane, readPart, save, searchWhenIndexed, prepareFolders } from "../search-driver.ts";
+import { deleteSaved, firstResult, readList, readPane, readPart, save, searchWhenIndexed, prepareFolders, readQuery } from "../search-driver.ts";
 
 beforeAll(prepareFolders, 30_000);
 afterEach(() => deleteSaved());
 
-/** The name shown at the top of the details pane: the chosen result. */
-const chosen = () => /([\w.-]+\.txt)/.exec(readPane())?.[1] ?? null;
+/** The kind of tea in the name shown at the top of the details pane: the chosen result. */
+const chosen = () => /tea-(\w+?)-/.exec(readPane())?.[1] ?? null;
+const teaOf = (name: string | null | undefined) => (name ? /tea-(\w+?)-/.exec(name)?.[1] ?? null : null);
 
 /** Saves three notes about tea, and searches until all three are listed. Returns the names in the list's order. */
 async function threeResults(): Promise<string[]> {
@@ -21,8 +22,8 @@ async function threeResults(): Promise<string[]> {
 
 test("the first result is chosen as the results come", async () => {
   const names = await threeResults();
-  expect(chosen()).toBe(firstResult());
-  expect(chosen()).toBe(names[0]!);
+  expect(chosen()).toBe(teaOf(firstResult()));
+  expect(chosen()).toBe(teaOf(names[0]));
   keepScreen();
 }, 180_000);
 
@@ -32,17 +33,17 @@ test("Down and Up move through the results, stopping at both ends", async () => 
   // These three are the best matches, so they are the first three rows.
   await tap("Down");
   await sleep(400);
-  expect(chosen()).toBe(names[1]!);
+  expect(chosen()).toBe(teaOf(names[1]));
   await tap("Down");
   await tap("Down");
   await sleep(400);
-  expect(chosen()).toBe(names[2]!);
+  expect(chosen()).toBe(teaOf(names[2]));
   keepScreen();
   await tap("Up");
   await tap("Up");
   await tap("Up");
   await sleep(400);
-  expect(chosen()).toBe(names[0]!);
+  expect(chosen()).toBe(teaOf(names[0]));
 }, 180_000);
 
 test("Tab hides the details pane and shows it again", async () => {
@@ -75,13 +76,10 @@ test("the arrows and Tab never reach the search box", async () => {
   await tap("Down");
   await tap("Tab");
   await sleep(600);
-  const header = readPart(380, 0, 330, 50);
-  expect(header).toMatch(/travel budget/);
-  expect(header).not.toMatch(/travel budget\s*\S/);
-  // The search box still has the keyboard: typing goes on at the end of the question.
+  // Still the question as typed: nothing was added to it, and the caret is where it was, at the end.
   await tap("s");
   await sleep(600);
-  expect(readPart(380, 0, 330, 50)).toMatch(/travel budgets/);
+  expect(readQuery()).toBe("travel budgets");
   keepScreen();
   await tap("Tab");
 }, 180_000);

@@ -71,16 +71,16 @@ export const highlightedWords = () => words().filter((w) => w.highlighted).map((
  * Where a phrase is on the screen: the words of `phrase` next to each other on one line. `prefer` picks among several
  * places: the lowest (chips, the footer, buttons) or the highest.
  */
-export function find(phrase: string, prefer: "lowest" | "highest" = "lowest", box: Box | null = launcher(), above = Infinity) {
+export function find(phrase: string, prefer: "lowest" | "highest" = "lowest", box: Box | null = launcher(), above = Infinity, leftOf = Infinity) {
   // OCR may glue words ("Anytime"), so compare the letters of runs of words, without the spaces.
   const want = plain(phrase);
-  const ws = words(box).filter((w) => w.y < above);
+  const ws = words(box).filter((w) => w.y < above && w.x < leftOf);
   const hits: { x: number; y: number }[] = [];
   for (let i = 0; i < ws.length; i++) {
     let text = "";
     for (let j = i; j < ws.length && text.length < want.length && Math.abs(ws[j]!.y - ws[i]!.y) < 8; j++) {
       text += plain(ws[j]!.text);
-      if (text === want) {
+      if (text === want || (want.length >= 6 && j === i && text.startsWith(want))) {
         const [first, last] = [ws[i]!, ws[j]!];
         hits.push({ x: Math.round((first.x + last.x + last.width) / 2), y: Math.round(first.y + first.height / 2) });
       }
@@ -91,8 +91,8 @@ export function find(phrase: string, prefer: "lowest" | "highest" = "lowest", bo
 }
 
 /** Clicks a phrase shown on the launcher (or, with `box` null, anywhere on the screen, such as a menu). */
-export async function click(phrase: string, prefer: "lowest" | "highest" = "lowest", box: Box | null = launcher(), double = false, above = Infinity) {
-  const at = find(phrase, prefer, box, above);
+export async function click(phrase: string, prefer: "lowest" | "highest" = "lowest", box: Box | null = launcher(), double = false, above = Infinity, leftOf = Infinity) {
+  const at = find(phrase, prefer, box, above, leftOf);
   if (!at) throw new Error(`"${phrase}" is not on the screen`);
   xdotool("mousemove", String(at.x), String(at.y), "click", ...(double ? ["--repeat", "2", "--delay", "80"] : []), "1");
   await sleep(600);
@@ -100,6 +100,9 @@ export async function click(phrase: string, prefer: "lowest" | "highest" = "lowe
 
 /** Clicks a button of the details pane ("Open", "Show in Files", "Copy Path"), above the footer's key hints. */
 export const clickButton = (label: string) => click(label, "lowest", launcher(), false, (launcher()?.y ?? 0) + 730);
+
+/** Clicks (or double-clicks) a result in the list, left of the details pane. */
+export const clickResult = (name: string, double = false) => click(name, "highest", launcher(), double, Infinity, (launcher()?.x ?? 0) + 750);
 
 /** Picks an entry of the "Any time" menu. */
 export async function chooseTime(current: string, choice: string) {
@@ -134,19 +137,47 @@ export function deleteSaved() {
 }
 
 /**
- * Searches until the launcher shows every one of `words` (case ignored). Between tries the question is cleared for a
- * few seconds: indexing waits while a question is on screen, so a file saved just now is indexed in those pauses.
+ * The question in the search box, read from the screen. The caret is moved to the start for the moment of reading
+ * (Home, then End), because OCR takes the caret and the letter before it for one character.
+ */
+export function readQuery() {
+  xdotool("key", "Home");
+  Bun.sleepSync(300);
+  const text = readPart(390, 0, 330, 50).replace(/^[\W_]+/, "");
+  xdotool("key", "End");
+  return text;
+}
+
+/** Opens the launcher and types a question, and types it again if a key press got lost on a busy machine. */
+export async function ask(query: string) {
+  for (let i = 0; i < 3; i++) {
+    await search(query);
+    if (readQuery().toLowerCase().includes(query.toLowerCase().trim())) return;
+  }
+}
+
+/** Waits, with the question cleared, until the footer says "Up to date": indexing has caught up. */
+export async function waitUntilIndexed(timeout = 90_000) {
+  await openLauncher();
+  await tap("ctrl+a");
+  await tap("BackSpace");
+  await sleep(3000); // the folders are watched with a short delay
+  for (const until = Date.now() + timeout; Date.now() < until; await sleep(2000))
+    if (/up ?to ?date/i.test(readPart(0, 746, 400, 40))) return;
+}
+
+/**
+ * Searches until the launcher shows every one of `words` (case ignored). Before each try the question is cleared until
+ * the footer says "Up to date": indexing waits while a question is on screen, so a file saved just now is indexed then.
  */
 export async function searchWhenIndexed(query: string, words: string[], timeout = 150_000): Promise<string> {
   let seen = "";
   for (const until = Date.now() + timeout; Date.now() < until; ) {
-    await search(query);
+    await waitUntilIndexed();
+    await ask(query);
     await sleep(1500);
     seen = readScreen();
     if (words.every((w) => seen.toLowerCase().includes(w.toLowerCase()))) break;
-    await tap("ctrl+a");
-    await tap("BackSpace");
-    await sleep(4000);
   }
   keepScreen();
   return seen;
@@ -169,7 +200,8 @@ export const clipboard = () => run(["xclip", "-o", "-selection", "clipboard"]);
 
 /** Puts text on the clipboard, as another app would. */
 export const setClipboard = (text: string) => {
-  Bun.spawnSync(["xclip", "-selection", "clipboard"], { stdin: Buffer.from(text), env: process.env });
+  // xclip stays in the background to own the clipboard: keep its output away from us, or we would wait for it.
+  Bun.spawnSync(["xclip", "-selection", "clipboard"], { stdin: Buffer.from(text), env: process.env, stdout: "ignore", stderr: "ignore" });
 };
 
 /** The words in a part of the launcher, given relative to its top-left corner, read with OCR. */

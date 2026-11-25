@@ -2,7 +2,7 @@
 // only what a user sees: what was opened (scripts/ail/bin stands in for xdg-open), the clipboard, and the launcher.
 import { afterEach, beforeAll, expect } from "bun:test";
 import { home, keepScreen, launcher, opened, openLauncher, readScreen, sleep, tap, test, typeText, unique, waitFor } from "../../desktop.ts";
-import { click, clickButton, clipboard, deleteSaved, readList, readPane, resetFilters, save, searchWhenIndexed, setClipboard, prepareFolders } from "../search-driver.ts";
+import { click, clickButton, clickResult, clipboard, deleteSaved, readList, readPane, resetFilters, save, searchWhenIndexed, setClipboard, prepareFolders } from "../search-driver.ts";
 
 beforeAll(prepareFolders, 30_000);
 afterEach(async () => {
@@ -10,7 +10,9 @@ afterEach(async () => {
   await resetFilters();
 }, 60_000);
 
-const chosen = () => /([\w.-]+\.txt)/.exec(readPane())?.[1] ?? null;
+/** The chosen result, from the name at the top of the details pane: its part of the bike, or the whole name. */
+const chosen = () => /bike-(chain|brakes|tyres)-/.exec(readPane())?.[1] ?? /([\w.-]+\.txt)/.exec(readPane())?.[1] ?? null;
+const partOf = (name: string) => /bike-(chain|brakes|tyres)-/.exec(name)?.[1];
 const newlyOpened = async (before: number) => (await waitFor(() => opened().length > before && opened().slice(before), 6000)) || [];
 
 /** Saves three notes about bikes, and searches until all three are listed. Returns their names in the list's order. */
@@ -19,14 +21,15 @@ async function bikes() {
   for (const part of ["chain", "brakes", "tyres"]) save(`Documents/Bike/bike-${part}-${id}.txt`, `Bike ${id}: how to fix the ${part} of a bicycle.`);
   await searchWhenIndexed(`fixing my bicycle ${id}`, [`bike-chain-${id}`, `bike-brakes-${id}`, `bike-tyres-${id}`]);
   await sleep(500);
-  return [...readList().matchAll(/(bike-\w+-\w+\.txt)/g)].map((m) => m[1]!).slice(0, 3);
+  // The names in the list's order, spelled as saved (OCR may misread a letter of the id).
+  return [...readList().matchAll(/bike-(chain|brakes|tyres)-/g)].map((m) => `bike-${m[1]}-${id}.txt`).slice(0, 3);
 }
 
 test("Enter opens the chosen file and closes the launcher", async () => {
   const names = await bikes();
   await tap("Down");
   await sleep(400);
-  expect(chosen()).toBe(names[1]!);
+  expect(chosen()).toBe(partOf(names[1]!));
   keepScreen();
   const before = opened().length;
   await tap("Return");
@@ -74,11 +77,12 @@ test("Ctrl+C copies the chosen file's path unless text is selected in the search
   const id = unique();
   save(`Documents/deposit-${id}.txt`, `Deposit ${id}: the deposit for the flat is three months of rent.`);
   await searchWhenIndexed("deposit", [`deposit-${id}`]);
-  const first = chosen();
+  expect(chosen()).toMatch(/^deposit-/);
+  await tap("End"); // nothing selected in the search box
   setClipboard("nothing yet");
   await tap("ctrl+c");
   await sleep(500);
-  expect(clipboard()).toBe(`${home()}/Documents/${first}`);
+  expect(clipboard()).toBe(`${home()}/Documents/deposit-${id}.txt`);
   await tap("ctrl+a");
   await tap("ctrl+c");
   await sleep(500);
@@ -88,12 +92,12 @@ test("Ctrl+C copies the chosen file's path unless text is selected in the search
 
 test("a click chooses a result, a double click opens it", async () => {
   const names = await bikes();
-  await click(names[2]!, "highest");
+  await clickResult(`bike-${partOf(names[2]!)}`);
   await sleep(500);
-  expect(chosen()).toBe(names[2]!);
+  expect(chosen()).toBe(partOf(names[2]!));
   keepScreen();
   const before = opened().length;
-  await click(names[2]!, "highest", launcher(), true);
+  await clickResult(`bike-${partOf(names[2]!)}`, true);
   expect(await newlyOpened(before)).toEqual([`${home()}/Documents/Bike/${names[2]}`]);
   expect(await waitFor(() => !launcher(), 3000)).toBe(true);
 }, 180_000);

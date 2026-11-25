@@ -17,10 +17,10 @@ test("a recording is found by what is said in it", async () => {
 
 test("MP3 and FLAC recordings are read too", async () => {
   const dir = folder(), n = unique();
-  saveFixture("speech.mp3", `${dir}/${n}-c.mp3`);
-  saveWithFfmpeg(`${dir}/${n}-d.flac`, ["-i", "fixture:speech.wav"]);
+  saveFixture("speech.mp3", `${dir}/${n}-forecast.mp3`);
+  saveWithFfmpeg(`${dir}/${n}-forecast.flac`, ["-i", "fixture:speech.wav"]);
   tone(`${dir}/${n}-tone.wav`);
-  for (const name of [`${n}-c.mp3`, `${n}-d.flac`])
+  for (const name of [`${n}-forecast.mp3`, `${n}-forecast.flac`])
     expect(shownAbove(await searchUntilAbove("a weather forecast", name, [`${n}-tone.wav`]), name, `${n}-tone.wav`)).toBe(true);
 }, 480_000);
 

@@ -4,7 +4,7 @@
 import { afterEach, beforeAll, expect } from "bun:test";
 import { utimesSync } from "node:fs";
 import { closeLauncher, keepScreen, openLauncher, readScreen, search, sleep, tap, test, unique, waitFor, launcher } from "../../desktop.ts";
-import { chooseTime, click, deleteSaved, readList, resetFilters, save, searchWhenIndexed, prepareFolders } from "../search-driver.ts";
+import { chooseTime, click, deleteSaved, readList, resetFilters, save, searchWhenIndexed, prepareFolders, ask } from "../search-driver.ts";
 
 beforeAll(prepareFolders, 30_000);
 afterEach(async () => {
@@ -75,7 +75,7 @@ test("the filters are kept until the user changes them", async () => {
   await tap("ctrl+alt+space", 300);
   expect(await waitFor(launcher, 5000)).not.toBeNull();
   await openLauncher();
-  await search(`dried figs ${id}`);
+  await ask(`dried figs ${id}`);
   await sleep(1500);
   const list = readList();
   expect(list).toContain(`figs-${id}.py`);

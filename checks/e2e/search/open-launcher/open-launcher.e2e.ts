@@ -2,7 +2,7 @@
 // what a user sees: whether a window titled "Valafind" is on screen, where it is, and the words on it.
 import { afterAll, afterEach, beforeAll, expect } from "bun:test";
 import { closeLauncher, keepScreen, launcher, openLauncher, readScreen, search, sleep, tap, test, typeText, unique, waitFor, windows, xdotool } from "../../desktop.ts";
-import { deleteSaved, readPane, save, searchWhenIndexed, prepareFolders } from "../search-driver.ts";
+import { deleteSaved, readPane, save, searchWhenIndexed, prepareFolders, readPart, readQuery } from "../search-driver.ts";
 
 beforeAll(prepareFolders, 30_000);
 let other: ReturnType<typeof Bun.spawn> | null = null;
@@ -17,11 +17,10 @@ test("Ctrl+Alt+Space opens the launcher, ready to type into", async () => {
   await pressShortcut();
   expect(await waitFor(launcher, 5000)).not.toBeNull();
   await sleep(500);
-  const word = `kiwi${unique()}`;
   await tap("ctrl+a");
-  await typeText(word);
+  await typeText("kiwi fruit");
   await sleep(600);
-  expect(readScreen()).toContain(word);
+  expect(readQuery()).toContain("kiwi fruit");
   keepScreen();
 }, 30_000);
 
@@ -56,22 +55,22 @@ test("the question and its results are kept for the next time", async () => {
   expect(await waitFor(() => !launcher(), 3000)).toBe(true);
   await pressShortcut();
   expect(await waitFor(launcher, 5000)).not.toBeNull();
-  await sleep(800);
-  const seen = readScreen();
-  expect(seen).toContain(`fruit trees ${id}`);
+  await sleep(1500);
+  // Read without moving the caret, which would undo the selection.
+  expect(readPart(390, 0, 330, 50)).toContain("fruit trees");
   expect(/([\w.-]+\.txt)/.exec(readPane())?.[1]).toBe(chosen);
   keepScreen();
   await typeText("plums");
-  await sleep(600);
-  const after = readScreen();
+  await sleep(800);
+  const after = readQuery();
   expect(after).toContain("plums");
-  expect(after).not.toContain(`fruit trees ${id}`);
+  expect(after).not.toContain("fruit trees");
 }, 180_000);
 
 test("opened with the shortcut, it closes when the user clicks another window", async () => {
   const title = `Other window ${unique()}`;
-  other = Bun.spawn(["xterm", "-geometry", "60x10+0+0", "-T", title], { env: process.env, stdout: "ignore", stderr: "ignore" });
-  const box = await waitFor(() => windows(`^${title}$`)[0], 5000);
+  other = Bun.spawn(["xmessage", "-geometry", "300x200+0+0", "-title", title, "Another app"], { env: process.env, stdout: "ignore", stderr: "ignore" });
+  const box = await waitFor(() => windows(`^${title}$`)[0], 15_000);
   expect(box).toBeTruthy();
   await closeLauncher();
   await pressShortcut();

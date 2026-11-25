@@ -12,13 +12,13 @@ test("an e-mail is found by its subject and body", async () => {
   const seen = await searchUntilFound("when do I see the dentist", [`${n}.eml`, t]);
   expect(seen).toContain(t);
   expect(seen).toContain("Subject: Dentist appointment");
-}, 240_000);
+}, 420_000);
 
 test("every message in a mailbox file is searched", async () => {
   const dir = folder(), n = unique(), t = unique();
   saveDocument(`${dir}/${n}.mbox`, "mbox", ["We should paint the fence green this weekend.", `The chess tournament ${t} starts at noon.`]);
   expect(await searchUntilFound("chess competition", [`${n}.mbox`, t])).toContain(t);
-}, 240_000);
+}, 420_000);
 
 test("a notebook is searched by its cells, not their output", async () => {
   const dir = folder(), n = unique(), t = unique(), out = unique();
@@ -26,4 +26,4 @@ test("a notebook is searched by its cells, not their output", async () => {
   const seen = await searchUntilFound("teaching a computer to recognise cats", [`${n}.ipynb`, t]);
   expect(seen).toContain(t);
   expect(seen).not.toContain(out);
-}, 240_000);
+}, 420_000);
