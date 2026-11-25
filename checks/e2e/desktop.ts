@@ -103,7 +103,8 @@ export function readScreen(box: Box | null = launcher(), scale = 2): string {
   const shot = join(dir, "shot.png"), big = join(dir, "big.png");
   run(["import", "-window", box ? box.id : "root", shot]);
   run(["convert", shot, "-resize", `${scale * 100}%`, "-colorspace", "Gray", big]);
-  const text = run(["tesseract", big, "stdout", "--psm", "6"]);
+  // One thread: on a busy machine, tesseract's thread pool can take minutes for one read.
+  const text = Bun.spawnSync(["tesseract", big, "stdout", "--psm", "6"], { env: { ...process.env, OMP_THREAD_LIMIT: "1" }, stdout: "pipe", stderr: "ignore" }).stdout.toString();
   rmSync(dir, { recursive: true, force: true });
   return text.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
 }
