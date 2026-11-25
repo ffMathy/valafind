@@ -1,0 +1,510 @@
+{
+  "version": 1,
+  "nodes": {
+    "ActOnResult": {
+      "hash": "0c5cf7e55c79f4ab64058f0ab9fdc216c30ea374f1ee8958db498c13724af72a",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "AppLog": {
+      "hash": "01f81f74191109d334a3e1d42bf3193ea2b43c8ed617670d465f9ed0d583d23f",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "AppShell": {
+      "hash": "a885ed9149259ac7e24feed5fb33493b1befc03a5c532ebf3fbd13e97653da63",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Audio": {
+      "hash": "6a107a04cb0d83c9c0b31d9ae66ccb491cb57031ccbc8a65f58e0498ee1500d6",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "AudioClips": {
+      "hash": "0947e3a2660df9d93df96a07ad85fd15d0a1baa9286a99f43f997f54525e79b3",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "AudioFeatures": {
+      "hash": "bd459884422fe6b7512fce1f55c8fd9d29ef6b228cab6061141145e1170df5c1",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "AutoUpdate": {
+      "hash": "c6597af69999b28ec04dd35f9d318cf9c3d08f5b0b18de5a5450f479b30a6096",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "BundledModel": {
+      "hash": "97639b9d308c2f79e9b2821623b9c95c0a431a65efa70d17f7afd3c156be50b3",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ChangeRules": {
+      "hash": "d4f6424d9d2752515170cdba22ca6638653ba21376ab04b175dad7dc473c7716",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ChangeSettings": {
+      "hash": "1dfa5f397822e44a4ce94c56800a2a2cce48ddfa20a6a51e934ebb9b89a3351b",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "CloudFiles": {
+      "hash": "952ce9854b8b6e38276f233453b6b096f9eefef1423e58e3476401caf5416198",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "CommandLine": {
+      "hash": "629c4afd9123037b099fe448d7de393b969350aa148fb83ed9fa3db5ac77edba",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ComputeDevice": {
+      "hash": "6dbb26c3f237f098de5c69a121acdd486b0e48dba216054b50018005937bd344",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "DataLocations": {
+      "hash": "856c2f3bf281982f9763d2aff6b807595ccf03ffe5ab7e61454e872962567242",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "DetailsPane": {
+      "hash": "f96920e1cde0c4fb2d0e6b7309df4101f3297f912fe13a2ef7010066abaf130c",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "DocumentReading": {
+      "hash": "17ae17e67a8ac7066003bc186c3a89c60970bef3a372ef1185780ac24d0c3284",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "EmbeddingInputs": {
+      "hash": "2a29cebe8ab5033322bb7b3e8c9cf7faddee44f84d5edbe1faad0dc740f3b189",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "EmbeddingModel": {
+      "hash": "35fe9ac57238736bc43ff03a3c0c627f8eb650664ffbe3846fbb58d0af7a0c0f",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ExclusionRules": {
+      "hash": "470c06aa4c497dec7da21dd0a15cb00f01ce105cbec2509702e32b0f2e08bb8e",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "FileDiscovery": {
+      "hash": "07f47dc79f307b4a8c4aaa8ad44cdf1606da36ee8d0443aedddd1723affaa916",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "FormatRules": {
+      "hash": "2334148a1ba3451092e64fcbedaef3ea2616acab5421fd8052ff20bd0fdcee63",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "FsEventsHistory": {
+      "hash": "978ab1a69735877274aa739468254dee45cdb693ae2f4c59c5966d03e532e57c",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "IndexDatabase": {
+      "hash": "aa92dd356025bbdb9be140a208f28c3a59b4d476fe4f64850b658813d280fd6b",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Indexing": {
+      "hash": "afcb082871fadbeb2cb90d01f6cd7ca5e6ed12218ce8bb65dba8d704224898a4",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "IndexOrder": {
+      "hash": "76eeff072ebec5534f85c084fdb04f664535a8132f74866370415647987124c3",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "IndexPanel": {
+      "hash": "1f29113ff328170b7376a8991f97abab1094cf4ec7ed2203adf457e561512543",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "IndexStatusText": {
+      "hash": "1bf7c41a873afb1c9c99754cc43afafea7ba1e4108ecb83aee9fa3b31d9328c1",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "KindsOfFiles": {
+      "hash": "2527f22cbc66ac4b0b8b7dae1d279fa01e8955adc18d62855d5fb0da25f1ed6b",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "KindTable": {
+      "hash": "87198e09180a22d574d7adb026544e976a17a29c6d784945db19e27ea2b9874c",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "LanguageRules": {
+      "hash": "7294927762af6f4b4d33721169475144ce9c05653e42e5bcab926f8dc24816f2",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Languages": {
+      "hash": "818e2fda7b5c087a104521e0c0a47a6e9b0df46a6339ef8b8a209225fd237bd6",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "LauncherKeys": {
+      "hash": "3aa289d4f2c2256ed6b8ed00f993b77ab48d06a5b9b17182d51dbe9904b27a89",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "LauncherLayout": {
+      "hash": "5a9f49c9a54df54d1abe9b1f6d95e97d21fa7473e63396f56a642daba6392c08",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "LauncherMessages": {
+      "hash": "62fa9a847f0d8ccde0c6ccf813cabfab65b456baf19905793d3768721487fddb",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "LauncherPlacement": {
+      "hash": "405883d6e464081a592e3269f8f8b1d9bbebe398690fb633be0a4dca9d6b3c30",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "LauncherState": {
+      "hash": "3933e6102385c51d3ad3cd80cd4d255d2f86859fedcbb185e518ac883b75b25b",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "MailAndNotebooks": {
+      "hash": "af75e0511748a3c4193a3c11781709e2c2e2c3ae1e6c753cc183d21074b3c363",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "MediaDecoders": {
+      "hash": "21cf78090a0c87b04e010e22c075bf2db01cd6ab4e9fbc21a6bce70762113823",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "MediaInputs": {
+      "hash": "6029d6c84708528aa3df45157b738162ee6e63229da62db18e850e62b86837d8",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ModelFolder": {
+      "hash": "30dd09271f91ffd4fc49e63a5e05d3db9262ded9ec58121b36848b6efa027dc6",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ModelInstallHelp": {
+      "hash": "8e002a218cfd7affcd862b8766e2df2946f8723e7b037094a0f8e9e30ca0ec1a",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ModelSetup": {
+      "hash": "c5919015666673cac468bbed2c73f07a247a400f20d01ba894da12646cb7a715",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "NameOnly": {
+      "hash": "bd3dcac42d337a331721185e5e4ee73544e36229da48b24011b4fbdf7afc294f",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "NameOnlyRules": {
+      "hash": "3f30c971635d2dd6b0a754d935ad5664fcad78f89d6c6e335ff5ae971a2cf947",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "NarrowResults": {
+      "hash": "a602a1b4aa80f62a20a6c227d754c47fa765a65c758f5cdadff6dcb4c74a6292",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "OfficeDocuments": {
+      "hash": "5249f0307742387760b979ec2a5258e0e59b5b74d52c2ef545c7bf8a76d3f2fd",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "OpenLauncher": {
+      "hash": "91c660734a3aa90c31977dcc8e0bd27bdac0747a11298c47f237851e90d700bc",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "PaceControl": {
+      "hash": "b0b20af75c4c3fd44106d6262013f9f5ef907fb86c4e006d97c051d1926b3ff6",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Pacing": {
+      "hash": "090b7583d845ac715f90181d415654a4e1ad47f27341cbe9b428d9abd60f7203",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "PathKeys": {
+      "hash": "1e6a84a3bd0e727cc4f12ef0230cb9839f2519fa2571ae4713065091799a90bf",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "PictureDecoding": {
+      "hash": "e59eb2d8ca4c2df9c0998506c66ebf6b8a25f0d5377ba69342a648c946bd117a",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Pictures": {
+      "hash": "8237d5241a1e7aea76749ec7ffc1d5316529097396b71696c189bb132d5cc1c1",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "PlatformLaunchers": {
+      "hash": "1d646a8afb07b02462ca27c5aa9d91c2461c19b81acb77ab21e55b7dbefee1d1",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "RebuildIndex": {
+      "hash": "a862eca35cc4946afac2a429098e0b8ce6b4f44ea1a12b3c492ae5964848ceb9",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ReferenceParity": {
+      "hash": "3ae080c674dcdcddaa213573be08f107edc4bf312442e345b6caa5c67469eba2",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ResultFormat": {
+      "hash": "e3763c2fb25794064ac2782a896a1ddd8bf32234ea249d8e84743aa10dbe448c",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ResultRow": {
+      "hash": "6b42041b5441bb14d7302a382f7d274ae56f9cbc011217138346891c2534c6a3",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "RunScheduler": {
+      "hash": "3fa1b0fa1fcf681a7594c4258dbaac311f57491182b5d26e4fdb9670aa2c3a06",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SearchFiles": {
+      "hash": "c1def756e98762d71221856665cd12d8b154b8b24ad8fa5122c22eaad3496f37",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SearchRules": {
+      "hash": "ff3b5d0651239616ee5cbf83cfafed94f90e439b9c6b5b9be5673228c0083d62",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SelfInstall": {
+      "hash": "8b13931d07864dcbde10765ff5e8d1ae9fdb82a804bc68bcbef31468ef0cd8c9",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SettingsFile": {
+      "hash": "450b3a477bb3b685f5c753afd93c2088a93ba044baed7862555be955ed44a1ee",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SettingsWindow": {
+      "hash": "ea71379957a61da2edf70506d8337c2caf5ba97b6fb26a0e64336ae432bf9755",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ShortcutRules": {
+      "hash": "31b50e83be5ef49c7902784546d1d96157d968e574a4d86bd3d4ef29e4d60962",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SingleInstance": {
+      "hash": "dfbe880fa8f903181d8c3c3e4eb2ecf328180d8c02f55b20150d88c67e82965f",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SniffRules": {
+      "hash": "83782c010579fa57e5829fdf1dd45f2d2985e8c9ec956afe7ca7915dfbf477a2",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "SnippetRules": {
+      "hash": "b3dc454be2d291db3488cc783c62228ceb1267e801700585e20b316be932bd58",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "StartAtLogin": {
+      "hash": "acb2686f208381ada7ba2d3a0a65c470a11b0ad6f6131a22b485540ed8241d27",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "StartupCheck": {
+      "hash": "ccbcab9a081df32ddc1666d2bcef38c439941e0b05d760a9eaa15b9f61f845a3",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "TermMatching": {
+      "hash": "583185e208c2c5bd5de211b98e305c7066c6ea286676c93641f9bf79bb60e788",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "TextChunking": {
+      "hash": "9c2dd18e43d440c2f0c321a636f1d063dd301b55500f8722c6345fe2106bdeaa",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "TextDocuments": {
+      "hash": "f237385a8c38f45a4c15ccb93d56fc3b3db1cb69993f5c7af28bafb972fe3aa2",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "TextSniffing": {
+      "hash": "2b40e0f5f9e73fa656884d476dbf24dd81c76ba3b66d0b16724a59f0151ca810",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "ThrottleGate": {
+      "hash": "58d61d6c14823bac256d4a857a34f242b5689e6d65679a20ec9eec18674120a3",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Tokenizer": {
+      "hash": "e1e2709c850995cd8874b2353eda6d2dc434dca50fb5724a3d71dc8b1cd69267",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "TrayMenu": {
+      "hash": "6f7cafc5d98d99fbaf78caf583979a63b98169956016c5337a8dcf53b03ed66d",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "UiFlavours": {
+      "hash": "b3197bd9f06e30e330c420776b12ef69b32fa8b8508deecd848d21fc8df9fd7e",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Valafind": {
+      "hash": "6e6d790b3a82a686c3254a0f0967bdf96f01590efc0d820562d9ae48f5ae8bad",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "VectorSearch": {
+      "hash": "91b3507bc8053e1b953fe397c7714a3ac7efb1e97dabb45f4163ac4652762e15",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "Video": {
+      "hash": "58e0de6243105dadf92ea221fc743c3626cedccd55f8d2467401726157ef3748",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "VideoFrames": {
+      "hash": "7eb6dec6f61c1bf8a6bbddec8ce29e62c429345bd4eadff87b614aeb5ec669b0",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "VisionPreprocessing": {
+      "hash": "2491d6fdddc28aca44fff0a93df82475c1295c6fb3b4b2a3092942fe233c413c",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "WatchChanges": {
+      "hash": "113c36b6e9c2677fe651d6bc5abb2c28103279464b46430b52981490974ce11d",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    },
+    "WhatGetsIndexed": {
+      "hash": "2fe6a4245398b34e0894159cac078eba5651f8bcaf29dea2d5c435ba860e4a37",
+      "files": {},
+      "by": "adopted",
+      "adopted": true
+    }
+  },
+  "glue": {}
+}

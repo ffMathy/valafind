@@ -58,7 +58,8 @@ node TrayMenu : flow   level: experience
     tray.tooltip     "Valafind — {index state}"
   look
     menu        the platform's own menu, in this order: Open Valafind, a separator, Pause indexing, Settings…, Check for
-                updates…, a separator, Quit Valafind; it is not mirrored in Arabic or Urdu
+                updates…, a separator, Quit Valafind; both separators are thin, light grey lines across the menu; it is not
+                mirrored in Arabic or Urdu
     icon        Valafind's magnifier in a rounded blue square; on a Mac a template image that follows the menu bar
   uses      ChangeSettings, AutoUpdate
   sources
