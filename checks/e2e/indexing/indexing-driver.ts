@@ -35,13 +35,13 @@ export function readRegion(region: Box, scale = 2): string {
 type Word = { text: string; x: number; y: number; w: number; h: number; line: string };
 
 /** Every word OCR finds in a region of the screen, with its position on the screen. */
-export function wordsIn(region: Box | null = null, scale = 2): Word[] {
+export function wordsIn(region: Box | null = null, scale = 2, psm = 6): Word[] {
   const r = region ?? { id: "root", x: 0, y: 0, width: 1280, height: 800 };
   const dir = mkdtempSync(join(tmpdir(), "ail-ocr-"));
   const shot = join(dir, "shot.png"), big = join(dir, "big.png");
   run(["import", "-window", "root", "-crop", `${r.width}x${r.height}+${r.x}+${r.y}`, "+repage", shot]);
   run(["convert", shot, "-resize", `${scale * 100}%`, "-colorspace", "Gray", big]);
-  const tsv = run(["tesseract", big, "stdout", "--psm", "6", "tsv"]);
+  const tsv = run(["tesseract", big, "stdout", "--psm", String(psm), "tsv"]);
   rmSync(dir, { recursive: true, force: true });
   const words: Word[] = [];
   for (const row of tsv.split("\n").slice(1)) {
@@ -57,9 +57,10 @@ export function wordsIn(region: Box | null = null, scale = 2): Word[] {
 
 /** The centre of the first place on screen where `phrase` is written (its words in a row), or null. */
 export function find(phrase: string, region: Box | null = null): { x: number; y: number } | null {
-  // OCR misses a word at one scale now and then; a second read at another scale usually gets it.
-  for (const scale of [2, 3]) {
-    const at = findAt(phrase, wordsIn(region, scale));
+  // OCR misses a word in one reading now and then; another reading usually gets it.
+  // Block mode reads labels in rows best; sparse mode finds lone buttons ("Cancel") that block mode skips.
+  for (const [scale, psm] of [[2, 6], [2, 11], [3, 6]]) {
+    const at = findAt(phrase, wordsIn(region, scale, psm));
     if (at) return at;
   }
   return null;
