@@ -1,0 +1,7 @@
+#!/bin/sh
+# A stand-in for the file manager and the web browser, for the end-to-end checks: instead of opening a file, a folder or
+# a link, it writes it on a line of .ail/opened/<display>.txt, which the checks read as "what opened".
+# scripts/ail/run-legacy.sh puts this folder first on Valafind's PATH so nothing really opens.
+root="$(cd "$(dirname "$0")/../../.." && pwd)"
+mkdir -p "$root/.ail/opened"
+printf '%s\n' "$@" >>"$root/.ail/opened/$(printf '%s' "${DISPLAY:-none}" | tr -cd '[:alnum:]').txt"

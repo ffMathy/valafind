@@ -1,0 +1,16 @@
+{
+  "specRoot": "ail",
+  "checksDir": "checks",
+  "run": {
+    "legacy": {
+      "start": "scripts/ail/run-legacy.sh",
+      "cwd": ".",
+      "ready": "pgrep -f '[V]alafind.dll --no-install' >/dev/null && grep -q 'Core services ready' .ail/legacy/valafind.log",
+      "timeout": 300,
+      "env": {
+        "DISPLAY": ":97",
+        "VALAFIND_HOME": ".ail/legacy/home"
+      }
+    }
+  }
+}

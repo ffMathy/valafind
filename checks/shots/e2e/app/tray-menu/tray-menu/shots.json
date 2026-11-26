@@ -1,0 +1,25 @@
+{
+  "node": "TrayMenu",
+  "shots": [
+    {
+      "test": "clicking the tray icon opens the launcher",
+      "file": "clicking-the-tray-icon-opens-the-launcher.png"
+    },
+    {
+      "test": "Open Valafind opens the launcher",
+      "file": "open-valafind-opens-the-launcher.png"
+    },
+    {
+      "test": "Pause indexing pauses until Resume indexing",
+      "file": "pause-indexing-pauses-until-resume-indexing.png"
+    },
+    {
+      "test": "Settings… opens the settings, and only once",
+      "file": "settings-opens-the-settings-and-only-once.png"
+    },
+    {
+      "test": "Check for updates… opens the releases page when this copy cannot update itself",
+      "file": "check-for-updates-opens-the-releases-page-when-this-copy-can.png"
+    }
+  ]
+}

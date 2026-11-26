@@ -1,0 +1,33 @@
+{
+  "node": "OfficeDocuments",
+  "shots": [
+    {
+      "test": "a Word document is found by its text",
+      "file": "a-word-document-is-found-by-its-text.png"
+    },
+    {
+      "test": "an Excel workbook is found by its sheet names and cells",
+      "file": "an-excel-workbook-is-found-by-its-sheet-names-and-cells.png"
+    },
+    {
+      "test": "a PowerPoint presentation is found by its slides and speaker notes",
+      "file": "a-powerpoint-presentation-is-found-by-its-slides-and-speaker.png"
+    },
+    {
+      "test": "an OpenDocument text is found by its text",
+      "file": "an-opendocument-text-is-found-by-its-text.png"
+    },
+    {
+      "test": "an EPUB book is found by its chapters",
+      "file": "an-epub-book-is-found-by-its-chapters.png"
+    },
+    {
+      "test": "an RTF document is found by its text",
+      "file": "an-rtf-document-is-found-by-its-text.png"
+    },
+    {
+      "test": "a PDF is found by its text",
+      "file": "a-pdf-is-found-by-its-text.png"
+    }
+  ]
+}

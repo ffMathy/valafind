@@ -1,0 +1,25 @@
+{
+  "node": "LauncherKeys",
+  "shots": [
+    {
+      "test": "the first result is chosen as the results come",
+      "file": "the-first-result-is-chosen-as-the-results-come.png"
+    },
+    {
+      "test": "Down and Up move through the results, stopping at both ends",
+      "file": "down-and-up-move-through-the-results-stopping-at-both-ends.png"
+    },
+    {
+      "test": "Tab hides the details pane and shows it again",
+      "file": "tab-hides-the-details-pane-and-shows-it-again.png"
+    },
+    {
+      "test": "the footer shows the keys",
+      "file": "the-footer-shows-the-keys.png"
+    },
+    {
+      "test": "the arrows and Tab never reach the search box",
+      "file": "the-arrows-and-tab-never-reach-the-search-box.png"
+    }
+  ]
+}

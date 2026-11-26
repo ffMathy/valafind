@@ -1,0 +1,17 @@
+{
+  "node": "Pacing",
+  "shots": [
+    {
+      "test": "the meters mark the targets of the default limits",
+      "file": "the-meters-mark-the-targets-of-the-default-limits.png"
+    },
+    {
+      "test": "a higher processor limit moves the CPU target",
+      "file": "a-higher-processor-limit-moves-the-cpu-target.png"
+    },
+    {
+      "test": "pausing from the launcher's menu holds new files back until the user resumes",
+      "file": "pausing-from-the-launcher-s-menu-holds-new-files-back-until-.png"
+    }
+  ]
+}

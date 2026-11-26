@@ -20,3 +20,14 @@ models/
 !tests/Valafind.Core.Tests/Fixtures/BundledModel/**
 
 __pycache__/
+
+# AIL: the legacy app's runtime folders, and bun's packages
+.ail/
+node_modules/
+
+# Local Claude Code state (agent worktrees, personal settings); the shared settings are committed.
+.claude/*
+!.claude/settings.json
+
+# ...except the stand-ins the AIL checks put on the app's PATH.
+!scripts/ail/bin/

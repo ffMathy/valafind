@@ -1,0 +1,37 @@
+{
+  "node": "SearchFiles",
+  "shots": [
+    {
+      "test": "an English question finds a Danish document",
+      "file": "an-english-question-finds-a-danish-document.png"
+    },
+    {
+      "test": "the results come best first, with their count and the time the search took",
+      "file": "the-results-come-best-first-with-their-count-and-the-time-th.png"
+    },
+    {
+      "test": "every indexed file is listed, however weak the match",
+      "file": "every-indexed-file-is-listed-however-weak-the-match.png"
+    },
+    {
+      "test": "the sentence closest in meaning is highlighted",
+      "file": "the-sentence-closest-in-meaning-is-highlighted.png"
+    },
+    {
+      "test": "a weak match highlights the words of the question",
+      "file": "a-weak-match-highlights-the-words-of-the-question.png"
+    },
+    {
+      "test": "the excerpt is cut around the sentence that matches",
+      "file": "the-excerpt-is-cut-around-the-sentence-that-matches.png"
+    },
+    {
+      "test": "a one-letter question still searches",
+      "file": "a-one-letter-question-still-searches.png"
+    },
+    {
+      "test": "a blank question shows the hint again",
+      "file": "a-blank-question-shows-the-hint-again.png"
+    }
+  ]
+}

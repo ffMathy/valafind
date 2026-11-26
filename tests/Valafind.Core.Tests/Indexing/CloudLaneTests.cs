@@ -250,7 +250,9 @@ public class CloudLaneTests
 
             Assert.All(online, f => Assert.True(store.Files.ContainsKey(f)));
             Assert.Equal(1, Volatile.Read(ref cloud.HungReleases));
-            // The hung file stays on record, so the next start gives it back; the others are done with.
+            // The hung file stays on record, so the next start gives it back; the others are done with. The walk counts
+            // as complete once every file is indexed, while giving the others back can still be under way, so wait for it.
+            await WaitFor(() => store.LoadDownloads().Select(d => d.Path).SequenceEqual([online[0]]), "the files that did not hang given back");
             Assert.Equal([online[0]], store.LoadDownloads().Select(d => d.Path));
         }
         finally

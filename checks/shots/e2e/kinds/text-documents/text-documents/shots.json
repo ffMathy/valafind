@@ -1,0 +1,21 @@
+{
+  "node": "TextDocuments",
+  "shots": [
+    {
+      "test": "a text file is found by what it says, with the passage that matched",
+      "file": "a-text-file-is-found-by-what-it-says-with-the-passage-that-m.png"
+    },
+    {
+      "test": "Markdown and code are read as text",
+      "file": "markdown-and-code-are-read-as-text.png"
+    },
+    {
+      "test": "a web page is read without its markup",
+      "file": "a-web-page-is-read-without-its-markup.png"
+    },
+    {
+      "test": "only the first part of a long document is searched",
+      "file": "only-the-first-part-of-a-long-document-is-searched.png"
+    }
+  ]
+}

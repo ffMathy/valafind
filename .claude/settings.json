@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "agentic-intermediate-language": {
+      "source": {
+        "source": "github",
+        "repo": "ffMathy/agentic-intermediate-language"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ail@agentic-intermediate-language": true
+  }
+}
