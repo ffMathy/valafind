@@ -228,6 +228,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>The version of Valafind that is running, e.g. "7.1.0".</summary>
     public string AppVersion => (_updater?.CurrentVersion ?? ReleaseVersion.Current()).ToString();
 
+    /// <summary>
+    /// Whether the settings offer updates at all. A copy that an app store installed is updated by the store, so the
+    /// update setting and "Check for updates" are left out there.
+    /// </summary>
+    public bool ShowsUpdates { get; init; } = !StoreInstall.IsActive;
+
     /// <summary>What the updater is doing, or why this copy cannot update itself.</summary>
     public string UpdateStatus => _updater?.StatusText ?? Strings.UpdateChecksGitHub;
 

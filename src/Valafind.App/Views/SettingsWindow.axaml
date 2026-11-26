@@ -355,8 +355,9 @@
                               AutomationProperties.Name="{x:Static l:Strings.SettingsStartAtLogin}" />
               </Grid>
             </Border>
-            <Border Classes="divider" />
-            <Border Classes="item">
+            <!-- Left out in a copy from an app store: the store updates it (SettingsViewModel.ShowsUpdates). -->
+            <Border Classes="divider" IsVisible="{Binding ShowsUpdates}" />
+            <Border Classes="item" x:Name="UpdatesItem" IsVisible="{Binding ShowsUpdates}">
               <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                   <StackPanel Spacing="2" VerticalAlignment="Center">

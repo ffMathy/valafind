@@ -35,7 +35,9 @@ internal sealed class TrayIconController : IDisposable
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(_pause);
         menu.Items.Add(settingsItem);
-        menu.Items.Add(_updates);
+        // A copy from an app store is updated by the store, so it offers no update check.
+        if (!Updates.StoreInstall.IsActive)
+            menu.Items.Add(_updates);
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(quitItem);
 
