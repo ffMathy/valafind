@@ -1,0 +1,45 @@
+<!-- The yellow notice under the search box while indexing has not covered every file yet: results may be incomplete.
+     Shared by the three launchers; each places it right under its search box and sets its Margin, CornerRadius and
+     FontSize. Its colours are its own, the same in every design, so it reads as a warning everywhere. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="using:Valafind.App.Localization"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Valafind.App.ViewModels"
+             xmlns:c="using:Valafind.App.Controls"
+             mc:Ignorable="d" d:DesignWidth="680"
+             x:Class="Valafind.App.Views.Common.IncompleteNoticeView"
+             x:DataType="vm:LauncherViewModel"
+             IsVisible="{Binding ShowIncompleteNotice}">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="VfNoticeBrush" Color="#FFF4CE" />
+          <SolidColorBrush x:Key="VfNoticeBorderBrush" Color="#F2D46B" />
+          <SolidColorBrush x:Key="VfNoticeInkBrush" Color="#4D3800" />
+          <SolidColorBrush x:Key="VfNoticeIconBrush" Color="#9D5D00" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="VfNoticeBrush" Color="#433519" />
+          <SolidColorBrush x:Key="VfNoticeBorderBrush" Color="#6B5420" />
+          <SolidColorBrush x:Key="VfNoticeInkBrush" Color="#FCE8A5" />
+          <SolidColorBrush x:Key="VfNoticeIconBrush" Color="#FCE100" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+
+  <Border x:Name="Notice" Background="{DynamicResource VfNoticeBrush}" BorderBrush="{DynamicResource VfNoticeBorderBrush}"
+          BorderThickness="1" CornerRadius="{Binding $parent[UserControl].CornerRadius}" Padding="12,7">
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+      <c:StrokeIcon Data="{StaticResource VfIconWarning}" Width="15" Height="15" StrokeThickness="2"
+                    Foreground="{DynamicResource VfNoticeIconBrush}" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="1" Foreground="{DynamicResource VfNoticeInkBrush}" VerticalAlignment="Center"
+                 TextTrimming="CharacterEllipsis" AutomationProperties.LiveSetting="Polite">
+        <Run Text="{x:Static l:Strings.IncompleteNotice}" FontWeight="SemiBold" /><Run Text=" · " /><Run Text="{Binding Status.BannerDetail}" />
+      </TextBlock>
+    </Grid>
+  </Border>
+</UserControl>

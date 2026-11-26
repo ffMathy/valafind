@@ -33,6 +33,12 @@
       "caption": "Una pregunta con tus propias palabras encuentra el correo, las notas y un contrato de alquiler danés; el pasaje resaltado muestra por qué coincide cada uno.",
       "query": "¿dónde negociamos la fianza?"
     },
+    "media": {
+      "headline": "Busca dentro de fotos, vídeo y audio",
+      "subline": "Describe lo que contienen. Valafind mira tus fotos, ve tus vídeos y escucha tus grabaciones, así que el nombre del archivo no importa.",
+      "caption": "Una sola descripción encuentra la foto, el vídeo y la grabación de un día de playa, se llamen como se llamen los archivos.",
+      "query": "nuestro perro jugando en la playa"
+    },
     "photos": {
       "headline": "Fotos, por lo que aparece en ellas",
       "subline": "Describe la imagen y Valafind la encuentra. Sin etiquetas, álbumes ni nombres de archivo.",

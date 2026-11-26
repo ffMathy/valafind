@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>Kiểm tra cập nhật…</value>
   </data>
+  <data name="IncompleteNotice" xml:space="preserve">
+    <value>Việc lập chỉ mục chưa xong nên kết quả có thể chưa đầy đủ</value>
+  </data>
   <data name="RestartToUpdateMenu" xml:space="preserve">
     <value>Khởi động lại để cập nhật</value>
   </data>

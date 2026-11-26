@@ -33,6 +33,12 @@
       "caption": "Một câu hỏi bằng lời của bạn tìm ra email, ghi chú và một hợp đồng thuê nhà bằng tiếng Đan Mạch; đoạn được tô sáng cho biết vì sao từng tệp khớp.",
       "query": "chúng ta đã thương lượng tiền đặt cọc ở đâu?"
     },
+    "media": {
+      "headline": "Tìm bên trong ảnh, video và âm thanh",
+      "subline": "Hãy mô tả nội dung. Valafind xem ảnh, xem video và nghe bản ghi âm của bạn, nên tên tệp không quan trọng.",
+      "caption": "Một mô tả tìm ra ảnh, video và bản ghi âm của một ngày ở bãi biển, dù tệp tên là gì.",
+      "query": "chú chó của chúng tôi chơi trên bãi biển"
+    },
     "photos": {
       "headline": "Tìm ảnh theo nội dung",
       "subline": "Mô tả bức ảnh và Valafind sẽ tìm ra. Không cần thẻ, album hay tên tệp.",

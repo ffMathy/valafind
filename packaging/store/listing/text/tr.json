@@ -33,6 +33,12 @@
       "caption": "Kendi sözcüklerinizle sorulan bir soru e-postayı, notları ve Danca bir kira sözleşmesini bulur; vurgulanan bölüm her birinin neden eşleştiğini gösterir.",
       "query": "depozito pazarlığını nerede yapmıştık?"
     },
+    "media": {
+      "headline": "Fotoğrafların, videoların ve seslerin içinde arayın",
+      "subline": "İçinde ne olduğunu anlatın. Valafind resimlerinize bakar, videolarınızı izler ve kayıtlarınızı dinler; dosya adlarının önemi yoktur.",
+      "caption": "Tek bir tarif, plajdaki bir günün fotoğrafını, videosunu ve ses kaydını bulur; dosyaların adı ne olursa olsun.",
+      "query": "köpeğimiz plajda oynuyor"
+    },
     "photos": {
       "headline": "Fotoğrafları içeriğiyle bulun",
       "subline": "Fotoğrafı anlatın, Valafind bulsun. Etiket, albüm ya da dosya adı gerekmez.",

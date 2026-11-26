@@ -22,6 +22,15 @@ picture and *"the meeting about the budget"* finds the recording. Everything run
 
 <p align="center"><sub>An English question finds a Danish lease and the landlord's e-mail. The highlighted sentence shows <i>why</i> it matched.</sub></p>
 
+## Not just documents: photos, video and audio too
+
+<img src="docs/screenshots/media-search.png" width="680" alt="Searching for &quot;our dog playing on the beach&quot; finds a photo of a dog on a beach, a video, a sound recording and more photos, none of them named after what is in them">
+
+Valafind looks at your pictures, watches your videos and listens to your recordings, so you find them by what is *in*
+them. *"our dog playing on the beach"* finds the photo, the video and the voice memo from that day, even though they're
+called `IMG_20250712_163045.jpg`, `VID_20250712_170211.mp4` and `Recording 2025-07-12 16.58.m4a`. No tags, albums or
+file names needed.
+
 ## Stays out of your way
 
 <img src="docs/screenshots/indexing-pace.png" width="680" alt="Index panel: Phase 1 done, Phase 2 at 41%, CPU and disk meters with a tick at the level indexing steers towards">
@@ -34,8 +43,8 @@ load: when the machine is busy it slows to a trickle instead. Only you (or unplu
 battery*) pause it. Files you use often are indexed
 first (Phase 1), then the rest of your files (Phase 2). Within that, Valafind always goes **documents → pictures → audio →
 video**: everything you write and read is searchable before it starts on your photo library, and the slow video work
-comes last. The progress panel only appears while indexing is under way; once everything is indexed, the launcher just
-shows a small ✓ *Up to date*.
+comes last. The progress panel only appears while indexing is under way, and a yellow notice under the search box says that results
+may be incomplete until then; once everything is indexed, the launcher just shows a small ✓ *Up to date*.
 
 While it runs, Valafind watches your folders and updates the index a few seconds after a file is added, changed, moved
 or deleted. Changes made while it wasn't running are picked up about 90 seconds after it starts, so it stays out of the

@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>Duba sabuntawa…</value>
   </data>
+  <data name="IncompleteNotice" xml:space="preserve">
+    <value>Ba a gama tsara fayiloli ba tukuna, don haka sakamakon na iya rasa wasu</value>
+  </data>
   <data name="RestartToUpdateMenu" xml:space="preserve">
     <value>Sake farawa don sabuntawa</value>
   </data>

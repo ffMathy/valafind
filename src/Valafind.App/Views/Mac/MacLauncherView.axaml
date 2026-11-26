@@ -208,6 +208,9 @@
         </Button>
       </Grid>
 
+      <!-- Indexing not finished: results may be incomplete -->
+      <common:IncompleteNoticeView Margin="18,0,18,12" CornerRadius="8" FontSize="12" />
+
       <!-- Filter chips -->
       <DockPanel Margin="18,0,18,12">
         <Button DockPanel.Dock="Right" Classes="vf" Padding="6,4" CornerRadius="6" FontSize="12"

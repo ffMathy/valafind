@@ -33,6 +33,12 @@
       "caption": "Une question posée avec vos propres mots trouve l’e-mail, les notes et un bail danois ; le passage surligné montre pourquoi chacun correspond.",
       "query": "où a-t-on négocié la caution ?"
     },
+    "media": {
+      "headline": "Cherchez dans vos photos, vidéos et sons",
+      "subline": "Décrivez ce qu’ils contiennent. Valafind regarde vos images, visionne vos vidéos et écoute vos enregistrements : le nom des fichiers n’a pas d’importance.",
+      "caption": "Une seule description trouve la photo, la vidéo et l’enregistrement d’une journée à la plage, quel que soit le nom des fichiers.",
+      "query": "notre chien qui joue sur la plage"
+    },
     "photos": {
       "headline": "Vos photos, par ce qu’elles montrent",
       "subline": "Décrivez l’image et Valafind la retrouve. Ni tags, ni albums, ni noms de fichiers.",

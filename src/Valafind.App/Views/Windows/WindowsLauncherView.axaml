@@ -318,6 +318,9 @@
       </Grid>
       <Border Height="2" Margin="20,0" CornerRadius="1" Background="{DynamicResource VfAccentBrush}" />
 
+      <!-- Indexing not finished: results may be incomplete -->
+      <common:IncompleteNoticeView Margin="20,12,20,0" CornerRadius="6" FontSize="12.5" />
+
       <!-- Filter chips. (The mockup's "Summon" hint does not fit next to all eight chips; it moved to the empty state.) -->
       <DockPanel Margin="20,12,20,8">
         <Button DockPanel.Dock="Right" Classes="vf chip" Padding="12,0,10,0">

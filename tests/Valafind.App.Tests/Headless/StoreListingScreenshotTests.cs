@@ -37,7 +37,7 @@ public sealed class StoreListingScreenshotTests(HeadlessFixture fixture)
     private const int Width = 1920;
     private const int Height = 1080;
 
-    private static readonly string[] Scenes = ["search", "photos", "recordings", "indexing", "settings"];
+    private static readonly string[] Scenes = ["search", "media", "photos", "recordings", "indexing", "settings"];
     private static readonly Color Blue = Color.Parse("#0A7CFF");
     private static readonly IBrush Ink = new SolidColorBrush(Color.Parse("#14161A"));
     private static readonly IBrush Muted = new SolidColorBrush(Color.Parse("#4A5160"));
@@ -126,6 +126,7 @@ public sealed class StoreListingScreenshotTests(HeadlessFixture fixture)
         var ui = scene switch
         {
             "search" => View(Launcher(UiFlavor.Windows, query!)),
+            "media" => View(MediaLauncher(UiFlavor.Windows, query!)),
             "photos" => View(PhotoSearch(query!)),
             "recordings" => View(RecordingSearch(query!)),
             "indexing" => View(Indexing(searchQuery)),
@@ -333,7 +334,7 @@ public sealed class StoreListingScreenshotTests(HeadlessFixture fixture)
     // ------------------------------------------------------------------ pictures
 
     /// <summary>Draws a 4:3 photo and decodes it like a real picture on disk, so thumbnails and previews are the real thing.</summary>
-    private static Bitmap Picture(Action<SKCanvas> draw, int side, bool fill)
+    internal static Bitmap Picture(Action<SKCanvas> draw, int side, bool fill)
     {
         var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "valafind-store-" + Guid.NewGuid().ToString("N") + ".png");
         using (var bitmap = new SKBitmap(1200, 900))

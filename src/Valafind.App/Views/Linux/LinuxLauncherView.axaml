@@ -314,6 +314,9 @@
         </Grid>
       </Border>
 
+      <!-- Indexing not finished: results may be incomplete (the paused banner above says so itself) -->
+      <common:IncompleteNoticeView DockPanel.Dock="Top" Margin="18,12,18,0" CornerRadius="10" FontSize="13" />
+
       <!-- Hotkey problem (Wayland) -->
       <Border DockPanel.Dock="Top" Background="{DynamicResource GnomeBannerBrush}" Padding="18,7" IsVisible="{Binding HasHotkeyError}">
         <DockPanel>

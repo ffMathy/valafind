@@ -33,6 +33,12 @@
       "caption": "Pertanyaan dengan kata-kata Anda sendiri menemukan email, catatan, dan kontrak sewa berbahasa Denmark; bagian yang disorot menunjukkan alasan masing-masing cocok.",
       "query": "di mana kita menegosiasikan uang jaminan?"
     },
+    "media": {
+      "headline": "Cari di dalam foto, video, dan audio",
+      "subline": "Jelaskan isinya. Valafind melihat gambar Anda, menonton video Anda, dan mendengarkan rekaman Anda, jadi nama file tidak penting.",
+      "caption": "Satu deskripsi menemukan foto, video, dan rekaman hari di pantai, apa pun nama filenya.",
+      "query": "anjing kami bermain di pantai"
+    },
     "photos": {
       "headline": "Cari foto dari isinya",
       "subline": "Jelaskan gambarnya, dan Valafind akan menemukannya. Tidak perlu tag, album, atau nama file.",

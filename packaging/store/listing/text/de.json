@@ -33,6 +33,12 @@
       "caption": "Eine Frage in eigenen Worten findet die E-Mail, die Notizen und einen dänischen Mietvertrag; die hervorgehobene Stelle zeigt, warum jedes Ergebnis passt.",
       "query": "wo haben wir die Kaution verhandelt?"
     },
+    "media": {
+      "headline": "Suche in Fotos, Videos und Audio",
+      "subline": "Beschreibe, was darin ist. Valafind sieht sich deine Bilder an, schaut deine Videos und hört deine Aufnahmen, Dateinamen sind egal.",
+      "caption": "Eine Beschreibung findet Foto, Video und Aufnahme von einem Tag am Strand, egal wie die Dateien heißen.",
+      "query": "unser Hund spielt am Strand"
+    },
     "photos": {
       "headline": "Fotos nach dem, was drauf ist",
       "subline": "Beschreib das Bild, und Valafind findet es. Ganz ohne Tags, Alben oder Dateinamen.",

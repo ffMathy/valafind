@@ -65,9 +65,11 @@ h2 { font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -0.02em; line-height: 
 .features p { margin: 0; color: var(--muted); }
 
 .split { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 36px; align-items: center; padding: 40px 0; }
+.split.flip { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
 .split figure { margin: 0; }
 .split img { border-radius: var(--radius); }
 .split p { color: var(--muted); }
+.split code { overflow-wrap: anywhere; }
 
 .privacy { text-align: center; padding: 56px 24px; margin: 24px 0; border-radius: var(--radius); background: var(--accent-soft); }
 .privacy p { max-width: 640px; margin: 0 auto; color: var(--muted); }
@@ -82,7 +84,7 @@ h2 { font-size: clamp(22px, 2.6vw, 30px); letter-spacing: -0.02em; line-height: 
 footer { border-top: 1px solid var(--line); padding-top: 22px; padding-bottom: 40px; color: var(--muted); font-size: 14px; text-align: center; }
 
 @media (max-width: 760px) {
-  .features, .split, .downloads { grid-template-columns: 1fr; }
+  .features, .split, .split.flip, .downloads { grid-template-columns: 1fr; }
   .top nav { gap: 14px; }
   .hero { padding-top: 32px; }
 }

@@ -129,6 +129,11 @@ public sealed partial class IndexStatusViewModel : ObservableObject
     /// <summary>All phases done.</summary>
     [ObservableProperty] public partial bool IsUpToDate { get; private set; }
 
+    /// <summary>True while some files are still waiting to be indexed, so a search can miss them: indexing is running
+    /// or paused and less than all of the known files are searchable. Not while starting (the index from the last run
+    /// may well be complete) nor while the model is unavailable (nothing can be searched).</summary>
+    [ObservableProperty] public partial bool IsIncomplete { get; private set; }
+
     /// <summary>Tooltip of the discreet "up to date" indicator shown instead of the index panel.</summary>
     [ObservableProperty] public partial string UpToDateDetail { get; private set; } = string.Empty;
 
@@ -363,6 +368,9 @@ public sealed partial class IndexStatusViewModel : ObservableObject
             IndexingState.Starting => Strings.StatePreparingShort,
             _ => StateText + " · " + DisplayFormat.Percent(SearchableFraction),
         };
+
+        IsIncomplete = status.State is not (IndexingState.UpToDate or IndexingState.Starting or IndexingState.ModelUnavailable)
+            && SearchableFraction < 1;
 
         ShowBanner = IsPaused;
         BannerTitle = status.State switch
