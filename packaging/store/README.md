@@ -198,6 +198,13 @@ The store versions are paid; the GitHub releases stay free. Both stores pay out 
   Apps Agreement** and add your bank account and tax forms. Paid apps can't be submitted until the agreement is active.
   Then choose a price under the app's **Pricing and Availability**.
 
+
+**Automatic submissions need the price tier.** Partner Center prices new products per market, and the submission API
+then reports the base price as `Base`, which it refuses to take back. Sent without a price, a submission makes the app
+free. So `msstore` stops with "The Store returned a base price of 'Base'" until the repository variable
+`MSSTORE_PRICE_ID` names the tier, for example `Tier1012`. That sets one base price for every market (prices per market
+set in Partner Center are replaced), so choose the tier that matches the price you set. Until it is set, finish each
+submission in Partner Center: the run leaves a draft there, and the package is in its **microsoft-store** artifact.
 ## All secrets and variables
 
 Set them under **Settings › Secrets and variables › Actions** of this repository, or with the GitHub CLI:
@@ -228,6 +235,7 @@ gh variable set MSSTORE_PRODUCT_ID --repo ffMathy/valafind --body 9NXXXXXXXXXX
 | `MAS_CERTIFICATES_PASSWORD` | secret | That `.p12`'s password |
 | `MAS_PROVISIONING_PROFILE` | secret | Base64 of the Mac App Store Connect profile |
 | `STORE_DRAFT_ONLY` | variable | `true` to upload without submitting (first submissions) |
+| `MSSTORE_PRICE_ID` | variable | the Microsoft Store price tier, such as `Tier1012`; needed for a paid app priced per market (see *Charging for the app*) |
 
 ## Files
 
