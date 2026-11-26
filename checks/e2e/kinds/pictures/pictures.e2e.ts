@@ -3,7 +3,7 @@
 // format; a TIFF (read only on a Mac) is found by its name.
 import { afterEach, expect } from "bun:test";
 import { closeLauncher, releaseAll, test, unique } from "../../desktop.ts";
-import { cleanUp, folder, savePicture, searchUntilAbove, searchUntilFound, shownAbove } from "../kinds-driver.ts";
+import { cleanUp, folder, savePicture, searchUntilAbove, searchUntilFound, shownAbove, shows } from "../kinds-driver.ts";
 
 afterEach(async () => { await releaseAll(); await closeLauncher(); cleanUp(); });
 
@@ -37,7 +37,7 @@ test("a TIFF picture is found by its name only, except on a Mac", async () => {
   const dir = folder(), n = unique();
   savePicture(`${dir}/lighthouse-${n}.tiff`, { circle: "red" });
   savePicture(`${dir}/${n}-e.png`, { circle: "red" });
-  expect(await searchUntilFound("lighthouse", [`lighthouse-${n}.tiff`])).toContain(`lighthouse-${n}.tiff`);
+  expect(shows(await searchUntilFound("lighthouse", [`lighthouse-${n}.tiff`]), `lighthouse-${n}.tiff`)).toBe(true);
   const seen = await searchUntilAbove("a red circle", `${n}-e.png`, [`lighthouse-${n}.tiff`]);
   expect(shownAbove(seen, `${n}-e.png`, `lighthouse-${n}.tiff`)).toBe(true);
 }, 360_000);

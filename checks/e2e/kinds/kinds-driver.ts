@@ -66,10 +66,15 @@ export const filler = (chars: number) =>
  * characters or more), since OCR now and then misreads a letter of the random code in front.
  */
 function locate(seen: string, name: string): number {
-  const s = seen.toLowerCase(), n = name.toLowerCase(), whole = s.indexOf(n);
+  // OCR now and then reads "photo.tiff" as "photo. tiff": spaces around a dot are not part of a file name.
+  const dots = (t: string) => t.toLowerCase().replace(/\s*\.\s*/g, ".");
+  const s = dots(seen), n = dots(name), whole = s.indexOf(n);
   const rest = n.slice(n.indexOf("-") + 1);
   return whole >= 0 || !n.includes("-") || rest.length < 6 ? whole : s.indexOf(rest);
 }
+
+/** True when the launcher shows the file `name` (see locate for what OCR may get wrong). */
+export const shows = (seen: string, name: string) => locate(seen, name) >= 0;
 
 /** True when `first` is shown and comes before `then` in the launcher (or `then` is not shown at all). */
 export function shownAbove(seen: string, first: string, then: string): boolean {
@@ -98,7 +103,7 @@ export async function searchUntil(query: string, done: (seen: string) => boolean
 
 /** Searches for `query` until the launcher shows every one of `words` (case ignored). */
 export const searchUntilFound = (query: string, words: string[], timeout?: number) =>
-  searchUntil(query, (seen) => words.every((w) => seen.toLowerCase().includes(w.toLowerCase())), timeout);
+  searchUntil(query, (seen) => words.every((w) => seen.toLowerCase().includes(w.toLowerCase()) || shows(seen, w)), timeout);
 
 /** Searches for `query` until the launcher shows `first` above each of `below`. */
 export const searchUntilAbove = (query: string, first: string, below: string[], timeout?: number) =>

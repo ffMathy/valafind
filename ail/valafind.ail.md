@@ -24,10 +24,10 @@ target
   structure    Valafind.Core holds indexing, extraction, embedding, storage and search as plain, testable code; Valafind.App is the Avalonia app; Valafind.Model carries the model files
   naming       PascalCase types and members, one public type per file, file named after the type
   copy         user-visible text comes from Strings.resx and its translations, never from code
-  path.fn      src/Valafind.Core/Ail/{dir}/{Pascal}.cs
-  path.data    src/Valafind.Core/Ail/{dir}/{Pascal}.cs
-  path.flow    src/Valafind.App/Ail/{dir}/{Pascal}.cs
-  path.view    src/Valafind.App/Ail/{dir}/{Pascal}.axaml
+  path.fn      src/Valafind.Core/Ail/{dir}/{name}.cs
+  path.data    src/Valafind.Core/Ail/{dir}/{name}.cs
+  path.flow    src/Valafind.App/Ail/{dir}/{name}.cs
+  path.view    src/Valafind.App/Ail/{dir}/{name}.axaml
   path.system  src/Valafind.App/Ail/Program.cs
   generated    src/Valafind.Core/Ail/**, src/Valafind.App/Ail/**
   tests        xUnit v3 on Microsoft.Testing.Platform; end-to-end checks are bun tests that drive the desktop with xdotool and read it with tesseract
