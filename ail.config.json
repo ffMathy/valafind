@@ -1,6 +1,7 @@
 {
   "specRoot": "ail",
   "checksDir": "checks",
+  "migrate": "node-by-node",
   "run": {
     "legacy": {
       "start": "scripts/ail/run-legacy.sh",
