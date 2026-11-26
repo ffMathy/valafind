@@ -1,0 +1,4 @@
+# AIL: generated code and the lock file stay committed, but are collapsed in pull request diffs.
+src/Valafind.Core/Ail/** linguist-generated=true
+src/Valafind.App/Ail/** linguist-generated=true
+ail.lock.json linguist-generated=true
