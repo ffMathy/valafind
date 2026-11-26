@@ -1,6 +1,6 @@
 # Valafind
 
-[![Written in AIL](https://img.shields.io/badge/written%20in-AIL-b45309)](https://ffmathy.github.io/agentic-intermediate-language/)
+[![Written in Agentic Intermediate Language](https://img.shields.io/badge/written%20in-Agentic%20Intermediate%20Language-b45309)](https://ffmathy.github.io/agentic-intermediate-language/)
 
 <p align="center"><img src="docs/screenshots/cover@2x.png" alt="Valafind: find files by what they mean, not what they're called. Semantic search for documents, photos, audio and video that runs entirely on your computer, shown next to its launcher answering a question"></p>
 
@@ -63,9 +63,9 @@ there is nothing else to download. It puts text, pictures, audio and video in on
 finds the photo and *"the meeting where we talked about the budget"* finds the voice memo. Your files, the index and your searches never leave your computer. The only network
 request Valafind makes is checking GitHub for a newer release every few hours (see below); turn that off in Settings.
 
-## Written in AIL
+## Written in Agentic Intermediate Language
 
-<a href="https://ffmathy.github.io/agentic-intermediate-language/"><img src="https://img.shields.io/badge/written%20in-AIL-b45309?style=for-the-badge" alt="Written in AIL"></a>
+<a href="https://ffmathy.github.io/agentic-intermediate-language/"><img src="https://img.shields.io/badge/written%20in-Agentic%20Intermediate%20Language-b45309?style=for-the-badge" alt="Written in Agentic Intermediate Language"></a>
 
 Valafind is written in [AIL](https://github.com/ffMathy/agentic-intermediate-language), the Agentic Intermediate
 Language. The spec in [`ail/`](ail) is the source of truth: it says why each part exists, what it does and how it was
