@@ -129,6 +129,9 @@ jobs:
         env:
           PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
           DRAFT_ONLY: ${{ vars.STORE_DRAFT_ONLY }}
+          # The price tier (such as Tier1012). Products priced per market in Partner Center need it: the API returns
+          # their base price as 'Base', which it rejects on update, and a submission without a price makes the app free.
+          PRICE_ID: ${{ vars.MSSTORE_PRICE_ID }}
         run: |
           $upload = Get-ChildItem dist -Filter *.msixupload | Select-Object -First 1
           $draft = @()
@@ -136,7 +139,9 @@ jobs:
           if (-not $upload) { Write-Error 'No .msixupload in dist'; exit 1 }
           # The package file itself: msstore recognises a prebuilt package by its extension (.msix, .msixbundle or
           # .msixupload) and uploads from the folder it is in. A folder is taken for a project to build, and fails.
-          msstore publish $upload.FullName -id $env:PRODUCT_ID @draft
+          $price = @()
+          if ($env:PRICE_ID) { $price = @('--priceId', $env:PRICE_ID) }
+          msstore publish $upload.FullName -id $env:PRODUCT_ID @draft @price
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   mac-app-store:
