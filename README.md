@@ -1,5 +1,7 @@
 # Valafind
 
+[![Written in AIL](https://img.shields.io/badge/written%20in-AIL-b45309)](https://ffmathy.github.io/agentic-intermediate-language/)
+
 <p align="center"><img src="docs/screenshots/cover@2x.png" alt="Valafind: find files by what they mean, not what they're called. Semantic search for documents, photos, audio and video that runs entirely on your computer, shown next to its launcher answering a question"></p>
 
 **Find files by what they mean.** Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>, ask in your own words, and get the
@@ -60,6 +62,14 @@ The [EmbeddingGemma 2](https://huggingface.co/google/embeddinggemma-2) model run
 there is nothing else to download. It puts text, pictures, audio and video in one space, so *"a red car in the snow"*
 finds the photo and *"the meeting where we talked about the budget"* finds the voice memo. Your files, the index and your searches never leave your computer. The only network
 request Valafind makes is checking GitHub for a newer release every few hours (see below); turn that off in Settings.
+
+## Written in AIL
+
+<a href="https://ffmathy.github.io/agentic-intermediate-language/"><img src="https://img.shields.io/badge/written%20in-AIL-b45309?style=for-the-badge" alt="Written in AIL"></a>
+
+Valafind is written in [AIL](https://github.com/ffMathy/agentic-intermediate-language), the Agentic Intermediate
+Language. The spec in [`ail/`](ail) is the source of truth: it says why each part exists, what it does and how it was
+decided, and the code is compiled from it. To change what Valafind does, change the spec and run `ail build`.
 
 ## Get it
 
