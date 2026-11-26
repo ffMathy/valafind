@@ -33,6 +33,12 @@
       "caption": "A question in your own words finds the e-mail, the notes and a Danish lease; the highlighted passage shows why each one matched.",
       "query": "where did we negotiate the deposit?"
     },
+    "media": {
+      "headline": "Search inside photos, video and audio",
+      "subline": "Describe what's in it. Valafind looks at your pictures, watches your videos and listens to your recordings, so file names don't matter.",
+      "caption": "One description finds the photo, the video and the recording of a day at the beach, whatever the files are called.",
+      "query": "our dog playing on the beach"
+    },
     "photos": {
       "headline": "Photos, by what's in them",
       "subline": "Describe the picture and Valafind finds it. No tags, albums or file names needed.",

@@ -33,6 +33,12 @@
       "caption": "Et spørgsmål med dine egne ord finder mailen, noterne og lejekontrakten, også på tværs af sprog; den fremhævede passage viser, hvorfor hver enkelt matchede.",
       "query": "hvor forhandlede vi depositummet?"
     },
+    "media": {
+      "headline": "Søg i billeder, video og lyd",
+      "subline": "Beskriv, hvad der er i dem. Valafind ser på dine billeder, ser dine videoer og lytter til dine optagelser, så filnavne er ligegyldige.",
+      "caption": "Én beskrivelse finder billedet, videoen og optagelsen fra en dag på stranden, uanset hvad filerne hedder.",
+      "query": "vores hund der leger på stranden"
+    },
     "photos": {
       "headline": "Fotos, ud fra hvad de viser",
       "subline": "Beskriv billedet, og Valafind finder det. Ingen tags, albummer eller filnavne nødvendige.",

@@ -53,7 +53,7 @@ ORDER = ["en", "zh-Hans", "hi", "es", "ar", "fr", "bn", "pt", "ru", "id", "ur", 
 _DECLARED = manifest_locales()
 LOCALES = {code: _DECLARED[code] for code in ORDER if code in _DECLARED}
 
-SCREENSHOTS = ["search", "photos", "recordings", "indexing", "settings"]
+SCREENSHOTS = ["search", "media", "photos", "recordings", "indexing", "settings"]
 LOGOS = {"StoreLogo720x1080": "poster-1440x2160.png", "StoreLogo1080x1080": "boxart-2160x2160.png",
          "StoreLogo300x300": "tile-300x300.png"}
 COPYRIGHT = "© 2026 Valafind contributors"

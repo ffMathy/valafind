@@ -29,6 +29,8 @@ node PlatformLaunchers : view   level: system
       because "unknown, confirm with the owner"
     decide macOS: Quick Look shows the chosen file with the system's previewer (qlmanage -p)
       because "unknown, confirm with the owner"
+    decide the yellow incomplete notice of LauncherLayout sits under the search box on Windows (under the blue line, rounded 6, text 12.5) and macOS (between the search field and the chips, rounded 8, text 12) too, and shows also while paused, since neither design has a paused banner
+      because it should be read before the results, on every system (the owner, 2026-11-26)
     decide the time menu opens downwards from the top on Windows and macOS, upwards from the bottom on Linux
       because "unknown, confirm with the owner"
   sources

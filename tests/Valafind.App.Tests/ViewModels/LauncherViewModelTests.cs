@@ -565,4 +565,61 @@ public sealed class LauncherViewModelTests
         public void ResumeNow() => Log.Add("resume-now");
         public void CheckModel() => Log.Add("check-model");
     }
+
+    private static IndexStatus Status(IndexingState state, long done = 400, long total = 1000) =>
+        new(state, IndexPhase.All, 100, 100, done, total, true, null, null);
+
+    [Theory]
+    [InlineData(IndexingState.Running, true)]
+    [InlineData(IndexingState.PausedByUser, true)]
+    [InlineData(IndexingState.PausedOnBattery, true)]
+    [InlineData(IndexingState.UpToDate, false)]
+    [InlineData(IndexingState.Starting, false)]
+    public void IncompleteNoticeShowsWithResultsWhileIndexingIsUnfinished(IndexingState state, bool shown)
+    {
+        using var vm = Create(UiFlavor.Windows);
+        vm.LoadSnapshot("q", [Hit("a.pdf", FileKind.Pdf, 0.9f)], TimeSpan.Zero);
+        vm.UpdateStatus(Status(state));
+        Assert.Equal(shown, vm.ShowIncompleteNotice);
+    }
+
+    [Fact]
+    public void IncompleteNoticeShowsAboveNoMatchingFilesButNotTheHint()
+    {
+        using var vm = Create(UiFlavor.Mac);
+        vm.UpdateStatus(Status(IndexingState.Running));
+        vm.LoadSnapshot("q", [], TimeSpan.Zero);
+        Assert.True(vm.IsNoResultsVisible);
+        Assert.True(vm.ShowIncompleteNotice);
+        Assert.Contains("45%", vm.Status.BannerDetail, StringComparison.Ordinal);
+
+        vm.LoadSnapshot(string.Empty, [], TimeSpan.Zero);
+        Assert.False(vm.ShowIncompleteNotice);
+    }
+
+    [Fact]
+    public void IncompleteNoticeHidesOnceEveryFileIsSearchable()
+    {
+        using var vm = Create(UiFlavor.Windows);
+        vm.LoadSnapshot("q", [Hit("a.pdf", FileKind.Pdf, 0.9f)], TimeSpan.Zero);
+        var changed = new List<string?>();
+        vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        vm.UpdateStatus(Status(IndexingState.Running));
+        Assert.True(vm.ShowIncompleteNotice);
+        vm.UpdateStatus(Status(IndexingState.PausedByUser, 1000, 1000));
+        Assert.False(vm.ShowIncompleteNotice);
+        Assert.Contains(nameof(LauncherViewModel.ShowIncompleteNotice), changed);
+    }
+
+    [Fact]
+    public void OnLinuxThePausedBannerTakesTheNoticesPlace()
+    {
+        using var vm = Create(UiFlavor.Linux);
+        vm.LoadSnapshot("q", [Hit("a.pdf", FileKind.Pdf, 0.9f)], TimeSpan.Zero);
+        vm.UpdateStatus(Status(IndexingState.PausedByUser));
+        Assert.True(vm.Status.ShowBanner);
+        Assert.False(vm.ShowIncompleteNotice);
+        vm.UpdateStatus(Status(IndexingState.Running));
+        Assert.True(vm.ShowIncompleteNotice);
+    }
 }

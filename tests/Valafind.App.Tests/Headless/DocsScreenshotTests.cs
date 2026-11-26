@@ -56,6 +56,40 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
             Save(frame, file);
         }, TestContext.Current.CancellationToken);
 
+    /// <summary>One description finds a photo, a video and a recording: the files are searched by what is in them,
+    /// not by their names.</summary>
+    [Fact]
+    public Task RendersMediaScreenshot() =>
+        fixture.Session.Dispatch(() =>
+        {
+            var frame = Capture(Shot(LauncherView(UiFlavor.Mac, MediaLauncher(UiFlavor.Mac), 1.35, 60, 0), Backdrop(UiFlavor.Mac)));
+            Assert.Equal(ShotWidth, frame.PixelSize.Width);
+            Save(frame, "media-search.png");
+        }, TestContext.Current.CancellationToken);
+
+    /// <summary>The deposit search while indexing is still under way: the yellow notice under the search box says the
+    /// results may be incomplete.</summary>
+    [Theory]
+    [InlineData(UiFlavor.Windows, "indexing-notice-windows.png")]
+    [InlineData(UiFlavor.Mac, "indexing-notice-macos.png")]
+    [InlineData(UiFlavor.Linux, "indexing-notice-linux.png")]
+    public Task RendersIncompleteNoticeScreenshot(UiFlavor flavor, string file) =>
+        fixture.Session.Dispatch(() =>
+        {
+            var vm = Launcher(flavor);
+            vm.UpdateStatus(DesignData.BusyStatus);
+            Assert.True(vm.ShowIncompleteNotice);
+            var (scale, top, bottom) = flavor switch
+            {
+                UiFlavor.Windows => (1.05, 70.0, 26.0),
+                UiFlavor.Mac => (1.35, 60.0, 0.0),
+                _ => (1.0, 64.0, 24.0),
+            };
+            var frame = Capture(Shot(LauncherView(flavor, vm, scale, top, bottom), Backdrop(flavor)));
+            Assert.Equal(ShotWidth, frame.PixelSize.Width);
+            SaveExtra(frame, file);
+        }, TestContext.Current.CancellationToken);
+
     [Fact]
     public Task RendersFirstRunScreenshot() =>
         fixture.Session.Dispatch(() =>
@@ -131,6 +165,190 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
             "keys can be handed over on 1 March.\n\nBest regards,\nHenrik Larsen\nBolig ApS",
             false));
         return vm;
+    }
+
+    internal const string MediaQuery = "our dog playing on the beach";
+
+    /// <summary>Pictures, videos and recordings found by what is in them: none of the file names says "dog" or "beach".
+    /// The top photo is selected and previewed; the video and the recording (waves and barking) rank among the
+    /// photos.</summary>
+    internal static LauncherViewModel MediaLauncher(UiFlavor flavor, string query = MediaQuery)
+    {
+        var home = flavor switch
+        {
+            UiFlavor.Windows => @"C:\Users\alex",
+            UiFlavor.Mac => "/Users/alex",
+            _ => "/home/alex",
+        };
+        var sep = flavor == UiFlavor.Windows ? "\\" : "/";
+        string Dir(params string[] parts) => home + sep + string.Join(sep, parts);
+        var camera = Dir("Pictures", "Camera Roll");
+        var summer = Dir("Pictures", "2025", "Summer");
+        var videos = Dir("Videos", "Summer 2025");
+        var recordings = Dir("Documents", "Sound recordings");
+
+        var vm = new LauncherViewModel(flavor, new ValafindSettings(), new FixedTime(), static a => a(), home,
+            flavor == UiFlavor.Windows ? @"C:\Users\alex\AppData\Local\Programs\Valafind" : "/opt/valafind");
+        var photos = new Dictionary<string, Action<SkiaSharp.SKCanvas>>
+        {
+            ["IMG_20250712_163045.jpg"] = c => Beach(c, dog: true, evening: false),
+            ["PXL_20250713_193318.jpg"] = c => Beach(c, dog: true, evening: true),
+            ["DSC00417.jpg"] = c => Beach(c, dog: false, evening: false),
+            ["IMG_20240802_101522.jpg"] = c => Park(c),
+        };
+        SearchResult[] results =
+        [
+            Hit(camera, "IMG_20250712_163045.jpg", FileKind.Image, 4_118_302, 0.61f, string.Empty),
+            Hit(videos, "VID_20250712_170211.mp4", FileKind.Video, 286_904_117, 0.55f, string.Empty),
+            Hit(camera, "PXL_20250713_193318.jpg", FileKind.Image, 3_702_844, 0.51f, string.Empty),
+            Hit(recordings, "Recording 2025-07-12 16.58.m4a", FileKind.Audio, 3_911_420, 0.46f, string.Empty),
+            Hit(summer, "DSC00417.jpg", FileKind.Image, 6_220_913, 0.40f, string.Empty),
+            Hit(videos, "GX010233.MP4", FileKind.Video, 1_104_377_002, 0.36f, string.Empty),
+            Hit(summer, "IMG_20240802_101522.jpg", FileKind.Image, 3_330_118, 0.30f, string.Empty),
+        ];
+        vm.LoadSnapshot(query, results, TimeSpan.FromMilliseconds(flavor == UiFlavor.Linux ? 296 : 281));
+        vm.UpdateStatus(DesignData.IdleStatus with { State = IndexingState.UpToDate, AllDone = 189_144, AllTotal = 189_144 });
+        foreach (var item in vm.Results.Where(r => r.Kind == FileKind.Image))
+        {
+            var draw = photos[item.FileName];
+            item.Thumbnail = StoreListingScreenshotTests.Picture(draw, FilePreviewService.ThumbnailSide, fill: true);
+            if (item == vm.Results[0])
+                item.ApplyPreview(new FilePreview(StoreListingScreenshotTests.Picture(draw, 640, fill: false), null, false));
+        }
+        return vm;
+    }
+
+    /// <summary>A beach on a summer day (or at sunset): sky, sea, sand, and a golden dog running after a red ball.</summary>
+    private static void Beach(SkiaSharp.SKCanvas c, bool dog, bool evening)
+    {
+        static SkiaSharp.SKPaint Paint(SkiaSharp.SKColor color) => new() { Color = color, IsAntialias = true };
+        void Vertical(float top, float bottom, SkiaSharp.SKColor a, SkiaSharp.SKColor b)
+        {
+            using var p = new SkiaSharp.SKPaint
+            {
+                Shader = SkiaSharp.SKShader.CreateLinearGradient(new(0, top), new(0, bottom), [a, b], SkiaSharp.SKShaderTileMode.Clamp),
+            };
+            c.DrawRect(0, top, 1200, bottom - top, p);
+        }
+        if (evening)
+            Vertical(0, 430, new SkiaSharp.SKColor(0x4B, 0x4F, 0x8C), new SkiaSharp.SKColor(0xF6, 0xA0, 0x6B));
+        else
+            Vertical(0, 430, new SkiaSharp.SKColor(0x5A, 0xA9, 0xEE), new SkiaSharp.SKColor(0xD3, 0xEC, 0xFB));
+        using (var sun = Paint(evening ? new SkiaSharp.SKColor(0xFF, 0xD0, 0x8A) : new SkiaSharp.SKColor(0xFF, 0xF3, 0xC4)))
+            c.DrawCircle(evening ? 860 : 980, evening ? 400 : 120, evening ? 90 : 62, sun);
+        Vertical(400, 560, evening ? new SkiaSharp.SKColor(0x3E, 0x6C, 0x9A) : new SkiaSharp.SKColor(0x1E, 0x7F, 0xC2),
+            evening ? new SkiaSharp.SKColor(0x6F, 0x95, 0xB5) : new SkiaSharp.SKColor(0x3E, 0xB6, 0xD6));
+        using (var foam = Paint(new SkiaSharp.SKColor(0xFF, 0xFF, 0xFF, 0xB0)))
+        {
+            using var wave = new SkiaSharp.SKPath();
+            wave.MoveTo(0, 560);
+            for (var x = 0; x <= 1200; x += 100)
+                wave.QuadTo(x + 50, 538, x + 100, 560);
+            wave.LineTo(1200, 580);
+            wave.LineTo(0, 580);
+            wave.Close();
+            c.DrawPath(wave, foam);
+        }
+        Vertical(570, 900, evening ? new SkiaSharp.SKColor(0xD9, 0xB3, 0x8C) : new SkiaSharp.SKColor(0xF1, 0xD9, 0xA8),
+            evening ? new SkiaSharp.SKColor(0xB8, 0x8E, 0x66) : new SkiaSharp.SKColor(0xE0, 0xBE, 0x83));
+        using (var wet = Paint(new SkiaSharp.SKColor(0x8A, 0x6A, 0x40, 0x30)))
+            c.DrawRect(0, 572, 1200, 34, wet);
+        if (!dog)
+        {
+            // An umbrella and a towel.
+            using var pole = Paint(new SkiaSharp.SKColor(0x6B, 0x5B, 0x4B));
+            c.DrawRect(696, 470, 8, 300, pole);
+            using var canopy = Paint(new SkiaSharp.SKColor(0xE8, 0x4A, 0x3C));
+            using var arc = new SkiaSharp.SKPath();
+            arc.MoveTo(520, 500); arc.QuadTo(700, 360, 880, 500); arc.Close();
+            c.DrawPath(arc, canopy);
+            using var towel = Paint(new SkiaSharp.SKColor(0x2F, 0x9E, 0x8F));
+            c.DrawRoundRect(new SkiaSharp.SKRoundRect(new SkiaSharp.SKRect(420, 720, 760, 800), 8, 8), towel);
+            return;
+        }
+        Dog(c, evening ? 380 : 300, evening ? 560 : 520, evening ? 0.85f : 1.0f);
+        using var ball = Paint(new SkiaSharp.SKColor(0xE0, 0x2B, 0x2B));
+        c.DrawCircle(evening ? 760 : 840, evening ? 730 : 715, evening ? 20 : 26, ball);
+    }
+
+    /// <summary>A park lawn under trees: the near miss.</summary>
+    private static void Park(SkiaSharp.SKCanvas c)
+    {
+        using var sky = new SkiaSharp.SKPaint
+        {
+            Shader = SkiaSharp.SKShader.CreateLinearGradient(new(0, 0), new(0, 500),
+                [new SkiaSharp.SKColor(0x8C, 0xC4, 0xEE), new SkiaSharp.SKColor(0xE2, 0xF1, 0xFB)], SkiaSharp.SKShaderTileMode.Clamp),
+        };
+        c.DrawRect(0, 0, 1200, 520, sky);
+        using var grass = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0x6D, 0xA8, 0x4A), IsAntialias = true };
+        c.DrawRect(0, 500, 1200, 400, grass);
+        using var crown = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0x3C, 0x7A, 0x3A), IsAntialias = true };
+        using var trunk = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0x6B, 0x4A, 0x2E), IsAntialias = true };
+        foreach (var x in new[] { 160f, 980f })
+        {
+            c.DrawRect(x - 14, 360, 28, 170, trunk);
+            c.DrawCircle(x, 320, 120, crown);
+        }
+        Dog(c, 420, 560, 0.95f);
+    }
+
+    /// <summary>A golden dog mid-stride, facing right; (x, y) is the top left of its body.</summary>
+    private static void Dog(SkiaSharp.SKCanvas c, float x, float y, float s)
+    {
+        c.Save();
+        c.Translate(x, y);
+        c.Scale(s);
+        using var shadow = new SkiaSharp.SKPaint
+        {
+            Color = new SkiaSharp.SKColor(0, 0, 0, 0x38), IsAntialias = true,
+            MaskFilter = SkiaSharp.SKMaskFilter.CreateBlur(SkiaSharp.SKBlurStyle.Normal, 10),
+        };
+        c.DrawOval(170, 240, 190, 18, shadow);
+        using var fur = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0xD8, 0x9A, 0x4E), IsAntialias = true };
+        using var dark = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0xB5, 0x76, 0x34), IsAntialias = true };
+        using var limb = new SkiaSharp.SKPaint
+        {
+            Color = new SkiaSharp.SKColor(0xC8, 0x88, 0x40), IsAntialias = true, StrokeWidth = 26, StrokeCap = SkiaSharp.SKStrokeCap.Round,
+            Style = SkiaSharp.SKPaintStyle.Stroke,
+        };
+        // Legs in a gallop, the far ones darker.
+        limb.Color = new SkiaSharp.SKColor(0xB5, 0x76, 0x34);
+        c.DrawLine(90, 120, 20, 205, limb);
+        c.DrawLine(270, 115, 340, 200, limb);
+        limb.Color = new SkiaSharp.SKColor(0xC8, 0x88, 0x40);
+        c.DrawLine(110, 125, 60, 225, limb);
+        c.DrawLine(250, 120, 300, 228, limb);
+        // Tail up.
+        using var tail = new SkiaSharp.SKPaint
+        {
+            Color = new SkiaSharp.SKColor(0xD8, 0x9A, 0x4E), IsAntialias = true, StrokeWidth = 22, StrokeCap = SkiaSharp.SKStrokeCap.Round,
+            Style = SkiaSharp.SKPaintStyle.Stroke,
+        };
+        using (var t = new SkiaSharp.SKPath())
+        {
+            t.MoveTo(40, 70); t.QuadTo(-10, 40, -20, -20);
+            c.DrawPath(t, tail);
+        }
+        // Body, neck and head.
+        c.DrawRoundRect(new SkiaSharp.SKRoundRect(new SkiaSharp.SKRect(20, 40, 320, 150), 55, 55), fur);
+        using (var neck = new SkiaSharp.SKPath())
+        {
+            neck.MoveTo(250, 60); neck.LineTo(320, -10); neck.LineTo(370, 20); neck.LineTo(320, 120); neck.Close();
+            c.DrawPath(neck, fur);
+        }
+        c.DrawCircle(350, -10, 52, fur);
+        c.DrawRoundRect(new SkiaSharp.SKRoundRect(new SkiaSharp.SKRect(360, -10, 440, 34), 20, 20), fur);
+        using (var ear = new SkiaSharp.SKPath())
+        {
+            ear.MoveTo(318, -48); ear.QuadTo(290, -10, 300, 40); ear.QuadTo(330, 20, 340, -40); ear.Close();
+            c.DrawPath(ear, dark);
+        }
+        using var ink = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0x2A, 0x1E, 0x14), IsAntialias = true };
+        c.DrawCircle(372, -22, 7, ink);
+        c.DrawCircle(436, 4, 10, ink);
+        using var tongue = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0xE5, 0x6B, 0x7A), IsAntialias = true };
+        c.DrawOval(410, 40, 12, 18, tongue);
+        c.Restore();
     }
 
     internal static SearchResult Hit(string dir, string name, FileKind kind, long size, float score, string snippet,
@@ -398,6 +616,18 @@ public sealed class DocsScreenshotTests(HeadlessFixture fixture)
         {
             window.Close();
         }
+    }
+
+    /// <summary>Screenshots for review that the README and site don't use: written only when
+    /// <c>VALAFIND_EXTRA_SCREENSHOT_DIR</c> is set.</summary>
+    private static void SaveExtra(Bitmap frame, string name)
+    {
+        var dir = Environment.GetEnvironmentVariable("VALAFIND_EXTRA_SCREENSHOT_DIR");
+        if (string.IsNullOrWhiteSpace(dir))
+            return;
+        Directory.CreateDirectory(dir);
+        using var file = File.Create(System.IO.Path.Combine(dir, name));
+        frame.Save(file, new PngBitmapEncoderOptions());
     }
 
     private static void Save(Bitmap frame, string name)

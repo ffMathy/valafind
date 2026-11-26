@@ -293,7 +293,8 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     /// <summary>What the main area shows.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsHintVisible), nameof(IsResultsVisible), nameof(IsNoResultsVisible), nameof(IsErrorVisible),
-        nameof(IsModelLoadingVisible), nameof(IsModelMissingVisible), nameof(IsModelFailedVisible), nameof(IsMessageVisible))]
+        nameof(IsModelLoadingVisible), nameof(IsModelMissingVisible), nameof(IsModelFailedVisible), nameof(IsMessageVisible),
+        nameof(ShowIncompleteNotice))]
     public partial LauncherContent Content { get; private set; } = LauncherContent.ModelLoading;
 
     /// <summary>Content flags for bindings.</summary>
@@ -312,6 +313,12 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     public bool IsModelFailedVisible => Content == LauncherContent.ModelFailed;
     /// <summary>True for every non-results state (hint, empty, error, model states).</summary>
     public bool IsMessageVisible => Content != LauncherContent.Results;
+
+    /// <summary>The yellow notice under the search box: results (or "No matching files") are shown while indexing has
+    /// not covered every file yet, so they may be incomplete. On Linux the paused banner, which already says how much
+    /// is searchable, takes its place.</summary>
+    public bool ShowIncompleteNotice => (IsResultsVisible || IsNoResultsVisible) && Status.IsIncomplete
+        && !(Flavor == UiFlavor.Linux && Status.ShowBanner);
 
     /// <summary>Index status projection.</summary>
     public IndexStatusViewModel Status { get; } = new();
@@ -401,8 +408,11 @@ public sealed partial class LauncherViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Applies a new index status (must be called on the UI thread).</summary>
-    public void UpdateStatus(IndexStatus status) =>
+    public void UpdateStatus(IndexStatus status)
+    {
         Status.Update(status, _settings.MaxCpuPercent, _settings.MaxDiskBusyPercent, _settings.MaxGpuPercent);
+        OnPropertyChanged(nameof(ShowIncompleteNotice));
+    }
 
     /// <summary>Shows whether indexing is paused by the user. The persisted setting is the single source of truth, so
     /// the captions are right even before the Core runs (or while the model is unavailable).</summary>

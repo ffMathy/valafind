@@ -33,6 +33,9 @@
   <data name="CheckForUpdatesMenu" xml:space="preserve">
     <value>আপডেট খুঁজুন…</value>
   </data>
+  <data name="IncompleteNotice" xml:space="preserve">
+    <value>ইনডেক্স করা এখনও শেষ হয়নি, তাই ফলাফল অসম্পূর্ণ হতে পারে</value>
+  </data>
   <data name="RestartToUpdateMenu" xml:space="preserve">
     <value>আপডেট করতে রিস্টার্ট করুন</value>
   </data>

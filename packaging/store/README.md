@@ -112,7 +112,7 @@ The Store API can only update an app whose first submission exists, so make that
 
 ### The Store listing
 
-The listing (texts, five screenshots and the logos, in all 21 UI languages) is generated, so it never has to be typed in
+The listing (texts, six screenshots and the logos, in all 21 UI languages) is generated, so it never has to be typed in
 Partner Center:
 
 1. Run **Actions › Store listing** (or `packaging/store/listing/make-listing.sh` locally; it needs the .NET SDK,
