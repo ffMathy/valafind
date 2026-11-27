@@ -1,0 +1,29 @@
+{
+  "node": "LauncherLayout",
+  "shots": [
+    {
+      "test": "the launcher at rest",
+      "file": "01-the-launcher-at-rest.png"
+    },
+    {
+      "test": "while indexing, the index panel takes the place of \"Up to date\"",
+      "file": "02-while-indexing-the-index-panel-takes-the-place-of-up-to-date.png"
+    },
+    {
+      "test": "while indexing, a yellow notice under the search box says the results may be incomplete",
+      "file": "03-while-indexing-a-yellow-notice-under-the-search-box-says-the.png"
+    },
+    {
+      "test": "the notice goes once every file is searchable",
+      "file": "04-the-notice-goes-once-every-file-is-searchable.png"
+    },
+    {
+      "test": "while paused, the paused banner takes the notice's place",
+      "file": "05-while-paused-the-paused-banner-takes-the-notice-s-place.png"
+    },
+    {
+      "test": "a tip on \"Up to date\" says how many files can be found",
+      "file": "06-a-tip-on-up-to-date-says-how-many-files-can-be-found.png"
+    }
+  ]
+}

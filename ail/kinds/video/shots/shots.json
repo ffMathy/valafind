@@ -1,0 +1,13 @@
+{
+  "node": "Video",
+  "shots": [
+    {
+      "test": "a video is found by what its pictures show",
+      "file": "01-a-video-is-found-by-what-its-pictures-show.png"
+    },
+    {
+      "test": "a video is found by what is said in it",
+      "file": "02-a-video-is-found-by-what-is-said-in-it.png"
+    }
+  ]
+}

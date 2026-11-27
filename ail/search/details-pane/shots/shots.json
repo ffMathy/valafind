@@ -1,0 +1,25 @@
+{
+  "node": "DetailsPane",
+  "shots": [
+    {
+      "test": "a document in the pane",
+      "file": "01-a-document-in-the-pane.png"
+    },
+    {
+      "test": "code in the pane",
+      "file": "02-code-in-the-pane.png"
+    },
+    {
+      "test": "a picture in the pane",
+      "file": "03-a-picture-in-the-pane.png"
+    },
+    {
+      "test": "the pane follows the choice",
+      "file": "04-the-pane-follows-the-choice.png"
+    },
+    {
+      "test": "no pane without results",
+      "file": "05-no-pane-without-results.png"
+    }
+  ]
+}

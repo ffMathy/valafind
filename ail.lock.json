@@ -592,9 +592,18 @@
   },
   "glue": {},
   "hand": {
+    "Audio": {
+      "shots": "a36f769b51c4a86d"
+    },
+    "DetailsPane": {
+      "shots": "4507af5c0bebd62b"
+    },
     "IndexPanel": {
       "shots": "2f5bf57bb6476877",
       "look": "1edcaae1885f604da75934b8bc03423ea6ee7e8fcf3655fd1643c117941301e8"
+    },
+    "LauncherLayout": {
+      "shots": "00fb318ca9d0d98b"
     },
     "LauncherMessages": {
       "shots": "a8e280d5d3ce5002",
@@ -627,6 +636,12 @@
     "TextSniffing": {
       "shots": "9e6c9f9936d358b8",
       "look": "d98bd7c6b89181d2386905c865ae072ee85bb7beb7aef6afa6363b4c036c1e76"
+    },
+    "UiFlavours": {
+      "shots": "7f4ee6082d774ca1"
+    },
+    "Video": {
+      "shots": "d38351e57209fb68"
     }
   }
 }
