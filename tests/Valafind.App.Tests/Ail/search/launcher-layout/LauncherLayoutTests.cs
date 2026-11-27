@@ -159,14 +159,14 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
         await app.SetPausedAsync(true);
 
         await app.SearchAsync("orchard");
-        await Until(() => app.Launcher.Status.IsPaused && Texts(window).Contains(app.Launcher.Status.StateText),
+        await Until(() => app.Launcher.Status.IsPaused && PausedBanner(Texts(window)) is not null,
             "the paused banner to show", window);
 
         Assert.True(app.Launcher.Status.IsPaused);
         Assert.False(app.Launcher.Status.IsUpToDate);
         var texts = Texts(window);
-        Assert.Contains(app.Launcher.Status.StateText, texts);
-        Assert.Matches(new Regex(@"\d+\s*%|\d+\s*(of|/)\s*\d+"), Joined(texts));
+        // The banner says indexing is paused, with how much is searchable.
+        Assert.Matches(new Regex(@"\d+\s*%"), PausedBanner(texts)!);
         Assert.True(NoticeIndex(texts) < 0, "the yellow notice does not show while paused");
 
         AppHarness.SaveScreen(window, "while-paused-the-paused-banner-takes-the-notice-s-place.png");
@@ -267,6 +267,9 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
                 yield break;
         }
     }
+
+    private static string? PausedBanner(List<string> texts) =>
+        texts.FirstOrDefault(t => t.StartsWith("Indexing paused", StringComparison.Ordinal));
 
     // Where the text starts, from the window's left edge.
     private static double LeftOf(Window window, string text)
