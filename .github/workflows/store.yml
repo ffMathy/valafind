@@ -124,25 +124,44 @@ jobs:
         run: msstore reconfigure --tenantId $env:TENANT_ID --sellerId $env:SELLER_ID --clientId $env:CLIENT_ID --clientSecret $env:CLIENT_SECRET
       - name: Submit
         if: env.CAN_SUBMIT == 'true'
-        # Replaces the pending submission with one for this package. Certification takes up to a few days; the Store
-        # then publishes it. STORE_DRAFT_ONLY=true leaves the submission as a draft to commit in Partner Center.
+        # Replaces the pending submission with a draft for this package; the next step adds the release notes and
+        # commits it.
         env:
           PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
-          DRAFT_ONLY: ${{ vars.STORE_DRAFT_ONLY }}
           # The price tier (such as Tier1012). Products priced per market in Partner Center need it: the API returns
           # their base price as 'Base', which it rejects on update, and a submission without a price makes the app free.
           PRICE_ID: ${{ vars.MSSTORE_PRICE_ID }}
         run: |
           $upload = Get-ChildItem dist -Filter *.msixupload | Select-Object -First 1
-          $draft = @()
-          if ($env:DRAFT_ONLY -eq 'true') { $draft = @('--noCommit') }
           if (-not $upload) { Write-Error 'No .msixupload in dist'; exit 1 }
           # The package file itself: msstore recognises a prebuilt package by its extension (.msix, .msixbundle or
           # .msixupload) and uploads from the folder it is in. A folder is taken for a project to build, and fails.
           $price = @()
           if ($env:PRICE_ID) { $price = @('--priceId', $env:PRICE_ID) }
-          msstore publish $upload.FullName -id $env:PRODUCT_ID @draft @price
+          msstore publish $upload.FullName -id $env:PRODUCT_ID --noCommit @price
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Add the release notes and submit
+        if: env.CAN_SUBMIT == 'true'
+        # The GitHub release's notes become the submission's release notes (in every listing language), then the
+        # submission goes to certification, which takes up to a few days; the Store then publishes it.
+        # STORE_DRAFT_ONLY=true leaves it as a draft to submit in Partner Center.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+          CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+          PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+          PRICE_ID: ${{ vars.MSSTORE_PRICE_ID }}
+          DRAFT_ONLY: ${{ vars.STORE_DRAFT_ONLY }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body,url,tagName > "$RUNNER_TEMP/release.json" \
+            || echo '{}' > "$RUNNER_TEMP/release.json"
+          commit=--commit
+          if [[ "$DRAFT_ONLY" == true ]]; then commit=; fi
+          python packaging/store/release_notes.py --release "$RUNNER_TEMP/release.json" --tag "$TAG" \
+            --repository-url "$REPOSITORY_URL" --product-id "$PRODUCT_ID" --price-id "$PRICE_ID" $commit
 
   mac-app-store:
     name: Mac App Store
@@ -233,12 +252,17 @@ jobs:
           ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
           PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
           DRAFT_ONLY: ${{ vars.STORE_DRAFT_ONLY }}
-          RELEASE_NOTES: "What's new in this version: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ inputs.tag }}"
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           command -v fastlane > /dev/null || brew install fastlane
           deliver="$RUNNER_TEMP/deliver"
           mkdir -p "$deliver/metadata/en-US"
-          printf '%s\n' "$RELEASE_NOTES" > "$deliver/metadata/en-US/release_notes.txt"
+          # The same notes as the Microsoft Store's: the GitHub release's list of changes, as plain text.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body,url,tagName > "$RUNNER_TEMP/release.json" \
+            || echo '{}' > "$RUNNER_TEMP/release.json"
+          python3 packaging/store/release_notes.py --release "$RUNNER_TEMP/release.json" --tag "$TAG" \
+            --repository-url "$REPOSITORY_URL" --print > "$deliver/metadata/en-US/release_notes.txt"
           jq -n --arg key_id "$KEY_ID" --arg issuer_id "$ISSUER_ID" --arg key "$PRIVATE_KEY" \
             '{key_id: $key_id, issuer_id: $issuer_id, key: $key, in_house: false}' > "$deliver/api_key.json"
           submit=true
