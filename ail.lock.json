@@ -593,7 +593,8 @@
   "glue": {},
   "hand": {
     "Audio": {
-      "shots": "a36f769b51c4a86d"
+      "shots": "a36f769b51c4a86d",
+      "look": "ccedc8cd211d9dbb479ca3ec8233e8da616b3365387934b170f30409894ad5f6"
     },
     "DetailsPane": {
       "shots": "4507af5c0bebd62b"
@@ -611,19 +612,19 @@
     },
     "ModelSetup": {
       "shots": "0a39980cee3a6a8b",
-      "look": "f6ef7d943daf8dda9405b95df214175b1e6bd5438de5f6e41ecb751be22d21bf"
+      "look": "e57449faf16042c599c1f20de9dff619b279731965d2b1ff94749454d176d06f"
     },
     "NameOnly": {
       "shots": "ec098ee66742baa3",
-      "look": "4c593bf4c23bce4172b918639dd05c2e73291d3b488c1dea2c36d2b6ea741bbd"
+      "look": "80ca36feb3139f16458cd7dac0c5c312bc0f985d6f0954c8ed321bad04802cf0"
     },
     "NarrowResults": {
       "shots": "3e03f81817a9d529",
-      "look": "fd294f3bff48b5f0688f88fd2967631b2f6e58dc83d58ca2e9684c95333bce11"
+      "look": "18317679ea0e071545d226db599f451fd24afb9c00bd218f0dd110872264a454"
     },
     "Pictures": {
       "shots": "47a3987c5577b814",
-      "look": "b5946b62e75c9c24b7c2e63127c814d4df9434ae223100d57ac30d0e5b2a787d"
+      "look": "7dd020048574bfb66f535276d647d9d87b885c4e11b83996351c331d5c296010"
     },
     "ResultRow": {
       "shots": "a968a9e6d677e41a",
@@ -635,13 +636,15 @@
     },
     "TextSniffing": {
       "shots": "9e6c9f9936d358b8",
-      "look": "d98bd7c6b89181d2386905c865ae072ee85bb7beb7aef6afa6363b4c036c1e76"
+      "look": "69749c3a0b619a1372ddc327510add1248a37e622d4a6fda7e23e0d24d43f275"
     },
     "UiFlavours": {
-      "shots": "7f4ee6082d774ca1"
+      "shots": "7f4ee6082d774ca1",
+      "look": "c86039ea9923d044203d61f27e2f5b6afaf91634b232e33006269726a58c2b6b"
     },
     "Video": {
-      "shots": "d38351e57209fb68"
+      "shots": "d38351e57209fb68",
+      "look": "4ab2de94f81fd412ea7f61cd392dbeacdf2f96ff469b751c6eca4c2fc7552d48"
     }
   }
 }
