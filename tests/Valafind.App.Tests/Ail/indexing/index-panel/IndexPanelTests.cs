@@ -49,6 +49,8 @@ public sealed class IndexPanelTests(HeadlessFixture fixture)
         Assert.Contains("Indexing in the background", shown);
         Assert.Contains("CPU", shown);
         Assert.Contains("Disk", shown);
+        // Pictured now, while the panel shows: indexing 25 notes can be done before the counting below ends.
+        AppHarness.SaveScreen(app.LauncherWindow, "the-panel-shows-while-new-files-are-indexed.png");
 
         // And the row at the bottom counts the indexed files by type, growing as files are done
         var counts = new List<int> { DocumentsCount(shown)!.Value };
@@ -74,7 +76,6 @@ public sealed class IndexPanelTests(HeadlessFixture fixture)
         }
         Assert.All(counts, n => Assert.InRange(n, 1, 26));
 
-        AppHarness.SaveScreen(app.LauncherWindow, "the-panel-shows-while-new-files-are-indexed.png");
     });
 
     [Fact(DisplayName = "the panel gives way to \"Up to date\"")]

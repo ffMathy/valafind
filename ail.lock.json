@@ -100,11 +100,11 @@
       "spec": "f7a84ad2f279286cdc597f2a93244b706f807c18c58550d15e1869b03ad42653"
     },
     "DetailsPane": {
-      "hash": "f96920e1cde0c4fb2d0e6b7309df4101f3297f912fe13a2ef7010066abaf130c",
+      "hash": "669db99b8e53da338497124caf425a42757d23bf41ae573875c328b15d9564ca",
+      "spec": "3c81b44ac853ba53026b120bb4b83fa4a1571c6a65fae845cbf152fc6502c915",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "6535a22e560713eb01a02a38c8b60c1738ecebbbf03bec244c691689455820d1"
+      "adopted": true
     },
     "DocumentReading": {
       "hash": "17ae17e67a8ac7066003bc186c3a89c60970bef3a372ef1185780ac24d0c3284",
@@ -212,11 +212,11 @@
       "spec": "a041bf097ff38d200431ba5e3d993bae3fcd8474ad5dfa97742ff47c1cc82a48"
     },
     "Languages": {
-      "hash": "818e2fda7b5c087a104521e0c0a47a6e9b0df46a6339ef8b8a209225fd237bd6",
+      "hash": "c1c344ceeb3025d1830b8af7e54eae78590c31bd63648d3cc08eaf7594116b91",
+      "spec": "7172df0ec0ca98d5b065819ab93139bc7dbaed7002b5e164aee3ccec1221c1da",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "94b63e1fda9dd5d48405fd50ec939e7cf98458f22f5d11be2f0f7c327be0e600"
+      "adopted": true
     },
     "LauncherKeys": {
       "hash": "3aa289d4f2c2256ed6b8ed00f993b77ab48d06a5b9b17182d51dbe9904b27a89",
@@ -226,8 +226,8 @@
       "spec": "ad6b1b924ac8c91d820786861a568029714750fd9298d3674527f12d26c1aef7"
     },
     "LauncherLayout": {
-      "hash": "f4d3e7927dd6ff24df89b8c9dd42f5e1a3a0354af2f6241b166f8f59b50b922d",
-      "spec": "e23c5c7da8527271cc091f9315a0dd6a94aabc5f872862406487182e3f2cc865",
+      "hash": "ff0417e648a676b52620f8c6437b5a706bc9e3a483455c436c3d95db5f8ac1a5",
+      "spec": "9e80cac6de1b4e7a68606b9cab54113d42f18fe23dae7a61478cbb4f4c7e5b5f",
       "files": {},
       "by": "adopted",
       "adopted": true
@@ -436,11 +436,11 @@
       "spec": "7ecba1d0e7b65df9422f99487a43efbf6127942e8b5ce49cef6833e08ce112e8"
     },
     "SettingsWindow": {
-      "hash": "ea71379957a61da2edf70506d8337c2caf5ba97b6fb26a0e64336ae432bf9755",
+      "hash": "3d3a64f0cade75bc7993492a322c2e2f3bc20369fd916b422698aa237132d897",
+      "spec": "5291cf55cdf0a097d659b7427bfa8967d176c26ed90f2258f579c8425d0f7f5d",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "a795665b476fc40d817c488827f97e1cb330093a9c4bbc734763c97111898b20"
+      "adopted": true
     },
     "ShortcutRules": {
       "hash": "31b50e83be5ef49c7902784546d1d96157d968e574a4d86bd3d4ef29e4d60962",
@@ -527,11 +527,11 @@
       "spec": "e2052e9675b4e0dc0a45dbebad5c8d1b02baa28dbb105eda9d109bb31d3abdf4"
     },
     "TrayMenu": {
-      "hash": "6f7cafc5d98d99fbaf78caf583979a63b98169956016c5337a8dcf53b03ed66d",
+      "hash": "c4ad74ec649fc17ddd2bf883a8ff1ab665e3e451bc05de6852294e00a12e5ff5",
+      "spec": "57e0b0bf85f9fc69fc502eaca6387420df0121bb51fdb898c22d95bef88dfbf9",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "49cc781ac0f75e5557dc5eb0fb36e65f41810b8a1f048956eabd01b7b0cf9f2f"
+      "adopted": true
     },
     "UiFlavours": {
       "hash": "b3197bd9f06e30e330c420776b12ef69b32fa8b8508deecd848d21fc8df9fd7e",

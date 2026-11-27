@@ -8,9 +8,10 @@ node DetailsPane : view   level: experience
   why   Before opening a file the user wants to be sure it is the right one, without leaving the launcher.   <- SearchFiles
   what
     Scenario: a document in the pane
-      Given "scan_0042.txt", 266 bytes, in "~/Documents/Bolig", changed today at 20:30, is the chosen result with a match of 0.77
+      Given "scan_0042.txt", 266 bytes, in "~/Documents/Bolig", changed today at 20:30, is the chosen result, with a match such as 0.77
       Then the pane shows its icon, "scan_0042.txt" in bold, "~/Documents/Bolig", and "TXT · 266 B · Modified Today 20:30"
-      And "Match" with a bar filled to 77 % and "0.77"
+      And "Match" with a bar filled as far as its match, beside the match with two decimals (for 0.77, 77 % and "0.77";
+        the match itself is the model's, so it differs a little from run to run)
       And "Why it matched" over up to four lines of its excerpt, the explaining words highlighted
       And "Preview" over the start of the file's text, as it is in the file, on a grey panel that fills the rest of the height
       And at the bottom the buttons "Open", "Show in Files" and "Copy Path"
