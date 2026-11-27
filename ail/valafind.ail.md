@@ -31,6 +31,38 @@ target
   path.system  src/Valafind.App/Ail/Program.cs
   generated    src/Valafind.Core/Ail/**, src/Valafind.App/Ail/**
   tests        xUnit v3 on Microsoft.Testing.Platform; end-to-end checks are bun tests that drive the desktop with xdotool and read it with tesseract
+  checks.path  tests/Valafind.Core.Tests/Ail/{dir}/{name}Tests.cs
+  checks.run   dotnet test --project tests/Valafind.Core.Tests -- --filter-class "Valafind.Core.Tests.Ail.{name}Tests"
+  checks.path.view  tests/Valafind.App.Tests/Ail/{dir}/{name}Tests.cs
+  checks.run.view   VALAFIND_TEST_MODEL_DIR="${VALAFIND_TEST_MODEL_DIR:-$PWD/.model/embeddinggemma-2}" dotnet test --project tests/Valafind.App.Tests -- --filter-class "Valafind.App.Tests.Ail.{name}Tests"
+  checks.path.flow  tests/Valafind.App.Tests/Ail/{dir}/{name}Tests.cs
+  checks.run.flow   VALAFIND_TEST_MODEL_DIR="${VALAFIND_TEST_MODEL_DIR:-$PWD/.model/embeddinggemma-2}" dotnet test --project tests/Valafind.App.Tests -- --filter-class "Valafind.App.Tests.Ail.{name}Tests"
+  checks.harness  the views and flows are the existing app (Valafind.App, Avalonia), so their checks drive the real app on
+               Avalonia's headless platform, in tests/Valafind.App.Tests: a check is a public sealed class in the
+               file-scoped namespace Valafind.App.Tests.Ail, named after its file, marked
+               [Collection(HeadlessUiDefinition.Name)] (using Valafind.App.Tests.Headless) with a primary constructor
+               (HeadlessFixture fixture); each test `public Task Name() => AppHarness.RunAsync(fixture, async app => { ... },
+               new AppOptions { ... });` (await everything inside; the options are optional). AppOptions: Flavor (UiFlavor.Linux,
+               the default; UiFlavor.Windows; UiFlavor.Mac), Language (the system's, as a culture name such as "ar"),
+               WithoutModel (a build without the model, with an empty data folder). AppHarness runs the real app host, index,
+               model, search, launcher and settings window in a home folder and data folder of its own (no tray, window
+               manager or file manager; the global hotkey counts as registered): before or after await app.StartAsync()
+               (which opens the launcher), save files with app.SaveText(relative path, text, modified), SaveBytes,
+               SaveRandomBytes, SavePicture(path, Picture.RedCircle | Picture.BlueSquare | Picture.Word, word) in the format of
+               its extension, SaveFixture(name, path) (speech.wav and speech.mp3 read out a weather forecast),
+               SaveWithFfmpeg(path, arguments) ("fixture:x" and "home:x" name inputs), SaveDocument(path, format,
+               paragraphs) (docx, xlsx, pptx, odt, epub, rtf, pdf, eml, mbox, ipynb); AppHarness.Unique() gives a code
+               nothing else contains. Then await app.WaitUntilIndexedAsync() (status "Up to date"), app.SearchAsync(query),
+               or app.SearchUntilAsync(query, () => condition) to search again until the index has caught up;
+               app.PressAsync(Key.X, modifiers) presses a key in the launcher; app.SetPausedAsync(true) pauses indexing as
+               "Pause indexing" does; app.OpenSettingsAsync() opens and returns the settings window; app.ShowLauncher().
+               What there is to see: app.ResultNames (the listed file names, top first), app.Launcher (the launcher's view model: Results, SelectedResult,
+               SelectedIndex, Filters and SelectedFilter (each chip's SelectCommand picks it), TimeRanges and
+               SelectedTimeRange, ResultSummary, Content, Status (StateText, IsUpToDate, IsPaused…), ModelState),
+               app.LauncherWindow, app.SettingsWindow; AppHarness.Texts(window) lists every text it shows, in reading
+               order; AppHarness.Find<T>(window) its visible controls of a type; app.Opened the files and links it opened;
+               app.Home and app.Data the folders. Each test ends with AppHarness.SaveScreen(window, "<the file name it was
+               given>") on the window its scenario ends on.
 ```
 
 ## Glossary

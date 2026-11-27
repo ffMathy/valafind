@@ -2,11 +2,18 @@
 
 The one part of Valafind that is always on screen: an icon in the system tray (the menu bar on a Mac), with a menu.
 
+The system draws the icon and the menu, not Valafind, so they have no screen of their own to picture: what they show
+is under `what`, and the end-to-end check proves it on the desktop.
+
 ```ail
 node TrayMenu : flow   level: experience
   why   With no window of its own, Valafind needs a visible sign that it runs, a way to open it with the mouse, and a
         place to pause indexing, reach the settings and quit.   <- AppShell
   what
+    the menu is the platform's own, in this order: Open Valafind, a separator, Pause indexing, Settings…, Check for
+    updates…, a separator, Quit Valafind; both separators are thin, light grey lines across the menu; it is not
+    mirrored in Arabic or Urdu
+    the icon is Valafind's magnifier in a rounded blue square; on a Mac a template image that follows the menu bar
     Scenario: clicking the tray icon opens the launcher
       Given Valafind runs and its icon is in the tray
       When the user clicks the icon
@@ -56,11 +63,6 @@ node TrayMenu : flow   level: experience
     tray.updates     "Check for updates…"       "Restart to update" once an update is downloaded
     tray.quit        "Quit Valafind"
     tray.tooltip     "Valafind — {index state}"
-  look
-    menu        the platform's own menu, in this order: Open Valafind, a separator, Pause indexing, Settings…, Check for
-                updates…, a separator, Quit Valafind; both separators are thin, light grey lines across the menu; it is not
-                mirrored in Arabic or Urdu
-    icon        Valafind's magnifier in a rounded blue square; on a Mac a template image that follows the menu bar
   uses      ChangeSettings, AutoUpdate
   sources
     PR #1 (tray menu), PR #6 ("Check for updates…"), PR #16 (never pause for load), PR #30 ("Restart to update")

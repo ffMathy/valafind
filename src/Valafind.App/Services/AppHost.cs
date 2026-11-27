@@ -120,6 +120,18 @@ public sealed class AppHost : IAsyncDisposable
     /// <summary>The launcher view model (for tests and diagnostics).</summary>
     public LauncherViewModel Launcher => _launcherVm;
 
+    /// <summary>The launcher's window, once <see cref="Start"/> ran (for tests that look at it).</summary>
+    internal LauncherWindow? LauncherWindow => _launcher;
+
+    /// <summary>The settings window while it is open (for tests that look at it).</summary>
+    internal SettingsWindow? SettingsWindow => _settingsWindow;
+
+    /// <summary>The settings in use (for tests).</summary>
+    internal ValafindSettings Settings => _settings;
+
+    /// <summary>The latest registration of the global hotkey: its error, or null (for tests).</summary>
+    internal Task<string?> HotkeyRegistration => _hotkeyTask;
+
     /// <summary>True once <see cref="Start"/> ran (the UI is up).</summary>
     public bool IsStarted { get; private set; }
 

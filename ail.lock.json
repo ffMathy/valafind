@@ -590,5 +590,61 @@
       "spec": "44ba55dfcedded0661e15851f45ee42dd9bfb00f66dd9dba3550258918eda3c3"
     }
   },
-  "glue": {}
+  "glue": {},
+  "hand": {
+    "Audio": {
+      "shots": "a36f769b51c4a86d",
+      "look": "ccedc8cd211d9dbb479ca3ec8233e8da616b3365387934b170f30409894ad5f6"
+    },
+    "DetailsPane": {
+      "shots": "4507af5c0bebd62b"
+    },
+    "IndexPanel": {
+      "shots": "2f5bf57bb6476877",
+      "look": "1edcaae1885f604da75934b8bc03423ea6ee7e8fcf3655fd1643c117941301e8"
+    },
+    "LauncherLayout": {
+      "shots": "00fb318ca9d0d98b"
+    },
+    "LauncherMessages": {
+      "shots": "a8e280d5d3ce5002",
+      "look": "4d944bba8d1d9e5714aa934c1f076fc4d37316d7e195466c8936950dbb297f77"
+    },
+    "ModelSetup": {
+      "shots": "0a39980cee3a6a8b",
+      "look": "e57449faf16042c599c1f20de9dff619b279731965d2b1ff94749454d176d06f"
+    },
+    "NameOnly": {
+      "shots": "ec098ee66742baa3",
+      "look": "80ca36feb3139f16458cd7dac0c5c312bc0f985d6f0954c8ed321bad04802cf0"
+    },
+    "NarrowResults": {
+      "shots": "3e03f81817a9d529",
+      "look": "18317679ea0e071545d226db599f451fd24afb9c00bd218f0dd110872264a454"
+    },
+    "Pictures": {
+      "shots": "47a3987c5577b814",
+      "look": "7dd020048574bfb66f535276d647d9d87b885c4e11b83996351c331d5c296010"
+    },
+    "ResultRow": {
+      "shots": "a968a9e6d677e41a",
+      "look": "154954e19410be4ca9e7e162e942c56f140c8ee3f0facc254838fa6f8ea1273a"
+    },
+    "SettingsWindow": {
+      "shots": "83aba0d4e70082a4",
+      "look": "a76525981f601b4260af742bab89c135bf54d139ba72a949b72698050916c179"
+    },
+    "TextSniffing": {
+      "shots": "9e6c9f9936d358b8",
+      "look": "69749c3a0b619a1372ddc327510add1248a37e622d4a6fda7e23e0d24d43f275"
+    },
+    "UiFlavours": {
+      "shots": "7f4ee6082d774ca1",
+      "look": "c86039ea9923d044203d61f27e2f5b6afaf91634b232e33006269726a58c2b6b"
+    },
+    "Video": {
+      "shots": "d38351e57209fb68",
+      "look": "4ab2de94f81fd412ea7f61cd392dbeacdf2f96ff469b751c6eca4c2fc7552d48"
+    }
+  }
 }

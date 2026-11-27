@@ -80,8 +80,8 @@ jobs:
           path: .model
           key: embeddinggemma-2-q8-daa72c5
           enableCrossOsArchive: true
-      - name: Install ffmpeg (video decoding)
-        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: Install ffmpeg (video decoding) and ImageMagick (pictures for the UI checks)
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg imagemagick
       - name: Fetch model
         run: |
           if [ ! -f "$VALAFIND_TEST_MODEL_DIR/onnx/audio_encoder_quantized.onnx_data" ]; then
@@ -89,6 +89,14 @@ jobs:
           fi
       - name: Embedding tests
         run: dotnet test --project tests/Valafind.Core.Tests --configuration Release -- --filter-namespace "Valafind.Core.Tests.Embedding" --filter-namespace "Valafind.Core.Tests.EndToEnd"
+      # The AIL derived checks of the launcher, its views and the kinds of files run the real app headless, with the
+      # model: elsewhere they skip themselves, so here none may be skipped.
+      - name: UI checks (headless, with the model)
+        shell: bash
+        run: |
+          dotnet test --project tests/Valafind.App.Tests --configuration Release -- \
+            --filter-namespace "Valafind.App.Tests.Ail" | tee ui-checks.log
+          grep -Eq "skipped: 0" ui-checks.log
 
   publish:
     # One self-contained, single-file executable per platform with the EmbeddingGemma 2 model embedded, so a download

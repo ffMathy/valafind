@@ -1,0 +1,17 @@
+{
+  "node": "UiFlavours",
+  "shots": [
+    {
+      "test": "the Windows design",
+      "file": "01-the-windows-design.png"
+    },
+    {
+      "test": "the Mac design",
+      "file": "02-the-mac-design.png"
+    },
+    {
+      "test": "the Linux design",
+      "file": "03-the-linux-design.png"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "node": "IndexPanel",
+  "shots": [
+    {
+      "test": "the panel shows while new files are indexed",
+      "file": "01-the-panel-shows-while-new-files-are-indexed.png"
+    },
+    {
+      "test": "the panel gives way to \"Up to date\"",
+      "file": "02-the-panel-gives-way-to-up-to-date.png"
+    },
+    {
+      "test": "pausing shows in the panel",
+      "file": "03-pausing-shows-in-the-panel.png"
+    }
+  ]
+}
