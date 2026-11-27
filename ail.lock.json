@@ -614,11 +614,11 @@
     },
     "ModelSetup": {
       "shots": "0a39980cee3a6a8b",
-      "look": "e57449faf16042c599c1f20de9dff619b279731965d2b1ff94749454d176d06f"
+      "look": "b8c2660a3aa76abada7b39c89233d63f50cb61f4a17b0bfacce7b9220bb12b53"
     },
     "NameOnly": {
       "shots": "ec098ee66742baa3",
-      "look": "80ca36feb3139f16458cd7dac0c5c312bc0f985d6f0954c8ed321bad04802cf0"
+      "look": "900d96e47875e684738e8ef8aa894f54bbfdca1a670154992dad9c75656a08c8"
     },
     "NarrowResults": {
       "shots": "3e03f81817a9d529",
@@ -638,7 +638,7 @@
     },
     "TextSniffing": {
       "shots": "9e6c9f9936d358b8",
-      "look": "69749c3a0b619a1372ddc327510add1248a37e622d4a6fda7e23e0d24d43f275"
+      "look": "64dba6772695bad1c2e6103335aabec4e62e398657c6c1795a48837c35f85342"
     },
     "UiFlavours": {
       "shots": "7f4ee6082d774ca1",
