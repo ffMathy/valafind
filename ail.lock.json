@@ -597,7 +597,8 @@
       "look": "ccedc8cd211d9dbb479ca3ec8233e8da616b3365387934b170f30409894ad5f6"
     },
     "DetailsPane": {
-      "shots": "d76b137f340a14a3"
+      "shots": "d76b137f340a14a3",
+      "look": "0dbfe0170f3bc22c39d74219b8cc15dae8a59916e13409e5c85ca81da9c6718e"
     },
     "IndexPanel": {
       "shots": "2f5bf57bb6476877",
@@ -621,7 +622,7 @@
     },
     "NarrowResults": {
       "shots": "3e03f81817a9d529",
-      "look": "18317679ea0e071545d226db599f451fd24afb9c00bd218f0dd110872264a454"
+      "look": "9574987e85a1b2e284618101546225426c640dfc4c87d8fc9f7e17a2fbbf7f5c"
     },
     "Pictures": {
       "shots": "47a3987c5577b814",
