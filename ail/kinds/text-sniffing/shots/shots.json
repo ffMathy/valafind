@@ -1,0 +1,17 @@
+{
+  "node": "TextSniffing",
+  "shots": [
+    {
+      "test": "a text file without an extension is read",
+      "file": "01-a-text-file-without-an-extension-is-read.png"
+    },
+    {
+      "test": "a UTF-16 text file without a byte order mark is read",
+      "file": "02-a-utf-16-text-file-without-a-byte-order-mark-is-read.png"
+    },
+    {
+      "test": "a binary file with an unknown extension is not indexed",
+      "file": "03-a-binary-file-with-an-unknown-extension-is-not-indexed.png"
+    }
+  ]
+}

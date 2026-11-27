@@ -1,0 +1,21 @@
+{
+  "node": "Pictures",
+  "shots": [
+    {
+      "test": "a picture is found by what it shows",
+      "file": "01-a-picture-is-found-by-what-it-shows.png"
+    },
+    {
+      "test": "a picture is found by the words written in it",
+      "file": "02-a-picture-is-found-by-the-words-written-in-it.png"
+    },
+    {
+      "test": "PNG, JPEG, GIF, BMP and WebP pictures are all read",
+      "file": "03-png-jpeg-gif-bmp-and-webp-pictures-are-all-read.png"
+    },
+    {
+      "test": "a TIFF picture is found by its name only, except on a Mac",
+      "file": "04-a-tiff-picture-is-found-by-its-name-only-except-on-a-mac.png"
+    }
+  ]
+}

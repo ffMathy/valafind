@@ -1,0 +1,17 @@
+{
+  "node": "LauncherMessages",
+  "shots": [
+    {
+      "test": "the hint",
+      "file": "01-the-hint.png"
+    },
+    {
+      "test": "nothing matched",
+      "file": "02-nothing-matched.png"
+    },
+    {
+      "test": "a search on the way from the hint",
+      "file": "03-a-search-on-the-way-from-the-hint.png"
+    }
+  ]
+}

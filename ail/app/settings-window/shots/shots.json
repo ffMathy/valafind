@@ -1,0 +1,9 @@
+{
+  "node": "SettingsWindow",
+  "shots": [
+    {
+      "test": "the settings window shows every setting with its current value",
+      "file": "01-the-settings-window-shows-every-setting-with-its-current-val.png"
+    }
+  ]
+}

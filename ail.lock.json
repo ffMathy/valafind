@@ -590,5 +590,43 @@
       "spec": "44ba55dfcedded0661e15851f45ee42dd9bfb00f66dd9dba3550258918eda3c3"
     }
   },
-  "glue": {}
+  "glue": {},
+  "hand": {
+    "IndexPanel": {
+      "shots": "2f5bf57bb6476877",
+      "look": "1edcaae1885f604da75934b8bc03423ea6ee7e8fcf3655fd1643c117941301e8"
+    },
+    "LauncherMessages": {
+      "shots": "a8e280d5d3ce5002",
+      "look": "4604dd932c5d07d21539f191013ba3c52a38fb4e14539b310ebf6617479ea285"
+    },
+    "ModelSetup": {
+      "shots": "0a39980cee3a6a8b",
+      "look": "f6ef7d943daf8dda9405b95df214175b1e6bd5438de5f6e41ecb751be22d21bf"
+    },
+    "NameOnly": {
+      "shots": "ec098ee66742baa3",
+      "look": "4c593bf4c23bce4172b918639dd05c2e73291d3b488c1dea2c36d2b6ea741bbd"
+    },
+    "NarrowResults": {
+      "shots": "3e03f81817a9d529",
+      "look": "fd294f3bff48b5f0688f88fd2967631b2f6e58dc83d58ca2e9684c95333bce11"
+    },
+    "Pictures": {
+      "shots": "47a3987c5577b814",
+      "look": "b5946b62e75c9c24b7c2e63127c814d4df9434ae223100d57ac30d0e5b2a787d"
+    },
+    "ResultRow": {
+      "shots": "a968a9e6d677e41a",
+      "look": "1953b930c689206525bc6313f481fdacb5fb0be71858cd8c124a2e5a594d8be9"
+    },
+    "SettingsWindow": {
+      "shots": "83aba0d4e70082a4",
+      "look": "a76525981f601b4260af742bab89c135bf54d139ba72a949b72698050916c179"
+    },
+    "TextSniffing": {
+      "shots": "9e6c9f9936d358b8",
+      "look": "d98bd7c6b89181d2386905c865ae072ee85bb7beb7aef6afa6363b4c036c1e76"
+    }
+  }
 }

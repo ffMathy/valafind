@@ -1,0 +1,21 @@
+{
+  "node": "ResultRow",
+  "shots": [
+    {
+      "test": "a document's row",
+      "file": "01-a-document-s-row.png"
+    },
+    {
+      "test": "the dates",
+      "file": "02-the-dates.png"
+    },
+    {
+      "test": "the chosen row",
+      "file": "03-the-chosen-row.png"
+    },
+    {
+      "test": "a picture's row",
+      "file": "04-a-picture-s-row.png"
+    }
+  ]
+}

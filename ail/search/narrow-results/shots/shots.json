@@ -1,0 +1,21 @@
+{
+  "node": "NarrowResults",
+  "shots": [
+    {
+      "test": "a kind chip keeps only files of that kind",
+      "file": "01-a-kind-chip-keeps-only-files-of-that-kind.png"
+    },
+    {
+      "test": "a kind with no files shows No matching files",
+      "file": "02-a-kind-with-no-files-shows-no-matching-files.png"
+    },
+    {
+      "test": "the time menu keeps only recent files",
+      "file": "03-the-time-menu-keeps-only-recent-files.png"
+    },
+    {
+      "test": "the filters are kept until the user changes them",
+      "file": "04-the-filters-are-kept-until-the-user-changes-them.png"
+    }
+  ]
+}
