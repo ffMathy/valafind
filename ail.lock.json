@@ -594,7 +594,7 @@
   "hand": {
     "Audio": {
       "shots": "a36f769b51c4a86d",
-      "look": "ccedc8cd211d9dbb479ca3ec8233e8da616b3365387934b170f30409894ad5f6"
+      "look": "d7a33081c43853d3af60d4675de75463c1e71b446200165808f9625daeefe0da"
     },
     "DetailsPane": {
       "shots": "d76b137f340a14a3",
@@ -602,7 +602,7 @@
     },
     "IndexPanel": {
       "shots": "2f5bf57bb6476877",
-      "look": "1edcaae1885f604da75934b8bc03423ea6ee7e8fcf3655fd1643c117941301e8"
+      "look": "911e5f7d4217fe4cc3140bf17c96cc79a268cb4469eb2ed3ff92b94370207de3"
     },
     "LauncherLayout": {
       "shots": "5a5497480a73cc5c",
@@ -626,7 +626,7 @@
     },
     "Pictures": {
       "shots": "47a3987c5577b814",
-      "look": "7dd020048574bfb66f535276d647d9d87b885c4e11b83996351c331d5c296010"
+      "look": "db3839e78ff3c5dda75745eebc31e906a341775212f2d2d53c1f2bb37e38d6b9"
     },
     "ResultRow": {
       "shots": "a968a9e6d677e41a",
@@ -646,7 +646,7 @@
     },
     "Video": {
       "shots": "d38351e57209fb68",
-      "look": "4ab2de94f81fd412ea7f61cd392dbeacdf2f96ff469b751c6eca4c2fc7552d48"
+      "look": "564902a3a141b1dbe96eb2ab9f7e227a9bcc7fe437478d26ab61fc2ea49935ec"
     }
   }
 }
