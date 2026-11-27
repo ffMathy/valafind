@@ -107,7 +107,9 @@ The Store API can only update an app whose first submission exists, so make that
    `runFullTrust` restricted capability: "Valafind is a desktop app (packaged Win32/.NET) and needs full trust to index the user's files in the background, register its global hotkey and open files in their apps."
 3. **Submit to the Store**.
 4. When it is published, delete `STORE_DRAFT_ONLY` (or set it to `false`). With the API secrets, every later release is
-   submitted and published without you; without them, upload the releases you want from their **microsoft-store**
+   submitted and published without you, with its GitHub release notes as the Store's "What's new in this version"
+   (in every listing language; `packaging/store/release_notes.py` turns GitHub's list of changes into the
+   plain text of at most 1,500 characters the Store takes); without them, upload the releases you want from their **microsoft-store**
    artifacts the same way (you don't have to upload every one).
 
 ### The Store listing
@@ -181,7 +183,7 @@ provisioning profile is per app.
    2560×1600 or 2880×1800). In **App Review Information**, explain what the app does and which permissions it asks for
    (it indexes only the folders the user picks, entirely on the Mac, and makes no network connections).
 3. Select the uploaded build and **Add for Review**. After the first approval, set `STORE_DRAFT_ONLY` to `false`: every
-   later release is uploaded, given release notes that link to its GitHub release, submitted, and released when approved.
+   later release is uploaded, given its GitHub release notes, submitted, and released when approved.
 
 ## Charging for the app
 
