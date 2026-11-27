@@ -36,7 +36,7 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
         await app.WaitUntilIndexedAsync();
         var window = app.LauncherWindow;
 
-        await Until(() => Texts(window).Contains(HintTitle) && Joined(Texts(window)).Contains("✓ Up to date"),
+        await Until(() => Texts(window).Contains(HintTitle) && Texts(window).Contains("Up to date"),
             "the launcher at rest to show the hint and the quiet up-to-date footer");
 
         var texts = Texts(window);
@@ -60,11 +60,11 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
         Assert.True(anyTime > previous, "\"Any time\" is at the right of the chips");
         Assert.Same(Chip(app.Launcher.Filters, "All"), app.Launcher.SelectedFilter);
 
-        var joined = Joined(texts);
-        var upToDate = joined.IndexOf("✓ Up to date", StringComparison.Ordinal);
-        var keys = joined.IndexOf(FooterKeys, StringComparison.Ordinal);
-        Assert.True(upToDate >= 0, "the footer reads \"✓ Up to date\"");
-        Assert.True(keys > upToDate, "the key hints are at the right of \"Up to date\"");
+        // A green tick and "Up to date" at the left; the key hints at the right.
+        Assert.Contains("Up to date", texts);
+        Assert.Contains(FooterKeys, Joined(texts));
+        var upToDate = LeftOf(window, "Up to date");
+        Assert.True(LeftOf(window, "↑↓ navigate") > upToDate, "the key hints are at the right of \"Up to date\"");
 
         AppHarness.SaveScreen(window, "the-launcher-at-rest.png");
     });
@@ -137,12 +137,12 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
         Assert.True(NoticeIndex(Texts(window)) >= 0, "the notice is shown");
 
         await app.WaitUntilIndexedAsync();
-        await Until(() => NoticeIndex(Texts(window)) < 0 && Joined(Texts(window)).Contains("✓ Up to date"),
+        await Until(() => NoticeIndex(Texts(window)) < 0 && Texts(window).Contains("Up to date"),
             "the notice to go once indexing finishes");
 
         var texts = Texts(window);
         Assert.True(NoticeIndex(texts) < 0, "the notice is gone");
-        Assert.Contains("✓ Up to date", Joined(texts));
+        Assert.Contains("Up to date", texts);
 
         AppHarness.SaveScreen(window, "the-notice-goes-once-every-file-is-searchable.png");
     });
@@ -160,7 +160,7 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
 
         await app.SearchAsync("orchard");
         await Until(() => app.Launcher.Status.IsPaused && Texts(window).Contains(app.Launcher.Status.StateText),
-            "the paused banner to show");
+            "the paused banner to show", window);
 
         Assert.True(app.Launcher.Status.IsPaused);
         Assert.False(app.Launcher.Status.IsUpToDate);
@@ -268,13 +268,23 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
         }
     }
 
-    private static async Task Until(Func<bool> condition, string what, int seconds = 120)
+    // Where the text starts, from the window's left edge.
+    private static double LeftOf(Window window, string text)
+    {
+        var block = AppHarness.Find<TextBlock>(window)
+            .FirstOrDefault(t => t.IsEffectivelyVisible && (t.Text ?? t.Inlines?.Text ?? "").Trim() == text)
+            ?? throw new InvalidOperationException($"No text shows \"{text}\"");
+        return Avalonia.VisualExtensions.TranslatePoint(block, new Avalonia.Point(0, 0), window)?.X
+            ?? throw new InvalidOperationException($"\"{text}\" is not laid out");
+    }
+
+    private static async Task Until(Func<bool> condition, string what, Window? window = null, int seconds = 120)
     {
         var deadline = DateTime.UtcNow.AddSeconds(seconds);
         while (!condition())
         {
             if (DateTime.UtcNow > deadline)
-                Assert.Fail($"Timed out waiting for {what}.");
+                Assert.Fail($"Timed out waiting for {what}." + (window is null ? "" : $" It shows: {string.Join(" | ", Texts(window))}"));
             await Task.Delay(50);
         }
     }

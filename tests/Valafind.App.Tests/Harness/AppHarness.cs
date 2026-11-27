@@ -171,7 +171,8 @@ public sealed class AppHarness : IAsyncDisposable
     }
 
     /// <summary>
-    /// Types <paramref name="query"/> into the launcher's search box and waits for its results. Files saved shortly
+    /// Types <paramref name="query"/> into the launcher's search box and waits for its results (for a blank query, until
+    /// the results are cleared). Files saved shortly
     /// before may not be indexed yet: use <see cref="SearchUntilAsync"/> to search again until they are.
     /// </summary>
     public async Task SearchAsync(string query)
@@ -179,7 +180,11 @@ public sealed class AppHarness : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(query);
         ShowLauncher();
         Launcher.Query = query;
-        await WaitUntilAsync(() => Launcher.LastQuery == query.Trim() && !Launcher.IsSearching, "the search answered").ConfigureAwait(true);
+        // A blank question runs no search: the results are cleared instead.
+        if (string.IsNullOrWhiteSpace(query))
+            await WaitUntilAsync(() => !Launcher.IsSearching && Launcher.Results.Count == 0, "the results cleared").ConfigureAwait(true);
+        else
+            await WaitUntilAsync(() => Launcher.LastQuery == query.Trim() && !Launcher.IsSearching, "the search answered").ConfigureAwait(true);
         await SettleAsync().ConfigureAwait(true);
     }
 
