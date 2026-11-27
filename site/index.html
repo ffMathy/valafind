@@ -34,6 +34,10 @@
         <a class="button" href="https://github.com/ffMathy/valafind">Source on GitHub</a>
       </div>
       <p class="fineprint" id="download-note">Free and open source · Windows, macOS and Linux · runs entirely on your computer</p>
+      <div id="store" hidden>
+        <p class="store"><a href="https://apps.microsoft.com/detail/9P4FF64XJHD1?mode=direct"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Get it from Microsoft"></a></p>
+        <p class="fineprint"><strong>Free</strong> from GitHub. The Microsoft Store copy is paid and keeps itself up to date: buying it supports the project.</p>
+      </div>
     </section>
 
     <section class="platforms" aria-label="Valafind on each desktop">
@@ -139,6 +143,8 @@
       var ua = navigator.userAgent || "";
       var os = /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Win/i.test(ua) ? "windows" : /Linux|X11/i.test(ua) ? "linux" : null;
       var names = { windows: "Windows", mac: "macOS", linux: "Linux" };
+      // The Microsoft Store copy only runs on Windows.
+      document.getElementById("store").hidden = os !== "windows";
 
       function show(target) {
         document.querySelectorAll(".tabs [role=tab]").forEach(function (tab) {
