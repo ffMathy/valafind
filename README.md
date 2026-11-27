@@ -4,6 +4,9 @@
 
 <p align="center"><img src="docs/screenshots/cover@2x.png" alt="Valafind: find files by what they mean, not what they're called. Semantic search for documents, photos, audio and video that runs entirely on your computer, shown next to its launcher answering a question"></p>
 
+<p align="center"><a href="https://apps.microsoft.com/detail/9P4FF64XJHD1?mode=direct"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Get it from Microsoft"></a></p>
+<p align="center"><b>Free</b> from <a href="https://github.com/ffMathy/valafind/releases/latest">GitHub</a>. The Microsoft Store copy is paid: buying it supports the project.</p>
+
 **Find files by what they mean.** Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>, ask in your own words, and get the
 file, even when it is written in another language and named `scan_0042.pdf`. It works for **documents, photos, audio and
 video**: *"where did we negotiate the deposit?"* finds the e-mail and the lease, *"a red car in the snow"* finds the
@@ -73,7 +76,10 @@ decided, and the code is compiled from it. To change what Valafind does, change 
 
 ## Get it
 
-Download the file for your platform from the [latest release](https://github.com/ffMathy/valafind/releases/latest). It is
+Valafind is **free**: download the file for your platform from the
+[latest release](https://github.com/ffMathy/valafind/releases/latest). On Windows it is also in the
+[Microsoft Store](https://apps.microsoft.com/detail/9P4FF64XJHD1?mode=direct), where it costs a little and keeps itself
+up to date; buying it there is a way to support the project. The release file is
 a single executable with the model inside. Every merge to `main` publishes a new release, once CI has started each
 of its files on its own platform and seen the app come up (`tools/smoke-test-release.sh`).
 
