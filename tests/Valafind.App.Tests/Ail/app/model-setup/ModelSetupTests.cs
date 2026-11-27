@@ -63,9 +63,10 @@ public sealed class ModelSetupTests(HeadlessFixture fixture)
     [Fact(DisplayName = "the model is noticed without a restart")]
     public Task TheModelIsNoticedWithoutARestart() => AppHarness.RunAsync(fixture, async app =>
     {
-        var source = Environment.GetEnvironmentVariable("VALAFIND_TEST_MODEL_DIR");
-        Assert.False(string.IsNullOrWhiteSpace(source), "VALAFIND_TEST_MODEL_DIR is not set");
-        Assert.True(Directory.Exists(source), $"the test model folder {source} does not exist");
+        // The model to put in place, as every check that needs the model finds it.
+        var source = AppHarness.ModelDirectory;
+        if (source is null)
+            Assert.Skip("Needs the model: set VALAFIND_TEST_MODEL_DIR, or run tools/fetch-model.sh .model/embeddinggemma-2.");
 
         await app.StartAsync();
         var window = app.LauncherWindow!;
