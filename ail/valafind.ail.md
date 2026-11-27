@@ -37,7 +37,7 @@ target
   checks.run.view   VALAFIND_TEST_MODEL_DIR="${VALAFIND_TEST_MODEL_DIR:-$PWD/.model/embeddinggemma-2}" dotnet test --project tests/Valafind.App.Tests -- --filter-class "Valafind.App.Tests.Ail.{name}Tests"
   checks.path.flow  tests/Valafind.App.Tests/Ail/{dir}/{name}Tests.cs
   checks.run.flow   VALAFIND_TEST_MODEL_DIR="${VALAFIND_TEST_MODEL_DIR:-$PWD/.model/embeddinggemma-2}" dotnet test --project tests/Valafind.App.Tests -- --filter-class "Valafind.App.Tests.Ail.{name}Tests"
-  ui harness   the views and flows are the existing app (Valafind.App, Avalonia), so their checks drive the real app on
+  checks.harness  the views and flows are the existing app (Valafind.App, Avalonia), so their checks drive the real app on
                Avalonia's headless platform, in tests/Valafind.App.Tests: a check is a public sealed class in the
                file-scoped namespace Valafind.App.Tests.Ail, named after its file, marked
                [Collection(HeadlessUiDefinition.Name)] (using Valafind.App.Tests.Headless) with a primary constructor
