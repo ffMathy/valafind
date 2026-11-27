@@ -226,8 +226,8 @@
       "spec": "ad6b1b924ac8c91d820786861a568029714750fd9298d3674527f12d26c1aef7"
     },
     "LauncherLayout": {
-      "hash": "ff0417e648a676b52620f8c6437b5a706bc9e3a483455c436c3d95db5f8ac1a5",
-      "spec": "9e80cac6de1b4e7a68606b9cab54113d42f18fe23dae7a61478cbb4f4c7e5b5f",
+      "hash": "bb6346567343391ab21cac3ad23196ba79dc441c9e97712814fb4b00c5633c62",
+      "spec": "4abffe060a5db6a570ffb5b2f9621429a13a118a18232e61a5efe5f366109c5d",
       "files": {},
       "by": "adopted",
       "adopted": true
@@ -394,11 +394,11 @@
       "spec": "42ae328698f7d4eeab83435dea585fae41bc0d55057b012cd548875ab35b8343"
     },
     "ResultRow": {
-      "hash": "6b42041b5441bb14d7302a382f7d274ae56f9cbc011217138346891c2534c6a3",
+      "hash": "28e68a97b029b09917e3786d5babec74b80a08bac78af289817667b9522ea96f",
+      "spec": "19b7ea05e8e602dca28fd538cdeb14f7170643d196b68c1e107cd33d81ba440c",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "680be1d1d8447071b5bffbf3495086e30e1e6d4a75888cb61bdbd0a3713f3462"
+      "adopted": true
     },
     "RunScheduler": {
       "hash": "3fa1b0fa1fcf681a7594c4258dbaac311f57491182b5d26e4fdb9670aa2c3a06",
