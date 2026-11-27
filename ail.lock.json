@@ -594,43 +594,47 @@
   "hand": {
     "Audio": {
       "shots": "a36f769b51c4a86d",
-      "look": "d7a33081c43853d3af60d4675de75463c1e71b446200165808f9625daeefe0da"
+      "look": "a3e946b06dfe2ffeb6fd011c572516eb931a2ca8d9a39d9f0046b42c5ef1f3b4"
     },
     "DetailsPane": {
       "shots": "d76b137f340a14a3",
-      "look": "0dbfe0170f3bc22c39d74219b8cc15dae8a59916e13409e5c85ca81da9c6718e"
+      "look": "9df5a9a43604bc273bd515cea28d1d3fb01703a4eab02fcfa16b07e9511a7e17"
     },
     "IndexPanel": {
       "shots": "2f5bf57bb6476877",
-      "look": "911e5f7d4217fe4cc3140bf17c96cc79a268cb4469eb2ed3ff92b94370207de3"
+      "look": "2c11b69b579d1e0877bedd605f8e21bfef4b2dec09aefa66cb60d679244fcc21"
+    },
+    "Languages": {
+      "shots": "2e9621cd94ac9311",
+      "look": "dfc18b7a6cccdc7b8be4cfdb9dbc43190a26deb1b7ee89733755657e4a5781d5"
     },
     "LauncherLayout": {
-      "shots": "5a5497480a73cc5c",
-      "look": "e58f1a344b7f9a91083124cdcd83f21a0d714ee0f61d1f830ce9042eff74e545"
+      "shots": "bf066247093bdbcc",
+      "look": "8435b78c0147b4b6334c512d9508c84682d1e9776e50b1b9c0206e3372652e8c"
     },
     "LauncherMessages": {
       "shots": "a8e280d5d3ce5002",
-      "look": "cb4722b638e97f6811bafb1d65da0c387c01d4b584b9aafbd969d0a46de77f2f"
+      "look": "3b48651e5ab1866f18e31634bfd298102215527b1ce154017df1281d39f693aa"
     },
     "ModelSetup": {
       "shots": "0a39980cee3a6a8b",
-      "look": "b8c2660a3aa76abada7b39c89233d63f50cb61f4a17b0bfacce7b9220bb12b53"
+      "look": "519231c9db8a769d8855bbbee2386dfd22adc78109190152e728f1babdd7605b"
     },
     "NameOnly": {
       "shots": "ec098ee66742baa3",
-      "look": "900d96e47875e684738e8ef8aa894f54bbfdca1a670154992dad9c75656a08c8"
+      "look": "f7d4afb79bd81a7682f934e019ad196987878da5defc74a06598e380052742e3"
     },
     "NarrowResults": {
       "shots": "3e03f81817a9d529",
-      "look": "9574987e85a1b2e284618101546225426c640dfc4c87d8fc9f7e17a2fbbf7f5c"
+      "look": "b2ced5e581c71eace652b02642e96ef2a00ccdf06e6fc409d2128c898a8af68d"
     },
     "Pictures": {
       "shots": "47a3987c5577b814",
-      "look": "db3839e78ff3c5dda75745eebc31e906a341775212f2d2d53c1f2bb37e38d6b9"
+      "look": "288ce086a784c4d04a2481910df45c09dddb7696556e3687023ef6cea5fecae6"
     },
     "ResultRow": {
-      "shots": "a968a9e6d677e41a",
-      "look": "154954e19410be4ca9e7e162e942c56f140c8ee3f0facc254838fa6f8ea1273a"
+      "shots": "41d01da04459338d",
+      "look": "bdcb3d6b36eed06a9baac5da8a4f290a323157be98bd29dc97260c1b6d397861"
     },
     "SettingsWindow": {
       "shots": "f3c4a441129a85ca",
@@ -638,7 +642,7 @@
     },
     "TextSniffing": {
       "shots": "9e6c9f9936d358b8",
-      "look": "64dba6772695bad1c2e6103335aabec4e62e398657c6c1795a48837c35f85342"
+      "look": "4d81871130e13f6b145ee3d8f565e3f53cc19e93d5e7922183ad7110e87b8465"
     },
     "UiFlavours": {
       "shots": "7f4ee6082d774ca1",
@@ -646,7 +650,7 @@
     },
     "Video": {
       "shots": "d38351e57209fb68",
-      "look": "564902a3a141b1dbe96eb2ab9f7e227a9bcc7fe437478d26ab61fc2ea49935ec"
+      "look": "fbaf53f91a9303af5e58828e6f6a106b45d1575393c6daf5681a20083a08ad89"
     }
   }
 }

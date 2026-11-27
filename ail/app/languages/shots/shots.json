@@ -1,0 +1,17 @@
+{
+  "node": "Languages",
+  "shots": [
+    {
+      "test": "Arabic reads from right to left",
+      "file": "01-arabic-reads-from-right-to-left.png"
+    },
+    {
+      "test": "a language picked in the settings waits for the next start",
+      "file": "02-a-language-picked-in-the-settings-waits-for-the-next-start.png"
+    },
+    {
+      "test": "a parent language stands in for the system's own",
+      "file": "03-a-parent-language-stands-in-for-the-system-s-own.png"
+    }
+  ]
+}
