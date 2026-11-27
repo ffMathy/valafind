@@ -282,14 +282,15 @@ public sealed class AppHarness : IAsyncDisposable
     }
 
     /// <summary>
-    /// Runs ffmpeg with <paramref name="arguments"/>, writing to <paramref name="relativePath"/> in the home folder. An
-    /// argument "fixture:x" names a test fixture, "home:x" a file in the home folder.
+    /// Runs ffmpeg with <paramref name="arguments"/>, writing to <paramref name="relativePath"/> in the home folder. The
+    /// arguments may be written as on a command line, several in one string split at spaces. An argument "fixture:x"
+    /// names a test fixture, "home:x" a file in the home folder.
     /// </summary>
     public string SaveWithFfmpeg(string relativePath, params string[] arguments)
     {
         ArgumentNullException.ThrowIfNull(arguments);
         var path = HomePath(relativePath);
-        var resolved = arguments.Select(argument => argument.StartsWith("fixture:", StringComparison.Ordinal)
+        var resolved = arguments.SelectMany(part => part.Split(' ', StringSplitOptions.RemoveEmptyEntries)).Select(argument => argument.StartsWith("fixture:", StringComparison.Ordinal)
             ? Path.Combine(Fixtures, argument[8..])
             : argument.StartsWith("home:", StringComparison.Ordinal) ? Path.Combine(Home, argument[5..]) : argument);
         Run("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", .. resolved, path]);

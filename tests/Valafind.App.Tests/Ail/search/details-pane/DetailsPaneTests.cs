@@ -65,9 +65,9 @@ public sealed class DetailsPaneTests(HeadlessFixture fixture)
         var scoreText = texts.Skip(matchIndex + 1).FirstOrDefault(t => Regex.IsMatch(t, @"^[01]\.\d\d$"));
         Assert.NotNull(scoreText);
         var score = double.Parse(scoreText, System.Globalization.CultureInfo.InvariantCulture);
-        var bar = Visible(pane).OfType<ProgressBar>().SingleOrDefault();
+        var bar = Visible(pane).OfType<Valafind.App.Controls.MeterBar>().SingleOrDefault();
         Assert.NotNull(bar);
-        var fraction = (bar.Value - bar.Minimum) / (bar.Maximum - bar.Minimum);
+        var fraction = bar.Value;
         Assert.InRange(fraction, score - 0.01, score + 0.01);
 
         // "Why it matched" over at most four lines of the excerpt, with highlights.

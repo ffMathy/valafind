@@ -30,9 +30,34 @@ public sealed class UiFlavoursTests(HeadlessFixture fixture)
     private static int IndexOfExact(List<string> texts, string text) =>
         texts.FindIndex(t => string.Equals(t, text, StringComparison.Ordinal));
 
+    // A key hint shows its keys and its word in one text, as "↑↓ navigate": find the text that ends in the word.
+    private static int IndexOfHint(List<string> texts, string text) =>
+        IndexOfExact(texts, text) is var exact and >= 0
+            ? exact
+            : texts.FindIndex(t => t.EndsWith(" " + text, StringComparison.Ordinal));
+
+    // Where the text that shows this word starts, from the window's left edge.
+    private static double LeftOf(Avalonia.Controls.Window window, string text)
+    {
+        var block = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window)
+            .Where(v => v.IsEffectivelyVisible && OwnText(v)?.Trim() is { } shown
+                && (shown == text || shown.EndsWith(" " + text, StringComparison.Ordinal)))
+            .FirstOrDefault() ?? throw new InvalidOperationException($"No text shows \"{text}\"");
+        return Avalonia.VisualExtensions.TranslatePoint(block, new Avalonia.Point(0, 0), window)?.X
+            ?? throw new InvalidOperationException($"\"{text}\" is not laid out");
+    }
+
+    private static string? OwnText(Avalonia.Visual visual) => visual switch
+    {
+        Avalonia.Controls.TextBlock block => block.Text
+            ?? string.Concat(block.Inlines?.OfType<Avalonia.Controls.Documents.Run>().Select(run => run.Text) ?? []),
+        Avalonia.Controls.Presenters.TextPresenter presenter => presenter.Text,
+        _ => null,
+    };
+
     private static void AssertShows(List<string> texts, string text) =>
         Assert.True(
-            IndexOfExact(texts, text) >= 0,
+            IndexOfHint(texts, text) >= 0,
             $"Expected the launcher to show \"{text}\". It shows: {string.Join(" | ", texts)}");
 
     [Fact(DisplayName = "the Windows design")]
@@ -77,12 +102,12 @@ public sealed class UiFlavoursTests(HeadlessFixture fixture)
             $"Expected \"⌃⌥Space\" in the welcome and in the foot. It shows: {string.Join(" | ", texts)}");
 
         AssertShows(texts, "Up to date");
-        var upToDate = IndexOfExact(texts, "Up to date");
+        var upToDate = LeftOf(app.LauncherWindow, "Up to date");
         foreach (var key in new[] { "Navigate", "Open", "Reveal" })
         {
             AssertShows(texts, key);
             Assert.True(
-                IndexOfExact(texts, key) > upToDate,
+                LeftOf(app.LauncherWindow, key) > upToDate,
                 $"\"{key}\" should sit on the other side of \"Up to date\" in the foot");
         }
 
