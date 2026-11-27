@@ -56,8 +56,8 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
             Assert.True(at > previous, $"the chip \"{chip}\" follows in the chips row");
             previous = at;
         }
-        var anyTime = IndexAfter(texts, "Any time", previous);
-        Assert.True(anyTime > previous, "\"Any time\" is at the right of the chips");
+        Assert.Contains("Any time", texts);
+        Assert.True(LeftOf(window, "Any time") > LeftOf(window, ChipNames[^1]), "\"Any time\" is at the right of the chips");
         Assert.Same(Chip(app.Launcher.Filters, "All"), app.Launcher.SelectedFilter);
 
         // A green tick and "Up to date" at the left; the key hints at the right.
