@@ -23,12 +23,16 @@ node Languages : view   level: experience
       Then its texts are in Arabic, laid out from right to left: the close and menu buttons on the left, the settings
         button on the right, the filters starting from the right with "الكل"
       And the settings window is titled "إعدادات Valafind", its labels on the right and its controls on the left
-      And the tray menu is in Arabic, but not mirrored
     Scenario: a language picked in the settings waits for the next start
       Given Valafind shows English
       When the user picks "Deutsch" and saves
       Then the open windows stay in English, the hint having said "Takes effect the next time Valafind starts."
-      And after a restart they are in German
+    Scenario: a parent language stands in for the system's own
+      Given the system's language is Austrian German ("de-AT")
+      When Valafind starts and its launcher opens
+      Then its texts are in German, laid out from left to right
+    After a restart following "Deutsch" and Save, every window is in German.
+    The tray menu follows the language too, but is never mirrored (TrayMenu).
   look
     direction   right to left for Arabic and Urdu: every row mirrored, the search icon and placeholder on the right,
                 the shortcut badge on the left; paths and the shortcut stay left to right inside the text

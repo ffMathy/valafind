@@ -100,11 +100,11 @@
       "spec": "f7a84ad2f279286cdc597f2a93244b706f807c18c58550d15e1869b03ad42653"
     },
     "DetailsPane": {
-      "hash": "f96920e1cde0c4fb2d0e6b7309df4101f3297f912fe13a2ef7010066abaf130c",
+      "hash": "669db99b8e53da338497124caf425a42757d23bf41ae573875c328b15d9564ca",
+      "spec": "3c81b44ac853ba53026b120bb4b83fa4a1571c6a65fae845cbf152fc6502c915",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "6535a22e560713eb01a02a38c8b60c1738ecebbbf03bec244c691689455820d1"
+      "adopted": true
     },
     "DocumentReading": {
       "hash": "17ae17e67a8ac7066003bc186c3a89c60970bef3a372ef1185780ac24d0c3284",
@@ -212,11 +212,11 @@
       "spec": "a041bf097ff38d200431ba5e3d993bae3fcd8474ad5dfa97742ff47c1cc82a48"
     },
     "Languages": {
-      "hash": "818e2fda7b5c087a104521e0c0a47a6e9b0df46a6339ef8b8a209225fd237bd6",
+      "hash": "c1c344ceeb3025d1830b8af7e54eae78590c31bd63648d3cc08eaf7594116b91",
+      "spec": "7172df0ec0ca98d5b065819ab93139bc7dbaed7002b5e164aee3ccec1221c1da",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "94b63e1fda9dd5d48405fd50ec939e7cf98458f22f5d11be2f0f7c327be0e600"
+      "adopted": true
     },
     "LauncherKeys": {
       "hash": "3aa289d4f2c2256ed6b8ed00f993b77ab48d06a5b9b17182d51dbe9904b27a89",
@@ -226,8 +226,8 @@
       "spec": "ad6b1b924ac8c91d820786861a568029714750fd9298d3674527f12d26c1aef7"
     },
     "LauncherLayout": {
-      "hash": "f4d3e7927dd6ff24df89b8c9dd42f5e1a3a0354af2f6241b166f8f59b50b922d",
-      "spec": "e23c5c7da8527271cc091f9315a0dd6a94aabc5f872862406487182e3f2cc865",
+      "hash": "bb6346567343391ab21cac3ad23196ba79dc441c9e97712814fb4b00c5633c62",
+      "spec": "4abffe060a5db6a570ffb5b2f9621429a13a118a18232e61a5efe5f366109c5d",
       "files": {},
       "by": "adopted",
       "adopted": true
@@ -394,11 +394,11 @@
       "spec": "42ae328698f7d4eeab83435dea585fae41bc0d55057b012cd548875ab35b8343"
     },
     "ResultRow": {
-      "hash": "6b42041b5441bb14d7302a382f7d274ae56f9cbc011217138346891c2534c6a3",
+      "hash": "28e68a97b029b09917e3786d5babec74b80a08bac78af289817667b9522ea96f",
+      "spec": "19b7ea05e8e602dca28fd538cdeb14f7170643d196b68c1e107cd33d81ba440c",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "680be1d1d8447071b5bffbf3495086e30e1e6d4a75888cb61bdbd0a3713f3462"
+      "adopted": true
     },
     "RunScheduler": {
       "hash": "3fa1b0fa1fcf681a7594c4258dbaac311f57491182b5d26e4fdb9670aa2c3a06",
@@ -436,11 +436,11 @@
       "spec": "7ecba1d0e7b65df9422f99487a43efbf6127942e8b5ce49cef6833e08ce112e8"
     },
     "SettingsWindow": {
-      "hash": "ea71379957a61da2edf70506d8337c2caf5ba97b6fb26a0e64336ae432bf9755",
+      "hash": "3d3a64f0cade75bc7993492a322c2e2f3bc20369fd916b422698aa237132d897",
+      "spec": "5291cf55cdf0a097d659b7427bfa8967d176c26ed90f2258f579c8425d0f7f5d",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "a795665b476fc40d817c488827f97e1cb330093a9c4bbc734763c97111898b20"
+      "adopted": true
     },
     "ShortcutRules": {
       "hash": "31b50e83be5ef49c7902784546d1d96157d968e574a4d86bd3d4ef29e4d60962",
@@ -527,11 +527,11 @@
       "spec": "e2052e9675b4e0dc0a45dbebad5c8d1b02baa28dbb105eda9d109bb31d3abdf4"
     },
     "TrayMenu": {
-      "hash": "6f7cafc5d98d99fbaf78caf583979a63b98169956016c5337a8dcf53b03ed66d",
+      "hash": "c4ad74ec649fc17ddd2bf883a8ff1ab665e3e451bc05de6852294e00a12e5ff5",
+      "spec": "57e0b0bf85f9fc69fc502eaca6387420df0121bb51fdb898c22d95bef88dfbf9",
       "files": {},
       "by": "adopted",
-      "adopted": true,
-      "spec": "49cc781ac0f75e5557dc5eb0fb36e65f41810b8a1f048956eabd01b7b0cf9f2f"
+      "adopted": true
     },
     "UiFlavours": {
       "hash": "b3197bd9f06e30e330c420776b12ef69b32fa8b8508deecd848d21fc8df9fd7e",
@@ -594,57 +594,63 @@
   "hand": {
     "Audio": {
       "shots": "a36f769b51c4a86d",
-      "look": "ccedc8cd211d9dbb479ca3ec8233e8da616b3365387934b170f30409894ad5f6"
+      "look": "d53393f1639e78ed4064d7739761e4aec39d6820c775c147a34f7b2eba8555ef"
     },
     "DetailsPane": {
-      "shots": "4507af5c0bebd62b"
+      "shots": "d76b137f340a14a3",
+      "look": "d04bf7a7ac4e6adf0c529f62e55824105858125de66010c7dda25094d40af0a4"
     },
     "IndexPanel": {
       "shots": "2f5bf57bb6476877",
-      "look": "1edcaae1885f604da75934b8bc03423ea6ee7e8fcf3655fd1643c117941301e8"
+      "look": "51370a6ebb6ae2e9134475334669a85031980274958272667c95dbeef3f15af3"
+    },
+    "Languages": {
+      "shots": "2e9621cd94ac9311",
+      "look": "45c6e10721e19a7b0ad5c4b7e97dd09ed40f91124806ddb669059feacd935357"
     },
     "LauncherLayout": {
-      "shots": "00fb318ca9d0d98b"
+      "shots": "bf066247093bdbcc",
+      "look": "6ebc6804a7e96375e3c5dbf341a8a445edfb33a77d298c541a98eac32558a936"
     },
     "LauncherMessages": {
       "shots": "a8e280d5d3ce5002",
-      "look": "4d944bba8d1d9e5714aa934c1f076fc4d37316d7e195466c8936950dbb297f77"
+      "look": "ad1b2d8fd04486d3508f5583947808b89815d493a53dac7f4c431d74030d356d"
     },
     "ModelSetup": {
       "shots": "0a39980cee3a6a8b",
-      "look": "e57449faf16042c599c1f20de9dff619b279731965d2b1ff94749454d176d06f"
+      "look": "b113225a660466b6638869990deb210890ac1276db74f56f26123b849574da09"
     },
     "NameOnly": {
       "shots": "ec098ee66742baa3",
-      "look": "80ca36feb3139f16458cd7dac0c5c312bc0f985d6f0954c8ed321bad04802cf0"
+      "look": "a21541a87800ca63c00a492026eeb4e89db55585e642f8d8306faa1afe79a1c9"
     },
     "NarrowResults": {
       "shots": "3e03f81817a9d529",
-      "look": "18317679ea0e071545d226db599f451fd24afb9c00bd218f0dd110872264a454"
+      "look": "db5c572731e3f70f4ae5911d0adb9dc27d96ee1607af34a053fd30061351de87"
     },
     "Pictures": {
       "shots": "47a3987c5577b814",
-      "look": "7dd020048574bfb66f535276d647d9d87b885c4e11b83996351c331d5c296010"
+      "look": "be985143d06f836ec8c1d5bb255cf9b5c7b0b959fa9ddd7d2d311353b5ee8a33"
     },
     "ResultRow": {
-      "shots": "a968a9e6d677e41a",
-      "look": "154954e19410be4ca9e7e162e942c56f140c8ee3f0facc254838fa6f8ea1273a"
+      "shots": "41d01da04459338d",
+      "look": "db6e33d3c16cc306518f02eb0f6c12e27c9ea265fb772ccc58b94a56b2d2bde7"
     },
     "SettingsWindow": {
-      "shots": "83aba0d4e70082a4",
+      "shots": "f3c4a441129a85ca",
       "look": "a76525981f601b4260af742bab89c135bf54d139ba72a949b72698050916c179"
     },
     "TextSniffing": {
       "shots": "9e6c9f9936d358b8",
-      "look": "69749c3a0b619a1372ddc327510add1248a37e622d4a6fda7e23e0d24d43f275"
+      "look": "edf5a5d3405cd7f7629cbf7219691f3b76acc8754b8c8ddacb37492aa9dd4208"
     },
     "UiFlavours": {
       "shots": "7f4ee6082d774ca1",
-      "look": "c86039ea9923d044203d61f27e2f5b6afaf91634b232e33006269726a58c2b6b"
+      "look": "7896195c4b1611afd2565e00616b0349e1fc1aa2119f07da11ce1a8b04b3048f"
     },
     "Video": {
       "shots": "d38351e57209fb68",
-      "look": "4ab2de94f81fd412ea7f61cd392dbeacdf2f96ff469b751c6eca4c2fc7552d48"
+      "look": "a82b05150064f4500256c50db7b84add6718c640b6a1e20b32fc151aaa647e4f"
     }
   }
 }

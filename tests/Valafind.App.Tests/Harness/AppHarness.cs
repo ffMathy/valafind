@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
@@ -110,12 +111,24 @@ public sealed class AppHarness : IAsyncDisposable
             Assert.Skip("Needs the model: set VALAFIND_TEST_MODEL_DIR, or run tools/fetch-model.sh .model/embeddinggemma-2.");
         return fixture.Session.Dispatch(() =>
         {
-            // The check awaits on the UI thread: keep its dispatcher running until the check is done.
-            var run = RunCheckAsync(options, test);
-            var frame = new DispatcherFrame();
-            _ = run.ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
-            Dispatcher.UIThread.PushFrame(frame);
-            run.GetAwaiter().GetResult();
+            // The system's language, set here rather than in StartAsync: a culture set inside an async method does not
+            // flow back to its caller, so the check itself (opening the settings, say) would run in the old one. It is
+            // put back afterwards, so that no other check inherits it.
+            var saved = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture, CultureInfo.DefaultThreadCurrentCulture, CultureInfo.DefaultThreadCurrentUICulture);
+            Valafind.App.Localization.Loc.Apply(options.Language ?? "en");
+            try
+            {
+                // The check awaits on the UI thread: keep its dispatcher running until the check is done.
+                var run = RunCheckAsync(options, test);
+                var frame = new DispatcherFrame();
+                _ = run.ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
+                Dispatcher.UIThread.PushFrame(frame);
+                run.GetAwaiter().GetResult();
+            }
+            finally
+            {
+                (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture, CultureInfo.DefaultThreadCurrentCulture, CultureInfo.DefaultThreadCurrentUICulture) = saved;
+            }
         }, TestContext.Current.CancellationToken);
     }
 
@@ -145,13 +158,6 @@ public sealed class AppHarness : IAsyncDisposable
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(opener, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         SetEnvironment("PATH", bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"));
-        if (Options.Language is { } language)
-        {
-            var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
-            System.Globalization.CultureInfo.CurrentUICulture = culture;
-            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
-        }
-
         host = AppHost.Create(null, "show", NullLoggerFactory.Instance);
         host.Start(Application.Current!, new ClassicDesktopStyleApplicationLifetime());
         await WaitUntilAsync(() => Host.LauncherWindow?.IsVisible == true, "the launcher opened").ConfigureAwait(true);

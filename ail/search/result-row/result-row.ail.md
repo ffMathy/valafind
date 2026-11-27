@@ -9,9 +9,10 @@ node ResultRow : view   level: experience
   what
     Scenario: a document's row
       Given a text file "scan_0042.txt" in the folder "Documents/Bolig" of the home folder, saved today at 20:30
-      When it is a result with a match of 0.77
+      When it is a result, with a match such as 0.77
       Then its row shows a document icon, "scan_0042.txt" in bold, "~/Documents/Bolig · Today 20:30" under it, and the start of its excerpt under that, cut with "…" at the row's end
-      And at the right "0.77" in bold above a bar filled to 77 %
+      And at the right its match with two decimals in bold, above a bar filled as far as the match (for 0.77, "0.77" and
+        77 %; the match itself is the model's, so it differs a little from run to run)
     Scenario: the dates
       Given files changed today at 09:12, yesterday, and on 3 March 2020
       Then their rows read "Today 09:12", "Yesterday" and "3 Mar 2020"

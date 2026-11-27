@@ -1,4 +1,4 @@
-// ail-derived-from: TrayMenu@146239f447928b8b
+// ail-derived-from: TrayMenu@1b13fde83053087a
 // End-to-end check for TrayMenu: its scenarios, played with the tray icon of the running Valafind. It sees only what
 // a user sees: windows on screen, their words (OCR), and what would have opened in the browser (see app-driver.ts).
 import { afterEach, expect } from "bun:test";

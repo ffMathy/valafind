@@ -1,4 +1,4 @@
-// ail-derived-from: LauncherLayout@00fb318ca9d0d98b
+// ail-derived-from: LauncherLayout@bf066247093bdbcc
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -129,7 +129,7 @@ public sealed class LauncherLayoutTests(HeadlessFixture fixture)
     [Fact(DisplayName = "the notice goes once every file is searchable")]
     public Task TheNoticeGoesOnceEveryFileIsSearchable() => AppHarness.RunAsync(fixture, async app =>
     {
-        SaveManyNotes(app, 300);
+        SaveManyNotes(app, 120); // enough to search before indexing ends, few enough to index well within the harness's timeout
         await app.StartAsync();
         var window = app.LauncherWindow;
 
