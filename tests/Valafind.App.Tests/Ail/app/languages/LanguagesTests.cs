@@ -68,6 +68,15 @@ public sealed class LanguagesTests(HeadlessFixture fixture)
         await Dispatcher.UIThread.InvokeAsync(() => picker.SelectedItem = deutsch);
         Dispatcher.UIThread.RunJobs();
 
+        // The hint says when it applies, and the settings stay in English (Save then closes them).
+        var settingsTexts = AppHarness.Texts(settings);
+        Assert.Contains(Hint, settingsTexts);
+        Assert.Equal("System default", NameOf(picker.Items.Cast<object?>().First()));
+        Assert.Equal("Deutsch", NameOf(picker.SelectedItem));
+        Assert.Equal("Valafind Settings", settings.Title);
+        Assert.Contains("Save", settingsTexts);
+        AppHarness.SaveScreen(settings, "a-language-picked-in-the-settings-waits-for-the-next-start.png");
+
         var save = AppHarness.Find<Button>(settings).First(b => ButtonText(b) == "Save");
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -80,16 +89,7 @@ public sealed class LanguagesTests(HeadlessFixture fixture)
         await Task.Delay(100);
         Dispatcher.UIThread.RunJobs();
 
-        // The open windows stay in English: the settings window, with the hint ...
-        var shown = app.SettingsWindow ?? settings;
-        var settingsTexts = AppHarness.Texts(shown);
-        Assert.Contains(Hint, settingsTexts);
-        Assert.Equal("System default", NameOf(picker.Items.Cast<object?>().First()));
-        Assert.Equal("Deutsch", NameOf(picker.SelectedItem));
-        Assert.Equal("Valafind Settings", shown.Title);
-        AppHarness.SaveScreen(shown, "a-language-picked-in-the-settings-waits-for-the-next-start.png");
-
-        // ... and the launcher, which the settings hid, once it opens again.
+        // The open windows stay in English: the launcher, which the settings hid, once it opens again.
         app.ShowLauncher();
         Dispatcher.UIThread.RunJobs();
         Assert.Contains("All", AppHarness.Texts(launcher!));
