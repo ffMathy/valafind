@@ -48,6 +48,8 @@ h1 em { font-style: normal; color: var(--accent); }
 .button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .button:hover { filter: brightness(1.05); }
 .fineprint { color: var(--muted); font-size: 14px; margin-top: 14px; }
+.store { margin-top: 20px; }
+.store img { display: inline-block; height: auto; }
 
 .platforms { padding: 20px 0 8px; }
 .tabs { display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
